@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Reply{% endblock %}
+{% block page_title %}Reply{% endblock %}
+{% block content %}
+<div class="card p-4" style="max-width: 600px;">
+    <h5 class="mb-3">Reply to <strong>{{ item.sender_name }}</strong></h5>
+    <div class="bg-light p-3 rounded mb-4 border-start border-primary border-3">
+        <p class="mb-0 text-muted">{{ item.content }}</p>
+    </div>
+    <form method="post">
+        {% csrf_token %}
+        {% for field in form %}
+        <div class="mb-3">
+            {{ field }}
+        </div>
+        {% endfor %}
+        <button type="submit" class="btn btn-primary">
+            <i class="fa-solid fa-paper-plane me-1"></i>Send Reply
+        </button>
+    </form>
+</div>
+{% endblock %}

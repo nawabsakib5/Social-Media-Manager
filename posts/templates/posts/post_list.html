@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Posts{% endblock %}
+{% block page_title %}Posts{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="mb-0">All Posts</h4>
+    <a href="{% url 'post_create' %}" class="btn btn-primary btn-sm">
+        <i class="fa-solid fa-plus me-1"></i>New Post
+    </a>
+</div>
+<div class="card">
+    <ul class="list-group list-group-flush">
+        {% for post in posts %}
+        <li class="list-group-item py-3">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <span class="badge bg-primary me-2">{{ post.social_account.platform }}</span>
+                    <strong>{{ post.social_account.account_name }}</strong>
+                    <p class="mb-0 text-muted mt-1" style="font-size:13px;">{{ post.content }}</p>
+                </div>
+                <span class="badge
+                    {% if post.status == 'published' %}bg-success
+                    {% elif post.status == 'scheduled' %}bg-warning text-dark
+                    {% elif post.status == 'failed' %}bg-danger
+                    {% else %}bg-secondary{% endif %}">
+                    {{ post.status }}
+                </span>
+            </div>
+        </li>
+        {% empty %}
+        <li class="list-group-item text-muted py-4 text-center">কোনো পোস্ট নেই।</li>
+        {% endfor %}
+    </ul>
+</div>
+{% endblock %}

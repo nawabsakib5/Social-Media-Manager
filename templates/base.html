@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}Social Media Manager{% endblock %}</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body { background: #f0f2f5; }
+        .sidebar {
+            min-height: 100vh;
+            background: #1a1a2e;
+            padding-top: 20px;
+        }
+        .sidebar a {
+            color: #a0a0b0;
+            text-decoration: none;
+            display: block;
+            padding: 12px 20px;
+            border-radius: 8px;
+            margin: 4px 10px;
+            font-size: 14px;
+        }
+        .sidebar a:hover, .sidebar a.active {
+            background: #16213e;
+            color: #ffffff;
+        }
+        .sidebar .brand {
+            color: white;
+            font-size: 18px;
+            font-weight: 700;
+            padding: 10px 20px 30px 20px;
+            display: block;
+        }
+        .main-content { padding: 30px; }
+        .top-bar {
+            background: white;
+            padding: 12px 25px;
+            border-bottom: 1px solid #e0e0e0;
+            margin-bottom: 25px;
+            border-radius: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .card { border: none; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.06); }
+        .badge { font-size: 11px; }
+    </style>
+</head>
+<body>
+<div class="container-fluid p-0">
+    <div class="row g-0">
+
+        <!-- Sidebar -->
+        <div class="col-auto sidebar">
+            <a class="brand" href="{% url 'post_list' %}">
+                <i class="fa-solid fa-share-nodes me-2"></i>SocialManager
+            </a>
+            {% if user.is_authenticated %}
+            <a href="{% url 'post_list' %}"><i class="fa-solid fa-pen-to-square me-2"></i>Posts</a>
+            <a href="{% url 'inbox_list' %}"><i class="fa-solid fa-inbox me-2"></i>Inbox</a>
+            <a href="{% url 'account_list' %}"><i class="fa-solid fa-plug me-2"></i>Accounts</a>
+            {% endif %}
+        </div>
+
+        <!-- Main Content -->
+        <div class="col main-content">
+            {% if user.is_authenticated %}
+            <div class="top-bar">
+                <span class="fw-semibold text-muted">{% block page_title %}Dashboard{% endblock %}</span>
+                <div>
+                    <span class="me-3 text-muted"><i class="fa-solid fa-user me-1"></i>{{ user.username }}</span>
+                    <a href="{% url 'logout' %}" class="btn btn-sm btn-outline-secondary">Logout</a>
+                </div>
+            </div>
+            {% endif %}
+
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-info alert-dismissible fade show">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            {% block content %}{% endblock %}
+        </div>
+
+    </div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
