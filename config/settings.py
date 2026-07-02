@@ -7,14 +7,14 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-d-k0h63faq8uue80g!xv%4fp*a31&qi(29-^r^5oy@qw0@vjrq'
+# Loaded securely from the .env file
+SECRET_KEY = config('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+# Casts the 'True/False' string from .env into a Python Boolean
+DEBUG = config('DEBUG', cast=bool)
 
 ALLOWED_HOSTS = []
-
-
 # Application definition
 
 INSTALLED_APPS = [
@@ -118,3 +118,28 @@ LOGOUT_REDIRECT_URL = 'login'
 
 
 FIELD_ENCRYPTION_KEY = config('FIELD_ENCRYPTION_KEY')
+
+# Celery Settings
+CELERY_BROKER_URL = 'redis://127.0.0.1:6379/0'
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_BACKEND = 'redis://127.0.0.1:6379/0'
+CELERY_TIMEZONE = TIME_ZONE
+
+# Celery Queue Routing Settings
+CELERY_TASK_DEFAULT_QUEUE = 'default'
+CELERY_TASK_QUEUES = {
+    'default': {
+        'exchange': 'default',
+        'routing_key': 'default',
+    },
+    'media_uploads': {
+        'exchange': 'media_uploads',
+        'routing_key': 'media_uploads',
+    },
+}
+
+# Automatically route post publishing task to 'default' queue
+CELERY_TASK_ROUTES = {
+    'posts.tasks.publish_post_task': {'queue': 'default'},
+}

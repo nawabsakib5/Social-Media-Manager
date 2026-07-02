@@ -1,7 +1,6 @@
 from django.db import models
 from accounts.models import Team
 
-
 class SocialAccount(models.Model):
     PLATFORM_CHOICES = [
         ('facebook', 'Facebook'),
@@ -19,6 +18,12 @@ class SocialAccount(models.Model):
     platform = models.CharField(max_length=20, choices=PLATFORM_CHOICES)
     account_name = models.CharField(max_length=100)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='disconnected')
+    
+    platform_account_id = models.CharField(max_length=255, null=True, blank=True) 
+    access_token = models.TextField(null=True, blank=True)
+    refresh_token = models.TextField(null=True, blank=True)
+    token_expiry = models.DateTimeField(null=True, blank=True)
+    
     connected_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

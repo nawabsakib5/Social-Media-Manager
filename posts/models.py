@@ -2,7 +2,6 @@ from django.db import models
 from django.contrib.auth.models import User
 from social_accounts.models import SocialAccount
 
-
 class Post(models.Model):
     STATUS_CHOICES = [
         ('draft', 'Draft'),
@@ -13,6 +12,7 @@ class Post(models.Model):
 
     social_account = models.ForeignKey(SocialAccount, on_delete=models.CASCADE)
     content = models.TextField()
+    media_file = models.FileField(upload_to='post_media/', null=True, blank=True) 
     scheduled_time = models.DateTimeField(null=True, blank=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft')
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
