@@ -1,0 +1,19 @@
+# Ignore environment variables file (Crucial!)
+.env
+
+# Ignore local database (if any)
+*.sqlite3
+db.sqlite3
+
+# Ignore python compiled files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Ignore virtual environment
+venv/
+ENV/
+env/
+
+# Ignore media uploads (user uploaded images/videos)
+media/

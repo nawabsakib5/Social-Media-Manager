@@ -2,15 +2,36 @@ from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from .models import Post
 from .forms import PostForm
-from .tasks import publish_post_task  
+from .tasks import publish_post_task
+from accounts.models import Team, TeamMember  # Imported accounts models
+
+def get_or_create_user_team(user):
+    """
+    Auto-Healing Helper: Automatically creates a default workspace for the user
+    if they don't have one, making the system 100% manual-setup free.
+    """
+    membership = user.teammemberships.first()
+    if membership:
+        return membership.team
+    
+    # Auto-create a workspace named after their username
+    workspace_name = f"{user.username}'s Workspace"
+    team, created = Team.objects.get_or_create(name=workspace_name)
+    
+    # Superuser/Staff will be Admin, invited users will be Editors
+    role = 'admin' if user.is_superuser or user.is_staff else 'editor'
+    
+    TeamMember.objects.get_or_create(
+        user=user,
+        team=team,
+        defaults={'role': role}
+    )
+    return team
 
 @login_required
 def post_list(request):
-    membership = request.user.teammemberships.first()
-    active_team = membership.team if membership else None
-    
-    if not active_team:
-        return render(request, 'posts/no_team.html')
+    # Auto-resolves or silently heals the user's workspace
+    active_team = get_or_create_user_team(request.user)
         
     posts = Post.objects.filter(social_account__team=active_team).order_by('-created_at')
     return render(request, 'posts/post_list.html', {
@@ -21,12 +42,8 @@ def post_list(request):
 
 @login_required
 def post_create(request):
-    membership = request.user.teammemberships.first()
-    active_team = membership.team if membership else None
-    
-    if not active_team:
-        # Safely redirect to post_list, which will render the no_team.html template
-        return redirect('post_list')
+    # Auto-resolves or silently heals the user's workspace
+    active_team = get_or_create_user_team(request.user)
 
     if request.method == 'POST':
         form = PostForm(request.POST, request.FILES, team=active_team)
@@ -40,6 +57,6 @@ def post_create(request):
             
             return redirect('post_list')
     else:
-        form = Form = PostForm(team=active_team)
+        form = PostForm(team=active_team)
         
     return render(request, 'posts/post_form.html', {'form': form})

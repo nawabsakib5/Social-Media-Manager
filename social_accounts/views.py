@@ -5,6 +5,28 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from urllib.parse import urlencode
 from .models import SocialAccount
+from accounts.models import Team, TeamMember  # Imported accounts models
+
+def get_or_create_user_team(user):
+    """
+    Auto-Healing Helper: Automatically creates a default workspace for the user
+    if they don't have one, making the system 100% manual-setup free.
+    """
+    membership = user.teammemberships.first()
+    if membership:
+        return membership.team
+    
+    workspace_name = f"{user.username}'s Workspace"
+    team, created = Team.objects.get_or_create(name=workspace_name)
+    
+    role = 'admin' if user.is_superuser or user.is_staff else 'editor'
+    
+    TeamMember.objects.get_or_create(
+        user=user,
+        team=team,
+        defaults={'role': role}
+    )
+    return team
 
 # Load Meta Credentials from settings
 FB_APP_ID = getattr(settings, 'FACEBOOK_APP_ID', '')
@@ -13,15 +35,8 @@ FB_REDIRECT_URI = getattr(settings, 'FACEBOOK_REDIRECT_URI', 'http://localhost:8
 
 @login_required
 def connect_mock_social(request):
-    """
-    Keep mock view for testing offline pipeline
-    """
-    membership = request.user.teammemberships.first()
-    if not membership:
-        messages.error(request, "You do not have an active team. Please create a team first.")
-        return redirect('post_list')
-
-    active_team = membership.team
+    active_team = get_or_create_user_team(request.user)
+    
     mock_account, created = SocialAccount.objects.get_or_create(
         team=active_team,
         platform='facebook',
@@ -41,9 +56,6 @@ def connect_mock_social(request):
 
 @login_required
 def facebook_login(request):
-    """
-    Step 1: Redirects the user to Facebook's OAuth Authorization Dialog.
-    """
     scopes = [
         'pages_show_list',
         'pages_read_engagement',
@@ -57,7 +69,7 @@ def facebook_login(request):
         'redirect_uri': FB_REDIRECT_URI,
         'scope': ','.join(scopes),
         'response_type': 'code',
-        'state': str(request.user.id)  # Security state parameter using logged-in user id
+        'state': str(request.user.id)
     }
     
     authorization_url = f"https://www.facebook.com/v20.0/dialog/oauth?{urlencode(params)}"
@@ -66,10 +78,6 @@ def facebook_login(request):
 
 @login_required
 def facebook_callback(request):
-    """
-    Step 2: Handles the Facebook redirection. Exchanges code for short-lived token,
-    exchanges that for a 60-day long-lived token, and fetches user's Pages.
-    """
     code = request.GET.get('code')
     state = request.GET.get('state')
     error = request.GET.get('error')
@@ -78,20 +86,14 @@ def facebook_callback(request):
         messages.error(request, f"Facebook login was cancelled or failed: {error or 'No response code.'}")
         return redirect('post_list')
 
-    # Security Check: State must match logged-in user id
     if state != str(request.user.id):
         messages.error(request, "Security token verification failed. Invalid OAuth State.")
         return redirect('post_list')
 
-    membership = request.user.teammemberships.first()
-    if not membership:
-        messages.error(request, "No active team found to bind this social media profile.")
-        return redirect('post_list')
-    
-    active_team = membership.team
+    # Auto-resolves or silently heals the user's workspace
+    active_team = get_or_create_user_team(request.user)
 
     try:
-        # A. Exchange the code for a short-lived User Access Token
         token_url = "https://graph.facebook.com/v20.0/oauth/access_token"
         token_params = {
             'client_id': FB_APP_ID,
@@ -109,7 +111,6 @@ def facebook_callback(request):
 
         short_lived_user_token = token_data['access_token']
 
-        # B. Exchange short-lived token for a 60-day Long-Lived User Access Token
         long_lived_url = "https://graph.facebook.com/v20.0/oauth/access_token"
         long_lived_params = {
             'grant_type': 'fb_exchange_token',
@@ -121,7 +122,6 @@ def facebook_callback(request):
         long_lived_data = long_lived_response.json()
         long_lived_user_token = long_lived_data.get('access_token', short_lived_user_token)
 
-        # C. Retrieve user's Facebook Pages and Page Access Tokens
         pages_url = "https://graph.facebook.com/v20.0/me/accounts"
         pages_params = {
             'access_token': long_lived_user_token
@@ -135,11 +135,10 @@ def facebook_callback(request):
 
         connected_pages = []
 
-        # D. Store or update retrieved Facebook Pages securely in the database
         for page in pages_data['data']:
             page_name = page['name']
             page_id = page['id']
-            page_access_token = page['access_token']  # Page access token
+            page_access_token = page['access_token']
 
             social_account, created = SocialAccount.objects.update_or_create(
                 team=active_team,
@@ -150,7 +149,6 @@ def facebook_callback(request):
                     'status': 'connected',
                 }
             )
-            # Secure token encryption auto-triggers here
             social_account.decrypted_access_token = page_access_token
             social_account.save()
             
@@ -165,3 +163,22 @@ def facebook_callback(request):
         messages.error(request, f"Network error during Meta OAuth: {str(e)}")
 
     return redirect('post_list')
+
+
+@login_required
+def account_list(request):
+    
+    active_team = get_or_create_user_team(request.user)
+    
+    
+    accounts = SocialAccount.objects.filter(team=active_team).order_by('-connected_at')
+    
+    
+    membership = request.user.teammemberships.first()
+    user_role = membership.role if membership else 'editor'
+    
+    return render(request, 'social_accounts/account_list.html', {
+        'accounts': accounts,
+        'user_role': user_role,
+        'active_team': active_team
+    })

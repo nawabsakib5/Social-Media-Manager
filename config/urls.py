@@ -8,7 +8,8 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('posts/', include('posts.urls')),
     path('inbox/', include('inbox.urls')),
-    path('social/', include('social_accounts.urls')),  # Integrated social_accounts URLs
+    path('social/', include('social_accounts.urls')),
+    path('accounts/', include('accounts.urls')), 
     path('login/', auth_views.LoginView.as_view(template_name='registration/login.html'), name='login'),
     path('logout/', auth_views.LogoutView.as_view(), name='logout'),
 ]
