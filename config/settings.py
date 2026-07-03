@@ -143,3 +143,8 @@ CELERY_TASK_QUEUES = {
 CELERY_TASK_ROUTES = {
     'posts.tasks.publish_post_task': {'queue': 'default'},
 }
+
+
+FACEBOOK_APP_ID = config('FACEBOOK_APP_ID', default='')
+FACEBOOK_APP_SECRET = config('FACEBOOK_APP_SECRET', default='')
+FACEBOOK_REDIRECT_URI = config('FACEBOOK_REDIRECT_URI', default='http://localhost:8000/social/callback/')
