@@ -56,10 +56,15 @@ def connect_mock_social(request):
 
 @login_required
 def facebook_login(request):
+    """
+    Step 1: Redirects the user to Facebook's OAuth Authorization Dialog.
+    """
+    # Added 'business_management' to unlock Business-owned Pages (Cotton Web & EcoVelin)
     scopes = [
         'pages_show_list',
         'pages_read_engagement',
         'pages_manage_posts',
+        'business_management',  # Crucial for Business Assets!
         'instagram_basic',
         'instagram_content_publish'
     ]
@@ -69,12 +74,11 @@ def facebook_login(request):
         'redirect_uri': FB_REDIRECT_URI,
         'scope': ','.join(scopes),
         'response_type': 'code',
-        'state': str(request.user.id)
+        'state': str(request.user.id)  # Security state parameter using logged-in user id
     }
     
     authorization_url = f"https://www.facebook.com/v20.0/dialog/oauth?{urlencode(params)}"
     return redirect(authorization_url)
-
 
 @login_required
 def facebook_callback(request):
@@ -90,10 +94,15 @@ def facebook_callback(request):
         messages.error(request, "Security token verification failed. Invalid OAuth State.")
         return redirect('post_list')
 
-    # Auto-resolves or silently heals the user's workspace
-    active_team = get_or_create_user_team(request.user)
+    membership = request.user.teammemberships.first()
+    if not membership:
+        messages.error(request, "No active team found to bind this social media profile.")
+        return redirect('post_list')
+    
+    active_team = membership.team
 
     try:
+        # A. Exchange the code for a short-lived User Access Token
         token_url = "https://graph.facebook.com/v20.0/oauth/access_token"
         token_params = {
             'client_id': FB_APP_ID,
@@ -111,6 +120,7 @@ def facebook_callback(request):
 
         short_lived_user_token = token_data['access_token']
 
+        # B. Exchange short-lived token for a 60-day Long-Lived User Access Token
         long_lived_url = "https://graph.facebook.com/v20.0/oauth/access_token"
         long_lived_params = {
             'grant_type': 'fb_exchange_token',
@@ -122,12 +132,25 @@ def facebook_callback(request):
         long_lived_data = long_lived_response.json()
         long_lived_user_token = long_lived_data.get('access_token', short_lived_user_token)
 
+        # DEBUG PRINT: Print granted permissions for this token
+        perms_url = "https://graph.facebook.com/v20.0/me/permissions"
+        perms_response = requests.get(perms_url, params={'access_token': long_lived_user_token}, timeout=15)
+        print("\n=== DEBUG: GRANTED PERMISSIONS ===")
+        print(perms_response.json())
+        print("==================================\n")
+
+        # C. Retrieve user's Facebook Pages and Page Access Tokens
         pages_url = "https://graph.facebook.com/v20.0/me/accounts"
         pages_params = {
             'access_token': long_lived_user_token
         }
         pages_response = requests.get(pages_url, params=pages_params, timeout=15)
         pages_data = pages_response.json()
+
+        # DEBUG PRINT: Print pages data in your Django terminal console
+        print("\n=== DEBUG: PAGES DATA ===")
+        print(pages_data)
+        print("=========================\n")
 
         if 'data' not in pages_data:
             messages.error(request, "Could not find any Facebook Pages connected to your account.")
@@ -138,7 +161,7 @@ def facebook_callback(request):
         for page in pages_data['data']:
             page_name = page['name']
             page_id = page['id']
-            page_access_token = page['access_token']
+            page_access_token = page['access_token']  # Page access token
 
             social_account, created = SocialAccount.objects.update_or_create(
                 team=active_team,
@@ -149,6 +172,7 @@ def facebook_callback(request):
                     'status': 'connected',
                 }
             )
+            # Secure token encryption auto-triggers here
             social_account.decrypted_access_token = page_access_token
             social_account.save()
             

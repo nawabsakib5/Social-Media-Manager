@@ -121,10 +121,16 @@ FIELD_ENCRYPTION_KEY = config('FIELD_ENCRYPTION_KEY')
 
 # Celery Settings
 CELERY_BROKER_URL = 'redis://127.0.0.1:6379/0'
+# Enforce protocol 2 directly in the result backend URL
+CELERY_RESULT_BACKEND = 'redis://127.0.0.1:6379/0?protocol=2'
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
-CELERY_RESULT_BACKEND = 'redis://127.0.0.1:6379/0'
 CELERY_TIMEZONE = TIME_ZONE
+
+# Pass the protocol version safely to the redis-py client for Kombu (Broker)
+CELERY_BROKER_TRANSPORT_OPTIONS = {
+    'protocol': 2,
+}
 
 # Celery Queue Routing Settings
 CELERY_TASK_DEFAULT_QUEUE = 'default'
@@ -158,3 +164,5 @@ EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=True, cast=bool)
 EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
 EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='') # Gmail App Password
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+
+
