@@ -15,6 +15,8 @@ class Post(models.Model):
     media_file = models.FileField(upload_to='post_media/', null=True, blank=True) 
     scheduled_time = models.DateTimeField(null=True, blank=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft')
+    platform_post_id = models.CharField(max_length=255, null=True, blank=True)
+    error_message = models.TextField(null=True, blank=True)
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 

@@ -20,4 +20,6 @@ class PostForm(forms.ModelForm):
                 status='connected'
             )
         else:
-            self.fields['social_account'].queryset = SocialAccount.objects.none()
+            self.fields['social_account'].queryset = SocialAccount.objects.filter(
+                status='connected'
+            )
