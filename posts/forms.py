@@ -14,12 +14,6 @@ class PostForm(forms.ModelForm):
         team = kwargs.pop('team', None)
         super().__init__(*args, **kwargs)
         
-        if team:
-            self.fields['social_account'].queryset = SocialAccount.objects.filter(
-                team=team, 
-                status='connected'
-            )
-        else:
-            self.fields['social_account'].queryset = SocialAccount.objects.filter(
-                status='connected'
-            )
+        self.fields['social_account'].queryset = SocialAccount.objects.filter(
+            status='connected'
+        )

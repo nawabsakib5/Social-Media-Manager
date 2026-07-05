@@ -121,15 +121,13 @@ FIELD_ENCRYPTION_KEY = config('FIELD_ENCRYPTION_KEY')
 
 # Celery Settings
 CELERY_BROKER_URL = 'redis://127.0.0.1:6379/0'
-# Enforce protocol 2 directly in the result backend URL
-CELERY_RESULT_BACKEND = 'redis://127.0.0.1:6379/0?protocol=2'
+CELERY_RESULT_BACKEND = 'redis://127.0.0.1:6379/0'
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_TIMEZONE = TIME_ZONE
 
-# Pass the protocol version safely to the redis-py client for Kombu (Broker)
 CELERY_BROKER_TRANSPORT_OPTIONS = {
-    'protocol': 2,
+    'visibility_timeout': 3600,
 }
 
 # Celery Queue Routing Settings
@@ -145,7 +143,6 @@ CELERY_TASK_QUEUES = {
     },
 }
 
-# Automatically route post publishing task to 'default' queue
 CELERY_TASK_ROUTES = {
     'posts.tasks.publish_post_task': {'queue': 'default'},
 }
