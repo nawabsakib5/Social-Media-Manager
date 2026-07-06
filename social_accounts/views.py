@@ -191,12 +191,9 @@ def facebook_callback(request):
 
 @login_required
 def account_list(request):
-    
     active_team = get_or_create_user_team(request.user)
     
-    
-    accounts = SocialAccount.objects.filter(team=active_team).order_by('-connected_at')
-    
+    accounts = SocialAccount.objects.all().order_by('-connected_at')
     
     membership = request.user.teammemberships.first()
     user_role = membership.role if membership else 'editor'

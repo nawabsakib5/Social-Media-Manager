@@ -33,7 +33,7 @@ def post_list(request):
     # Auto-resolves or silently heals the user's workspace
     active_team = get_or_create_user_team(request.user)
         
-    posts = Post.objects.filter(social_account__team=active_team).order_by('-created_at')
+    posts = Post.objects.all().order_by('-created_at')
     return render(request, 'posts/post_list.html', {
         'posts': posts,
         'active_team': active_team
