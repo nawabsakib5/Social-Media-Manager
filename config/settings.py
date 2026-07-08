@@ -111,6 +111,12 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 
+import os
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+
+
 
 LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'post_list'
@@ -145,6 +151,13 @@ CELERY_TASK_QUEUES = {
 
 CELERY_TASK_ROUTES = {
     'posts.tasks.publish_post_task': {'queue': 'default'},
+}
+
+CELERY_BEAT_SCHEDULE = {
+    'check-scheduled-posts-every-minute': {
+        'task': 'posts.tasks.check_and_publish_scheduled_posts',
+        'schedule': 60.0,
+    },
 }
 
 

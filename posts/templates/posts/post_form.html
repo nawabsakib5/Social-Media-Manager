@@ -4,7 +4,7 @@
 {% block content %}
 <div class="card p-4" style="max-width: 650px;">
     <h5 class="mb-4">New Post</h5>
-    <form method="post">
+    <form method="post" enctype="multipart/form-data">
         {% csrf_token %}
         {% for field in form %}
         <div class="mb-3">
@@ -15,9 +15,14 @@
             {% endif %}
         </div>
         {% endfor %}
-        <button type="submit" class="btn btn-primary">
-            <i class="fa-solid fa-floppy-disk me-1"></i>Save Post
-        </button>
+        <div class="d-flex gap-2 mt-3">
+            <button type="submit" name="post_type" value="instant" class="btn btn-primary">
+                ⚡ এখনই Post করুন
+            </button>
+            <button type="submit" name="post_type" value="scheduled" class="btn btn-outline-secondary">
+                🕐 Schedule করুন
+            </button>
+        </div>
     </form>
 </div>
 {% endblock %}

@@ -6,7 +6,10 @@ echo Starting Social Media Manager...
 :: Terminal 1: Django
 start "Django Server" cmd /k "cd /d C:\Users\nawab\Desktop\Social Media Manager && venv\Scripts\activate && python manage.py runserver"
 
-:: Terminal 2: Celery
+:: Terminal 2: Celery Worker
 start "Celery Worker" cmd /k "cd /d C:\Users\nawab\Desktop\Social Media Manager && venv\Scripts\activate && celery -A config worker -l info --pool=solo"
+
+:: Terminal 3: Celery Beat
+start "Celery Beat" cmd /k "cd /d C:\Users\nawab\Desktop\Social Media Manager && venv\Scripts\activate && celery -A config beat -l info"
 
 echo All services started!
