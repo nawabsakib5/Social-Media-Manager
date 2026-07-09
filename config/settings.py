@@ -24,6 +24,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'cloudinary',
+    'cloudinary_storage',
     'accounts',
     'social_accounts',
     'posts',
@@ -110,6 +112,23 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = 'static/'
+SITE_URL = "https://dev-rolls-contrast-jamie.trycloudflare.com"
+import cloudinary
+cloudinary.config(
+    cloud_name=config('CLOUDINARY_CLOUD_NAME'),
+    api_key=config('CLOUDINARY_API_KEY'),
+    api_secret=config('CLOUDINARY_API_SECRET'),
+    secure=True
+)
+CLOUDINARY_STORAGE = {
+    'CLOUD_NAME': config('CLOUDINARY_CLOUD_NAME'),
+    'API_KEY': config('CLOUDINARY_API_KEY'),
+    'API_SECRET': config('CLOUDINARY_API_SECRET'),
+}
+DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+
+
+
 
 import os
 MEDIA_URL = '/media/'
@@ -176,3 +195,7 @@ EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='') # Gmail App Pass
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
 
+
+
+SITE_URL = "https://dev-rolls-contrast-jamie.trycloudflare.com"
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'dev-rolls-contrast-jamie.trycloudflare.com']
