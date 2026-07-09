@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from django.utils import timezone
-from .models import Post
+from .models import Post, PostPlatformStatus
 from .forms import PostForm
 from .tasks import publish_post_task
 from accounts.models import Team, TeamMember
@@ -37,16 +37,27 @@ def post_create(request):
         if form.is_valid():
             post = form.save(commit=False)
             post.created_by = request.user
+            post.status = 'scheduled'
+            post.save()
+
+            # Selected platforms
+            selected_accounts = form.cleaned_data['social_accounts']
+
+            # প্রতিটা platform-এর জন্য PostPlatformStatus তৈরি করো
+            for account in selected_accounts:
+                PostPlatformStatus.objects.create(
+                    post=post,
+                    social_account=account,
+                    status='scheduled'
+                )
+
             post_type = request.POST.get('post_type', 'scheduled')
 
             if post_type == 'instant':
-                post.status = 'scheduled'
                 post.scheduled_time = timezone.now()
                 post.save()
-                publish_post_task.delay(post.id)
-            else:
-                post.status = 'scheduled'
-                post.save()
+                for account in selected_accounts:
+                    publish_post_task.delay(post.id, account.id)
 
             return redirect('post_list')
     else:
