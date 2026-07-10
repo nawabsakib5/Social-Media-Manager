@@ -1,65 +1,115 @@
 from celery import shared_task
 from django.utils import timezone
-from .models import Post
+from .models import Post, PostPlatformStatus
 from integrations import get_social_adapter
 
 
 @shared_task
 def check_and_publish_scheduled_posts():
+    """
+    Celery Beat runs this every minute.
+    Finds all due scheduled posts and fires a separate
+    publish_post_task for each account that hasn't been
+    published or is not already processing.
+    """
     now = timezone.now()
     due_posts = Post.objects.filter(
         status='scheduled',
         scheduled_time__lte=now
-    )
-    count = 0
+    ).prefetch_related('social_accounts', 'platform_statuses')
+
+    fired = 0
     for post in due_posts:
-        publish_post_task.delay(post.id)
-        count += 1
-    print(f"[Beat] {count} টা post queue-এ পাঠানো হয়েছে")
-    return f"Queued {count} posts"
+        for account in post.social_accounts.all():
+            already_handled = post.platform_statuses.filter(
+                social_account=account,
+                status__in=['published', 'processing']
+            ).exists()
+            if not already_handled:
+                publish_post_task.delay(post.id, account.id)
+                fired += 1
+
+    return f"Queued {fired} publish tasks for due scheduled posts"
 
 
 @shared_task(bind=True, max_retries=3, default_retry_delay=60)
-def publish_post_task(self, post_id):
+def publish_post_task(self, post_id, account_id):
+    """
+    Publishes a single post to a single social account.
+    Updates PostPlatformStatus accordingly.
+    For multi-platform posting, this task is fired
+    separately for each selected account.
+    """
+    from social_accounts.models import SocialAccount
+
+    # --- Fetch objects ---
     try:
         post = Post.objects.get(id=post_id)
-        social_account = post.social_account
-        print(f"Task Started: {social_account.platform} — Post ID {post_id}")
+    except Post.DoesNotExist:
+        return f"Post {post_id} not found — skipping"
 
-        adapter = get_social_adapter(social_account)
+    try:
+        account = SocialAccount.objects.get(id=account_id)
+    except SocialAccount.DoesNotExist:
+        return f"SocialAccount {account_id} not found — skipping"
+
+    # --- Get or create platform status record ---
+    status_obj, _ = PostPlatformStatus.objects.get_or_create(
+        post=post,
+        social_account=account,
+        defaults={'status': 'scheduled'}
+    )
+
+    # Mark as processing so Beat doesn't re-queue it
+    status_obj.status = 'processing'
+    status_obj.error_message = None
+    status_obj.save(update_fields=['status', 'error_message'])
+
+    # --- Publish ---
+    try:
+        adapter = get_social_adapter(account)
         result = adapter.publish_post(post)
 
         if result['status'] == 'success':
             platform_post_id = result.get('platform_post_id', '')
-            if not platform_post_id or str(platform_post_id).startswith('mock_'):
-                post.status = 'failed'
-                post.error_message = 'Mock token — real access token দিন'
-                post.save()
-                return "Failed: mock token"
 
-            post.status = 'published'
-            post.platform_post_id = platform_post_id
-            post.error_message = None
-            post.save()
-            print(f"Task Success: Post {post_id} → ID: {platform_post_id}")
-            return f"Published: {platform_post_id}"
+            if not platform_post_id or str(platform_post_id).startswith('mock_'):
+                status_obj.status = 'failed'
+                status_obj.error_message = 'Mock token detected — provide a real access token'
+                status_obj.save(update_fields=['status', 'error_message'])
+                return f"Failed (mock token): post {post_id} → {account.platform}"
+
+            status_obj.status = 'published'
+            status_obj.platform_post_id = platform_post_id
+            status_obj.error_message = None
+            status_obj.published_at = timezone.now()
+            status_obj.save(update_fields=['status', 'platform_post_id', 'error_message', 'published_at'])
+
+            # Mark Post itself as published if all platforms are done
+            all_statuses = post.platform_statuses.values_list('status', flat=True)
+            if all(s == 'published' for s in all_statuses):
+                post.status = 'published'
+                post.save(update_fields=['status'])
+
+            return f"Published: post {post_id} → {account.platform} (ID: {platform_post_id})"
+
         else:
             error_msg = result.get('error_message', 'Unknown error')
-            post.status = 'failed'
-            post.error_message = error_msg
-            post.save()
-            if "connection network timeout" in error_msg:
-                self.retry(exc=Exception(error_msg))
-            return f"Failed: {error_msg}"
+            status_obj.status = 'failed'
+            status_obj.error_message = error_msg
+            status_obj.save(update_fields=['status', 'error_message'])
 
-    except Post.DoesNotExist:
-        return "Post Not Found"
+            if 'connection' in error_msg.lower() or 'timeout' in error_msg.lower():
+                raise self.retry(exc=Exception(error_msg), countdown=60 * (self.request.retries + 1))
+
+            return f"Failed: post {post_id} → {account.platform}: {error_msg}"
+
     except Exception as e:
+        status_obj.status = 'failed'
+        status_obj.error_message = str(e)[:1000]
+        status_obj.save(update_fields=['status', 'error_message'])
+
         try:
-            post = Post.objects.get(id=post_id)
-            post.status = 'failed'
-            post.error_message = str(e)
-            post.save()
-        except Exception:
-            pass
-        return f"Error: {str(e)}"
+            raise self.retry(exc=e, countdown=60 * (self.request.retries + 1))
+        except self.MaxRetriesExceededError:
+            return f"Permanently failed: post {post_id} → {account.platform}: {e}"

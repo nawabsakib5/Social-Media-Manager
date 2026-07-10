@@ -3,41 +3,229 @@
 {% block page_title %}Posts{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h4 class="mb-0">All Posts</h4>
-    <!-- Button group on the right side of the header -->
+<!-- Header -->
+<div class="d-flex justify-content-between align-items-center mb-4" id="page-header">
+    <div>
+        <h4 class="mb-0 fw-bold">All Posts</h4>
+        <small class="text-muted">Manage your scheduled and published content</small>
+    </div>
     <div class="d-flex gap-2">
         <a href="{% url 'accounts:invite_member' %}" class="btn btn-outline-primary btn-sm">
-            <i class="fa-solid fa-user-plus me-1"></i>Invite Team Member
+            <i class="fa-solid fa-user-plus me-1"></i>Invite Member
         </a>
-        <a href="{% url 'post_create' %}" class="btn btn-primary btn-sm">
+        <a href="{% url 'post_create' %}" class="btn btn-primary btn-sm" id="new-post-btn">
             <i class="fa-solid fa-plus me-1"></i>New Post
         </a>
     </div>
 </div>
 
-<div class="card">
-    <ul class="list-group list-group-flush">
-        {% for post in posts %}
-        <li class="list-group-item py-3">
-            <div class="d-flex justify-content-between align-items-center">
-                <div>
-                    <span class="badge bg-primary me-2">{{ post.social_account.platform }}</span>
-                    <strong>{{ post.social_account.account_name }}</strong>
-                    <p class="mb-0 text-muted mt-1" style="font-size:13px;">{{ post.content }}</p>
+<!-- Post Cards -->
+<div id="posts-container">
+    {% for post in posts %}
+    <div class="post-card card mb-3 border-0 shadow-sm" style="opacity:0; transform:translateY(30px);">
+        <div class="card-body">
+
+            <!-- Top row: platform badges + overall status -->
+            <div class="d-flex justify-content-between align-items-start mb-2">
+                <div class="d-flex flex-wrap gap-2">
+                    {% for ps in post.platform_statuses.all %}
+                    <span class="platform-badge badge rounded-pill
+                        {% if ps.social_account.platform == 'facebook' %}bg-primary
+                        {% elif ps.social_account.platform == 'instagram' %}bg-instagram
+                        {% elif ps.social_account.platform == 'twitter' %}bg-info text-dark
+                        {% elif ps.social_account.platform == 'whatsapp' %}bg-success
+                        {% else %}bg-secondary{% endif %}">
+                        <i class="fa-brands fa-{{ ps.social_account.platform }} me-1"></i>
+                        {{ ps.social_account.account_name }}
+                    </span>
+                    {% endfor %}
                 </div>
-                <span class="badge
+
+                <!-- Overall post status pill -->
+                <span class="status-pill badge rounded-pill px-3 py-2
                     {% if post.status == 'published' %}bg-success
                     {% elif post.status == 'scheduled' %}bg-warning text-dark
                     {% elif post.status == 'failed' %}bg-danger
                     {% else %}bg-secondary{% endif %}">
-                    {{ post.status }}
+                    {% if post.status == 'published' %}<i class="fa-solid fa-check me-1"></i>
+                    {% elif post.status == 'scheduled' %}<i class="fa-solid fa-clock me-1"></i>
+                    {% elif post.status == 'failed' %}<i class="fa-solid fa-xmark me-1"></i>
+                    {% endif %}
+                    {{ post.status|capfirst }}
                 </span>
             </div>
-        </li>
-        {% empty %}
-        <li class="list-group-item text-muted py-4 text-center">কোনো পোস্ট নেই।</li>
-        {% endfor %}
-    </ul>
+
+            <!-- Content preview -->
+            <p class="mb-3 text-dark" style="font-size:14px; line-height:1.6;">
+                {{ post.content|truncatewords:30 }}
+            </p>
+
+            <!-- Per-platform status breakdown -->
+            <div class="platform-status-row d-flex flex-wrap gap-2 mb-2">
+                {% for ps in post.platform_statuses.all %}
+                <div class="platform-status-item d-flex align-items-center gap-1 px-2 py-1 rounded-2"
+                     style="font-size:12px; background:#f8f9fa; border:1px solid #e9ecef;">
+
+                    <i class="fa-brands fa-{{ ps.social_account.platform }}
+                        {% if ps.social_account.platform == 'facebook' %}text-primary
+                        {% elif ps.social_account.platform == 'instagram' %}text-danger
+                        {% elif ps.social_account.platform == 'twitter' %}text-info
+                        {% elif ps.social_account.platform == 'whatsapp' %}text-success
+                        {% else %}text-secondary{% endif %}">
+                    </i>
+
+                    <span class="text-muted">{{ ps.social_account.platform|capfirst }}:</span>
+
+                    {% if ps.status == 'published' %}
+                        <span class="text-success fw-semibold"><i class="fa-solid fa-circle-check"></i> Published</span>
+                        {% if ps.published_at %}
+                        <span class="text-muted">· {{ ps.published_at|date:"M d, H:i" }}</span>
+                        {% endif %}
+                    {% elif ps.status == 'processing' %}
+                        <span class="text-warning fw-semibold">
+                            <i class="fa-solid fa-spinner fa-spin"></i> Processing
+                        </span>
+                    {% elif ps.status == 'failed' %}
+                        <span class="text-danger fw-semibold">
+                            <i class="fa-solid fa-circle-xmark"></i> Failed
+                        </span>
+                        {% if ps.error_message %}
+                        <span class="text-danger" title="{{ ps.error_message }}">
+                            · {{ ps.error_message|truncatechars:40 }}
+                        </span>
+                        {% endif %}
+                    {% else %}
+                        <span class="text-secondary fw-semibold">
+                            <i class="fa-solid fa-clock"></i> Scheduled
+                        </span>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Footer: scheduled time + created by -->
+            <div class="d-flex justify-content-between align-items-center mt-1">
+                <small class="text-muted">
+                    {% if post.scheduled_time %}
+                    <i class="fa-regular fa-calendar me-1"></i>
+                    Scheduled: {{ post.scheduled_time|date:"M d, Y · H:i" }}
+                    {% else %}
+                    <i class="fa-regular fa-calendar me-1"></i>
+                    Created: {{ post.created_at|date:"M d, Y · H:i" }}
+                    {% endif %}
+                </small>
+                {% if post.created_by %}
+                <small class="text-muted">
+                    <i class="fa-regular fa-user me-1"></i>{{ post.created_by.username }}
+                </small>
+                {% endif %}
+            </div>
+
+        </div>
+    </div>
+    {% empty %}
+    <div id="empty-state" class="text-center py-5" style="opacity:0;">
+        <i class="fa-regular fa-newspaper fa-3x text-muted mb-3 d-block"></i>
+        <h6 class="text-muted">No posts yet</h6>
+        <p class="text-muted small">Create your first post to get started.</p>
+        <a href="{% url 'post_create' %}" class="btn btn-primary btn-sm mt-2">
+            <i class="fa-solid fa-plus me-1"></i>Create Post
+        </a>
+    </div>
+    {% endfor %}
 </div>
+
+<!-- Instagram gradient badge style -->
+<style>
+    .bg-instagram {
+        background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888);
+        color: white;
+    }
+    .post-card {
+        border-radius: 12px !important;
+        transition: box-shadow 0.2s ease;
+    }
+    .post-card:hover {
+        box-shadow: 0 4px 20px rgba(0,0,0,0.1) !important;
+    }
+    .platform-status-item {
+        transition: background 0.2s;
+    }
+    .platform-status-item:hover {
+        background: #e9ecef !important;
+    }
+    #new-post-btn {
+        transition: transform 0.2s ease;
+    }
+    #new-post-btn:hover {
+        transform: scale(1.05);
+    }
+</style>
+
+<!-- GSAP Animation -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const tl = gsap.timeline();
+
+    // Header fade in
+    tl.from('#page-header', {
+        opacity: 0,
+        y: -20,
+        duration: 0.5,
+        ease: 'power2.out'
+    });
+
+    // Post cards stagger in
+    const cards = document.querySelectorAll('.post-card');
+    if (cards.length > 0) {
+        tl.to(cards, {
+            opacity: 1,
+            y: 0,
+            duration: 0.4,
+            stagger: 0.08,
+            ease: 'power2.out'
+        }, '-=0.2');
+
+        // Platform badges pop in after cards
+        tl.from('.platform-badge', {
+            scale: 0.7,
+            opacity: 0,
+            duration: 0.25,
+            stagger: 0.04,
+            ease: 'back.out(1.7)'
+        }, '-=0.2');
+
+        // Status pills slide in from right
+        tl.from('.status-pill', {
+            x: 15,
+            opacity: 0,
+            duration: 0.3,
+            stagger: 0.06,
+            ease: 'power2.out'
+        }, '-=0.3');
+    }
+
+    // Empty state
+    const emptyState = document.getElementById('empty-state');
+    if (emptyState) {
+        tl.to(emptyState, {
+            opacity: 1,
+            y: 0,
+            duration: 0.5,
+            ease: 'power2.out'
+        });
+    }
+
+    // Hover lift effect on cards
+    cards.forEach(card => {
+        card.addEventListener('mouseenter', () => {
+            gsap.to(card, { y: -3, duration: 0.2, ease: 'power2.out' });
+        });
+        card.addEventListener('mouseleave', () => {
+            gsap.to(card, { y: 0, duration: 0.2, ease: 'power2.out' });
+        });
+    });
+});
+</script>
 {% endblock %}

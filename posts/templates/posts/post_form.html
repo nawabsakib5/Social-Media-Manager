@@ -1,28 +1,312 @@
 {% extends "base.html" %}
 {% block title %}Create Post{% endblock %}
 {% block page_title %}Create Post{% endblock %}
+
 {% block content %}
-<div class="card p-4" style="max-width: 650px;">
-    <h5 class="mb-4">New Post</h5>
-    <form method="post" enctype="multipart/form-data">
-        {% csrf_token %}
-        {% for field in form %}
-        <div class="mb-3">
-            <label class="form-label fw-semibold">{{ field.label }}</label>
-            <div>{{ field }}</div>
-            {% if field.errors %}
-                <div class="text-danger" style="font-size:12px;">{{ field.errors }}</div>
-            {% endif %}
-        </div>
-        {% endfor %}
-        <div class="d-flex gap-2 mt-3">
-            <button type="submit" name="post_type" value="instant" class="btn btn-primary">
-                ⚡ এখনই Post করুন
-            </button>
-            <button type="submit" name="post_type" value="scheduled" class="btn btn-outline-secondary">
-                🕐 Schedule করুন
-            </button>
-        </div>
-    </form>
+<!-- Header -->
+<div class="d-flex justify-content-between align-items-center mb-4" id="form-header">
+    <div>
+        <h4 class="mb-0 fw-bold">Create New Post</h4>
+        <small class="text-muted">Publish instantly or schedule for later</small>
+    </div>
+    <a href="{% url 'post_list' %}" class="btn btn-outline-secondary btn-sm">
+        <i class="fa-solid fa-arrow-left me-1"></i>Back to Posts
+    </a>
 </div>
+
+<div class="row g-4">
+    <!-- Form -->
+    <div class="col-lg-7" id="form-col">
+        <div class="card border-0 shadow-sm" style="border-radius:16px; opacity:0;">
+            <div class="card-body p-4">
+                <form method="post" enctype="multipart/form-data" id="post-form">
+                    {% csrf_token %}
+
+                    {% for field in form %}
+                    <div class="mb-4 form-field-row" style="opacity:0; transform:translateX(-20px);">
+                        <label class="form-label fw-semibold text-dark mb-1">
+                            {{ field.label }}
+                            {% if field.field.required %}
+                            <span class="text-danger ms-1">*</span>
+                            {% endif %}
+                        </label>
+
+                        <!-- Field-specific icons -->
+                        {% if field.name == 'content' %}
+                        <div class="input-wrapper position-relative">
+                            {{ field }}
+                            <small class="text-muted mt-1 d-block">
+                                <i class="fa-regular fa-pen-to-square me-1"></i>Write your post content
+                            </small>
+                        </div>
+
+                        {% elif field.name == 'media_file' %}
+                        <div class="upload-area p-3 rounded-3 text-center"
+                             style="border: 2px dashed #dee2e6; cursor:pointer; transition:border-color 0.2s;"
+                             id="upload-area">
+                            {{ field }}
+                            <div id="upload-placeholder" class="mt-2">
+                                <i class="fa-regular fa-image fa-2x text-muted d-block mb-1"></i>
+                                <small class="text-muted">Click to upload image or video</small>
+                            </div>
+                            <div id="file-preview" class="mt-2" style="display:none;">
+                                <img id="preview-img" src="" alt="Preview"
+                                     style="max-width:100%; max-height:200px; border-radius:8px; display:none;">
+                                <video id="preview-video" controls
+                                       style="max-width:100%; max-height:200px; border-radius:8px; display:none;">
+                                </video>
+                                <p id="preview-name" class="text-muted small mt-1 mb-0"></p>
+                            </div>
+                        </div>
+
+                        {% elif field.name == 'scheduled_time' %}
+                        <div class="input-group">
+                            <span class="input-group-text bg-light border-end-0">
+                                <i class="fa-regular fa-calendar text-muted"></i>
+                            </span>
+                            {{ field }}
+                        </div>
+                        <small class="text-muted mt-1 d-block">
+                            <i class="fa-solid fa-circle-info me-1"></i>
+                            Required only if scheduling. Leave blank for instant post.
+                        </small>
+
+                        {% elif field.name == 'social_accounts' %}
+                        <div class="accounts-grid" id="accounts-grid">
+                            {% for checkbox in field %}
+                            <label class="account-option d-flex align-items-center gap-2 p-2 rounded-3 mb-2"
+                                   style="cursor:pointer; border:1px solid #e9ecef; transition:all 0.2s;">
+                                {{ checkbox.tag }}
+                                <span>{{ checkbox.choice_label }}</span>
+                            </label>
+                            {% endfor %}
+                        </div>
+
+                        {% else %}
+                        {{ field }}
+                        {% endif %}
+
+                        {% if field.errors %}
+                        <div class="text-danger mt-1" style="font-size:12px;">
+                            <i class="fa-solid fa-circle-exclamation me-1"></i>
+                            {{ field.errors|join:", " }}
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+
+                    <!-- Action Buttons -->
+                    <div class="d-flex gap-2 mt-4 pt-2 border-top" id="action-buttons" style="opacity:0;">
+                        <button type="submit" name="post_type" value="instant"
+                                class="btn btn-primary flex-fill" id="btn-instant">
+                            <i class="fa-solid fa-bolt me-2"></i>Post Now
+                        </button>
+                        <button type="submit" name="post_type" value="scheduled"
+                                class="btn btn-outline-secondary flex-fill" id="btn-schedule">
+                            <i class="fa-regular fa-clock me-2"></i>Schedule
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tips Sidebar -->
+    <div class="col-lg-5" id="tips-col">
+        <div class="card border-0 shadow-sm mb-3" style="border-radius:16px; opacity:0;">
+            <div class="card-body p-4">
+                <h6 class="fw-bold mb-3">
+                    <i class="fa-solid fa-lightbulb text-warning me-2"></i>Quick Tips
+                </h6>
+                <ul class="list-unstyled mb-0" id="tips-list">
+                    <li class="tip-item d-flex gap-2 mb-3" style="opacity:0;">
+                        <span class="text-primary mt-1"><i class="fa-solid fa-circle-dot fa-xs"></i></span>
+                        <small class="text-muted">Select one or more platforms below the content field.</small>
+                    </li>
+                    <li class="tip-item d-flex gap-2 mb-3" style="opacity:0;">
+                        <span class="text-primary mt-1"><i class="fa-solid fa-circle-dot fa-xs"></i></span>
+                        <small class="text-muted">For Instagram, only image or video posts are supported — text-only won't work.</small>
+                    </li>
+                    <li class="tip-item d-flex gap-2 mb-3" style="opacity:0;">
+                        <span class="text-primary mt-1"><i class="fa-solid fa-circle-dot fa-xs"></i></span>
+                        <small class="text-muted">Set a scheduled time and click <strong>Schedule</strong> to queue the post for later.</small>
+                    </li>
+                    <li class="tip-item d-flex gap-2" style="opacity:0;">
+                        <span class="text-primary mt-1"><i class="fa-solid fa-circle-dot fa-xs"></i></span>
+                        <small class="text-muted">Click <strong>Post Now</strong> to publish immediately to all selected platforms.</small>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Status Legend -->
+        <div class="card border-0 shadow-sm" style="border-radius:16px; opacity:0;" id="legend-card">
+            <div class="card-body p-4">
+                <h6 class="fw-bold mb-3">
+                    <i class="fa-solid fa-tag text-muted me-2"></i>Status Guide
+                </h6>
+                <div class="d-flex flex-column gap-2">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="badge bg-success rounded-pill px-3">Published</span>
+                        <small class="text-muted">Successfully sent to the platform</small>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="badge bg-warning text-dark rounded-pill px-3">Scheduled</span>
+                        <small class="text-muted">Waiting for the scheduled time</small>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="badge bg-danger rounded-pill px-3">Failed</span>
+                        <small class="text-muted">Something went wrong — check error</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    textarea, input[type="text"], input[type="datetime-local"] {
+        border-radius: 8px !important;
+        border: 1px solid #dee2e6 !important;
+        padding: 10px 14px !important;
+        width: 100%;
+        transition: border-color 0.2s, box-shadow 0.2s;
+        font-size: 14px;
+    }
+    textarea:focus, input:focus {
+        border-color: #0d6efd !important;
+        box-shadow: 0 0 0 3px rgba(13,110,253,0.1) !important;
+        outline: none;
+    }
+    textarea { min-height: 120px; resize: vertical; }
+
+    /* Hide default file input, style the area */
+    #id_media_file { display: none; }
+    .upload-area:hover { border-color: #0d6efd !important; }
+
+    /* Account checkboxes */
+    .account-option input[type="checkbox"] { accent-color: #0d6efd; width:16px; height:16px; }
+    .account-option:hover { background: #f0f4ff; border-color: #0d6efd !important; }
+    .account-option:has(input:checked) {
+        background: #e8f0fe;
+        border-color: #0d6efd !important;
+    }
+
+    /* Input group border fix */
+    .input-group .input-group-text { border-radius: 8px 0 0 8px !important; }
+    .input-group input { border-radius: 0 8px 8px 0 !important; border-left: none !important; }
+
+    #btn-instant { border-radius: 8px; }
+    #btn-schedule { border-radius: 8px; }
+</style>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const tl = gsap.timeline({ defaults: { ease: 'power2.out' } });
+
+    // Header
+    tl.from('#form-header', { opacity: 0, y: -20, duration: 0.4 });
+
+    // Form card
+    tl.to('.card', { opacity: 1, duration: 0.4, stagger: 0.1 }, '-=0.1');
+
+    // Form fields stagger
+    tl.to('.form-field-row', {
+        opacity: 1,
+        x: 0,
+        duration: 0.35,
+        stagger: 0.08
+    }, '-=0.2');
+
+    // Action buttons
+    tl.to('#action-buttons', { opacity: 1, duration: 0.3 }, '-=0.1');
+
+    // Tips list items
+    tl.to('.tip-item', {
+        opacity: 1,
+        x: 0,
+        duration: 0.3,
+        stagger: 0.07
+    }, '-=0.2');
+
+    // Legend card
+    tl.to('#legend-card', { opacity: 1, duration: 0.3 }, '-=0.2');
+
+    // Button hover effects
+    ['#btn-instant', '#btn-schedule'].forEach(id => {
+        const btn = document.querySelector(id);
+        if (!btn) return;
+        btn.addEventListener('mouseenter', () =>
+            gsap.to(btn, { scale: 1.03, duration: 0.15 }));
+        btn.addEventListener('mouseleave', () =>
+            gsap.to(btn, { scale: 1, duration: 0.15 }));
+        btn.addEventListener('click', () =>
+            gsap.fromTo(btn, { scale: 0.96 }, { scale: 1, duration: 0.2, ease: 'back.out(2)' }));
+    });
+
+    // Upload area click → trigger file input
+    const uploadArea = document.getElementById('upload-area');
+    const fileInput = document.getElementById('id_media_file');
+    if (uploadArea && fileInput) {
+        uploadArea.addEventListener('click', () => fileInput.click());
+
+        fileInput.addEventListener('change', () => {
+            const file = fileInput.files[0];
+            if (!file) return;
+
+            const placeholder = document.getElementById('upload-placeholder');
+            const preview = document.getElementById('file-preview');
+            const previewImg = document.getElementById('preview-img');
+            const previewVideo = document.getElementById('preview-video');
+            const previewName = document.getElementById('preview-name');
+            const url = URL.createObjectURL(file);
+
+            placeholder.style.display = 'none';
+            preview.style.display = 'block';
+            previewName.textContent = file.name;
+
+            if (file.type.startsWith('image/')) {
+                previewImg.src = url;
+                previewImg.style.display = 'block';
+                previewVideo.style.display = 'none';
+            } else if (file.type.startsWith('video/')) {
+                previewVideo.src = url;
+                previewVideo.style.display = 'block';
+                previewImg.style.display = 'none';
+            }
+
+            gsap.from(preview, { opacity: 0, scale: 0.95, duration: 0.3, ease: 'back.out(1.5)' });
+        });
+
+        // Drag and drop
+        uploadArea.addEventListener('dragover', e => {
+            e.preventDefault();
+            gsap.to(uploadArea, { borderColor: '#0d6efd', duration: 0.2 });
+        });
+        uploadArea.addEventListener('dragleave', () => {
+            gsap.to(uploadArea, { borderColor: '#dee2e6', duration: 0.2 });
+        });
+        uploadArea.addEventListener('drop', e => {
+            e.preventDefault();
+            if (e.dataTransfer.files.length) {
+                fileInput.files = e.dataTransfer.files;
+                fileInput.dispatchEvent(new Event('change'));
+            }
+            gsap.to(uploadArea, { borderColor: '#dee2e6', duration: 0.2 });
+        });
+    }
+
+    // Account option checkbox animation
+    document.querySelectorAll('.account-option').forEach(label => {
+        const checkbox = label.querySelector('input[type="checkbox"]');
+        if (!checkbox) return;
+        checkbox.addEventListener('change', () => {
+            if (checkbox.checked) {
+                gsap.fromTo(label, { scale: 0.97 }, { scale: 1, duration: 0.2, ease: 'back.out(2)' });
+            }
+        });
+    });
+});
+</script>
 {% endblock %}

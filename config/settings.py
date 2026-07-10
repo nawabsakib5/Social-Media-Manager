@@ -199,3 +199,7 @@ DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
 SITE_URL = "https://dev-rolls-contrast-jamie.trycloudflare.com"
 ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'dev-rolls-contrast-jamie.trycloudflare.com']
+
+
+
+WHATSAPP_RECIPIENT_NUMBER = os.getenv('WHATSAPP_RECIPIENT_NUMBER', '')

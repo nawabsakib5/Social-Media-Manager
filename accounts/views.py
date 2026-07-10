@@ -1,101 +1,87 @@
 from django.shortcuts import render, redirect
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.models import User
 from django.contrib import messages
 from django.utils.crypto import get_random_string
 from django.core.mail import send_mail
 from django.conf import settings
-from .models import TeamMember, Team
-from .forms import TeamInviteForm
+
+MAX_USERS = 50
+
+
+def is_admin(user):
+    return user.is_superuser or user.is_staff
+
 
 @login_required
-def invite_team_member(request):
-    # 1. Retrieve the logged-in user's active team membership
-    membership = request.user.teammemberships.first()
-    if not membership or membership.role != 'admin':
-        messages.error(request, "Access Denied: Only the team Admin can invite new members.")
-        return redirect('post_list')
-    
-    active_team = membership.team
+@user_passes_test(is_admin, login_url='post_list')
+def user_list(request):
+    users = User.objects.all().order_by('date_joined')
+    return render(request, 'accounts/user_list.html', {
+        'users': users,
+        'max_users': MAX_USERS,
+    })
+
+
+@login_required
+@user_passes_test(is_admin, login_url='post_list')
+def invite_member(request):
+    if User.objects.count() >= MAX_USERS:
+        messages.error(request, f"Maximum user limit ({MAX_USERS}) reached.")
+        return redirect('accounts:user_list')
 
     if request.method == 'POST':
-        form = TeamInviteForm(request.POST)
-        if form.is_valid():
-            email = form.cleaned_data['email']
-            role = form.cleaned_data['role']
+        email = request.POST.get('email', '').strip()
+        if not email:
+            messages.error(request, "Email is required.")
+            return redirect('accounts:invite_member')
 
-            # 2. Check if the User already exists in our database
-            user_exists = User.objects.filter(email=email).exists()
-            
-            if user_exists:
-                invited_user = User.objects.get(email=email)
-                # Check if they are already in the same team
-                if TeamMember.objects.filter(user=invited_user, team=active_team).exists():
-                    messages.warning(request, f"'{email}' is already a member of this team.")
-                    return redirect('accounts:invite_member')
-                
-                # Link existing user to this team
-                TeamMember.objects.create(
-                    user=invited_user,
-                    team=active_team,
-                    role=role
-                )
-                
-                # Send simple notification email to the existing user
-                subject = f"You've been added to {active_team.name}"
-                message = f"Hello,\n\nYou have been added to the team '{active_team.name}' as a {role.upper()}.\nYou can now log in to view your dashboard."
-                send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, [email])
-                
-                messages.success(request, f"Successfully linked existing user {email} to your team!")
-            else:
-                # 3. Generate a secure random password for the new user
-                auto_password = get_random_string(length=12)
+        if User.objects.filter(email=email).exists():
+            messages.warning(request, f"{email} already exists.")
+            return redirect('accounts:invite_member')
 
-                # 4. Create the new Django User (Gmail as username & email)
-                invited_user = User.objects.create_user(
-                    username=email,
-                    email=email,
-                    password=auto_password
-                )
+        auto_password = get_random_string(length=12)
+        user = User.objects.create_user(
+            username=email,
+            email=email,
+            password=auto_password
+        )
 
-                # 5. Bind the new user to the Admin's active team
-                TeamMember.objects.create(
-                    user=invited_user,
-                    team=active_team,
-                    role=role
-                )
-
-                # 6. Compose and send the welcome email with auto-generated credentials
-                subject = f"Welcome to {active_team.name} - SaaS Invitation"
-                message = (
+        try:
+            send_mail(
+                subject="Your SocialManager Invitation",
+                message=(
                     f"Hello,\n\n"
-                    f"You have been invited to join the team '{active_team.name}' on SaaS Manager as an '{role.upper()}'.\n\n"
-                    f"Here are your login credentials:\n"
-                    f"Login URL: http://localhost:8000/login/\n"
-                    f"Username (Gmail): {email}\n"
-                    f"Temporary Password: {auto_password}\n\n"
-                    f"For security, please log in and change your password immediately.\n\n"
-                    f"Best regards,\n"
-                    f"The {active_team.name} Team"
-                )
-                
-                try:
-                    send_mail(
-                        subject,
-                        message,
-                        settings.DEFAULT_FROM_EMAIL,
-                        [email],
-                        fail_silently=False,
-                    )
-                    messages.success(request, f"Success: Invited {email}. Login credentials have been sent via email!")
-                except Exception as e:
-                    messages.warning(request, f"User created, but email failed to send. Generated Password is: {auto_password}. Error: {str(e)}")
-            
-            return redirect('post_list')
-    else:
-        form = TeamInviteForm()
+                    f"You have been invited to SocialManager.\n\n"
+                    f"Login URL: {settings.SITE_URL}/login/\n"
+                    f"Username: {email}\n"
+                    f"Password: {auto_password}\n\n"
+                    f"Please change your password after logging in."
+                ),
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[email],
+                fail_silently=False,
+            )
+            messages.success(request, f"Invitation sent to {email}.")
+        except Exception as e:
+            messages.warning(request, f"User created. Email failed. Password: {auto_password}")
 
-    return render(request, 'accounts/invite_member.html', {
-        'form': form, 
-        'active_team': active_team
-    })
+        return redirect('accounts:user_list')
+
+    return render(request, 'accounts/invite_member.html')
+
+
+@login_required
+@user_passes_test(is_admin, login_url='post_list')
+def remove_user(request, user_id):
+    if request.method == 'POST':
+        try:
+            user = User.objects.get(id=user_id)
+            if user == request.user:
+                messages.error(request, "You cannot remove yourself.")
+            else:
+                user.delete()
+                messages.success(request, f"User removed.")
+        except User.DoesNotExist:
+            messages.error(request, "User not found.")
+    return redirect('accounts:user_list')

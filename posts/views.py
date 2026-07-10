@@ -1,66 +1,61 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
+from django.contrib import messages
 from django.utils import timezone
 from .models import Post, PostPlatformStatus
 from .forms import PostForm
 from .tasks import publish_post_task
-from accounts.models import Team, TeamMember
-
-
-def get_or_create_user_team(user):
-    membership = user.teammemberships.first()
-    if membership:
-        return membership.team
-    workspace_name = f"{user.username}'s Workspace"
-    team, created = Team.objects.get_or_create(name=workspace_name)
-    role = 'admin' if user.is_superuser or user.is_staff else 'editor'
-    TeamMember.objects.get_or_create(user=user, team=team, defaults={'role': role})
-    return team
 
 
 @login_required
 def post_list(request):
-    active_team = get_or_create_user_team(request.user)
-    posts = Post.objects.all().order_by('-created_at')
-    return render(request, 'posts/post_list.html', {
-        'posts': posts,
-        'active_team': active_team
-    })
+    posts = (
+        Post.objects
+        .all()
+        .prefetch_related('platform_statuses__social_account', 'social_accounts')
+        .order_by('-created_at')
+    )
+    return render(request, 'posts/post_list.html', {'posts': posts})
 
 
 @login_required
 def post_create(request):
-    active_team = get_or_create_user_team(request.user)
-
     if request.method == 'POST':
-        form = PostForm(request.POST, request.FILES, team=active_team)
+        form = PostForm(request.POST, request.FILES)
         if form.is_valid():
             post = form.save(commit=False)
             post.created_by = request.user
-            post.status = 'scheduled'
             post.save()
 
-            # Selected platforms
             selected_accounts = form.cleaned_data['social_accounts']
 
-            # প্রতিটা platform-এর জন্য PostPlatformStatus তৈরি করো
+            if not selected_accounts:
+                messages.warning(request, "No platform selected.")
+                return redirect('post_create')
+
             for account in selected_accounts:
-                PostPlatformStatus.objects.create(
+                PostPlatformStatus.objects.get_or_create(
                     post=post,
                     social_account=account,
-                    status='scheduled'
+                    defaults={'status': 'scheduled'}
                 )
 
             post_type = request.POST.get('post_type', 'scheduled')
 
             if post_type == 'instant':
                 post.scheduled_time = timezone.now()
-                post.save()
+                post.status = 'scheduled'
+                post.save(update_fields=['scheduled_time', 'status'])
                 for account in selected_accounts:
                     publish_post_task.delay(post.id, account.id)
+                messages.success(request, f"Publishing to {len(selected_accounts)} platform(s).")
+            else:
+                post.status = 'scheduled'
+                post.save(update_fields=['status'])
+                messages.success(request, f"Scheduled for {post.scheduled_time}.")
 
             return redirect('post_list')
     else:
-        form = PostForm(team=active_team)
+        form = PostForm()
 
     return render(request, 'posts/post_form.html', {'form': form})

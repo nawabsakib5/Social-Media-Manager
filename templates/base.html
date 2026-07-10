@@ -1,95 +1,446 @@
 <!DOCTYPE html>
-<html lang="bn">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{% block title %}Social Media Manager{% endblock %}</title>
+    <title>{% block title %}SocialManager{% endblock %}</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
     <style>
-        body { background: #f0f2f5; }
+        :root {
+            --sidebar-width: 240px;
+            --sidebar-bg: #0f0f1a;
+            --sidebar-hover: rgba(255,255,255,0.06);
+            --sidebar-active: rgba(99,102,241,0.15);
+            --accent: #6366f1;
+            --accent-glow: rgba(99,102,241,0.3);
+            --topbar-bg: #ffffff;
+            --body-bg: #f4f6fb;
+            --card-bg: #ffffff;
+            --text-muted-custom: #94a3b8;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            background: var(--body-bg);
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            margin: 0;
+            overflow-x: hidden;
+        }
+
+        /* ── Sidebar ── */
         .sidebar {
-            min-height: 100vh;
-            background: #1a1a2e;
-            padding-top: 20px;
-        }
-        .sidebar a {
-            color: #a0a0b0;
-            text-decoration: none;
-            display: block;
-            padding: 12px 20px;
-            border-radius: 8px;
-            margin: 4px 10px;
-            font-size: 14px;
-        }
-        .sidebar a:hover, .sidebar a.active {
-            background: #16213e;
-            color: #ffffff;
-        }
-        .sidebar .brand {
-            color: white;
-            font-size: 18px;
-            font-weight: 700;
-            padding: 10px 20px 30px 20px;
-            display: block;
-        }
-        .main-content { padding: 30px; }
-        .top-bar {
-            background: white;
-            padding: 12px 25px;
-            border-bottom: 1px solid #e0e0e0;
-            margin-bottom: 25px;
-            border-radius: 10px;
+            position: fixed;
+            top: 0; left: 0;
+            width: var(--sidebar-width);
+            height: 100vh;
+            background: var(--sidebar-bg);
             display: flex;
-            justify-content: space-between;
-            align-items: center;
+            flex-direction: column;
+            z-index: 100;
+            padding: 0;
+            overflow: hidden;
         }
-        .card { border: none; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.06); }
-        .badge { font-size: 11px; }
+
+        .sidebar-glow {
+            position: absolute;
+            width: 200px; height: 200px;
+            background: var(--accent-glow);
+            border-radius: 50%;
+            filter: blur(80px);
+            top: -60px; left: -60px;
+            pointer-events: none;
+        }
+
+        .sidebar-brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 24px 20px 20px;
+            color: #fff;
+            font-size: 17px;
+            font-weight: 700;
+            letter-spacing: -0.3px;
+            text-decoration: none;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+            margin-bottom: 12px;
+        }
+
+        .sidebar-brand .brand-icon {
+            width: 34px; height: 34px;
+            background: linear-gradient(135deg, var(--accent), #818cf8);
+            border-radius: 9px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 15px;
+            box-shadow: 0 4px 12px var(--accent-glow);
+        }
+
+        .nav-section-label {
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: 1.2px;
+            color: rgba(255,255,255,0.25);
+            padding: 16px 20px 6px;
+            text-transform: uppercase;
+        }
+
+        .sidebar-link {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 16px;
+            margin: 2px 10px;
+            border-radius: 9px;
+            color: var(--text-muted-custom);
+            text-decoration: none;
+            font-size: 13.5px;
+            font-weight: 500;
+            transition: background 0.15s, color 0.15s;
+            position: relative;
+        }
+
+        .sidebar-link i {
+            width: 18px;
+            text-align: center;
+            font-size: 13px;
+        }
+
+        .sidebar-link:hover {
+            background: var(--sidebar-hover);
+            color: #fff;
+        }
+
+        .sidebar-link.active {
+            background: var(--sidebar-active);
+            color: #a5b4fc;
+        }
+
+        .sidebar-link.active::before {
+            content: '';
+            position: absolute;
+            left: 0; top: 20%; height: 60%;
+            width: 3px;
+            background: var(--accent);
+            border-radius: 0 3px 3px 0;
+            margin-left: -10px;
+        }
+
+        .sidebar-bottom {
+            margin-top: auto;
+            padding: 16px 10px;
+            border-top: 1px solid rgba(255,255,255,0.06);
+        }
+
+        /* ── Main ── */
+        .main-wrapper {
+            margin-left: var(--sidebar-width);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* ── Topbar ── */
+        .topbar {
+            background: var(--topbar-bg);
+            padding: 0 28px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid #e8ecf4;
+            position: sticky;
+            top: 0;
+            z-index: 50;
+        }
+
+        .topbar-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: #1e293b;
+        }
+
+        .topbar-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .user-pill {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: #f1f5f9;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 500;
+            color: #475569;
+        }
+
+        .user-avatar {
+            width: 26px; height: 26px;
+            background: linear-gradient(135deg, var(--accent), #818cf8);
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 11px;
+            color: #fff;
+            font-weight: 700;
+        }
+
+        .btn-logout {
+            font-size: 12px;
+            padding: 5px 14px;
+            border-radius: 7px;
+            border: 1px solid #e2e8f0;
+            color: #64748b;
+            background: transparent;
+            text-decoration: none;
+            transition: all 0.15s;
+        }
+
+        .btn-logout:hover {
+            background: #f8fafc;
+            color: #1e293b;
+        }
+
+        /* ── Page content ── */
+        .page-content {
+            padding: 28px 30px;
+            flex: 1;
+        }
+
+        /* ── Alerts ── */
+        .alert {
+            border: none;
+            border-radius: 10px;
+            font-size: 13.5px;
+            padding: 12px 16px;
+        }
+
+        .alert-info    { background: #eff6ff; color: #1d4ed8; }
+        .alert-success { background: #f0fdf4; color: #15803d; }
+        .alert-warning { background: #fffbeb; color: #b45309; }
+        .alert-danger  { background: #fef2f2; color: #b91c1c; }
+
+        /* ── Cards ── */
+        .card {
+            border: none;
+            border-radius: 14px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04);
+        }
+
+        /* ── Page load overlay ── */
+        #page-loader {
+            position: fixed;
+            inset: 0;
+            background: var(--sidebar-bg);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .loader-logo {
+            width: 48px; height: 48px;
+            background: linear-gradient(135deg, var(--accent), #818cf8);
+            border-radius: 14px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 22px;
+            color: #fff;
+        }
+
+        .loader-bar {
+            width: 160px; height: 3px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .loader-bar-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, var(--accent), #818cf8);
+            border-radius: 10px;
+        }
     </style>
 </head>
 <body>
-<div class="container-fluid p-0">
-    <div class="row g-0">
 
-        <!-- Sidebar -->
-        <div class="col-auto sidebar">
-            <a class="brand" href="{% url 'post_list' %}">
-                <i class="fa-solid fa-share-nodes me-2"></i>SocialManager
+<!-- Page loader -->
+<div id="page-loader">
+    <div class="loader-logo"><i class="fa-solid fa-share-nodes"></i></div>
+    <div class="loader-bar"><div class="loader-bar-fill" id="loader-fill"></div></div>
+</div>
+
+<div id="app-shell" style="opacity:0;">
+    <div class="d-flex">
+
+        <!-- ── Sidebar ── -->
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-glow"></div>
+
+            <a href="{% url 'post_list' %}" class="sidebar-brand">
+                <div class="brand-icon"><i class="fa-solid fa-share-nodes"></i></div>
+                SocialManager
             </a>
+
             {% if user.is_authenticated %}
-            <a href="{% url 'post_list' %}"><i class="fa-solid fa-pen-to-square me-2"></i>Posts</a>
-            <a href="{% url 'inbox_list' %}"><i class="fa-solid fa-inbox me-2"></i>Inbox</a>
-            <a href="{% url 'account_list' %}"><i class="fa-solid fa-plug me-2"></i>Accounts</a>
+            <div class="nav-section-label">Workspace</div>
+
+            <a href="{% url 'post_list' %}"
+               class="sidebar-link {% if request.resolver_match.url_name == 'post_list' %}active{% endif %}">
+                <i class="fa-solid fa-pen-to-square"></i> Posts
+            </a>
+
+            <a href="{% url 'inbox_list' %}"
+               class="sidebar-link {% if request.resolver_match.url_name == 'inbox_list' %}active{% endif %}">
+                <i class="fa-solid fa-inbox"></i> Inbox
+            </a>
+
+            <a href="{% url 'account_list' %}"
+               class="sidebar-link {% if request.resolver_match.url_name == 'account_list' %}active{% endif %}">
+                <i class="fa-solid fa-plug"></i> Accounts
+            </a>
+
+            {% if user.is_staff or user.is_superuser %}
+            <div class="nav-section-label">Admin</div>
+            <a href="{% url 'accounts:user_list' %}"
+               class="sidebar-link {% if request.resolver_match.url_name == 'user_list' %}active{% endif %}">
+                <i class="fa-solid fa-users"></i> Users
+            </a>
+            <a href="{% url 'accounts:invite_member' %}"
+               class="sidebar-link {% if request.resolver_match.url_name == 'invite_member' %}active{% endif %}">
+                <i class="fa-solid fa-user-plus"></i> Invite Member
+            </a>
+            {% endif %}
+
+            <div class="sidebar-bottom">
+                <a href="{% url 'logout' %}" class="sidebar-link" style="color:#f87171;">
+                    <i class="fa-solid fa-right-from-bracket"></i> Logout
+                </a>
+            </div>
             {% endif %}
         </div>
 
-        <!-- Main Content -->
-        <div class="col main-content">
+        <!-- ── Main ── -->
+        <div class="main-wrapper" id="main-wrapper">
+
             {% if user.is_authenticated %}
-            <div class="top-bar">
-                <span class="fw-semibold text-muted">{% block page_title %}Dashboard{% endblock %}</span>
-                <div>
-                    <span class="me-3 text-muted"><i class="fa-solid fa-user me-1"></i>{{ user.username }}</span>
-                    <a href="{% url 'logout' %}" class="btn btn-sm btn-outline-secondary">Logout</a>
+            <div class="topbar" id="topbar">
+                <span class="topbar-title">{% block page_title %}Dashboard{% endblock %}</span>
+                <div class="topbar-right">
+                    <div class="user-pill">
+                        <div class="user-avatar">{{ user.username|first|upper }}</div>
+                        {{ user.username }}
+                    </div>
+                    <a href="{% url 'logout' %}" class="btn-logout">Logout</a>
                 </div>
             </div>
             {% endif %}
 
-            {% if messages %}
-                {% for message in messages %}
-                    <div class="alert alert-info alert-dismissible fade show">
+            <div class="page-content">
+                {% if messages %}
+                <div id="messages-container">
+                    {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show mb-3"
+                         style="opacity:0; transform:translateY(-8px);">
+                        <i class="fa-solid
+                            {% if message.tags == 'success' %}fa-circle-check
+                            {% elif message.tags == 'error' or message.tags == 'danger' %}fa-circle-xmark
+                            {% elif message.tags == 'warning' %}fa-triangle-exclamation
+                            {% else %}fa-circle-info{% endif %} me-2"></i>
                         {{ message }}
                         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                     </div>
-                {% endfor %}
-            {% endif %}
+                    {% endfor %}
+                </div>
+                {% endif %}
 
-            {% block content %}{% endblock %}
+                <div id="page-body" style="opacity:0; transform:translateY(16px);">
+                    {% block content %}{% endblock %}
+                </div>
+            </div>
         </div>
-
     </div>
 </div>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script>
+const tl = gsap.timeline();
+
+// 1. Loader bar fill
+tl.to('#loader-fill', {
+    width: '100%',
+    duration: 0.6,
+    ease: 'power2.inOut'
+})
+
+// 2. Loader fade out
+.to('#page-loader', {
+    opacity: 0,
+    duration: 0.3,
+    ease: 'power2.in',
+    onComplete: () => document.getElementById('page-loader').style.display = 'none'
+})
+
+// 3. App shell fade in
+.to('#app-shell', { opacity: 1, duration: 0.01 })
+
+// 4. Sidebar slide in
+.from('#sidebar', {
+    x: -30,
+    opacity: 0,
+    duration: 0.45,
+    ease: 'power3.out'
+})
+
+// 5. Topbar drop in
+.from('#topbar', {
+    y: -20,
+    opacity: 0,
+    duration: 0.35,
+    ease: 'power2.out'
+}, '-=0.25')
+
+// 6. Sidebar links stagger
+.from('.sidebar-link', {
+    x: -15,
+    opacity: 0,
+    duration: 0.25,
+    stagger: 0.05,
+    ease: 'power2.out'
+}, '-=0.3')
+
+// 7. Page body
+.to('#page-body', {
+    opacity: 1,
+    y: 0,
+    duration: 0.4,
+    ease: 'power2.out'
+}, '-=0.15')
+
+// 8. Alert messages
+.to('.alert', {
+    opacity: 1,
+    y: 0,
+    duration: 0.3,
+    stagger: 0.07,
+    ease: 'back.out(1.5)'
+}, '-=0.2');
+
+// Sidebar link hover micro-animation
+document.querySelectorAll('.sidebar-link').forEach(link => {
+    link.addEventListener('mouseenter', () => {
+        gsap.to(link, { x: 3, duration: 0.15, ease: 'power2.out' });
+    });
+    link.addEventListener('mouseleave', () => {
+        gsap.to(link, { x: 0, duration: 0.15, ease: 'power2.out' });
+    });
+});
+</script>
 </body>
 </html>

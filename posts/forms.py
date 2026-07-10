@@ -17,12 +17,3 @@ class PostForm(forms.ModelForm):
         widgets = {
             'scheduled_time': forms.DateTimeInput(attrs={'type': 'datetime-local'}),
         }
-
-    def __init__(self, *args, **kwargs):
-        team = kwargs.pop('team', None)
-        super().__init__(*args, **kwargs)
-        if team:
-            self.fields['social_accounts'].queryset = SocialAccount.objects.filter(
-                status='connected',
-                team=team
-            )

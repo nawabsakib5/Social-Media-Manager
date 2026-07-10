@@ -3,84 +3,84 @@ import requests
 from django.conf import settings
 from .base import BaseSocialAdapter
 
+VIDEO_EXTENSIONS = ('.mp4', '.mov', '.avi')
+
 
 class InstagramAdapter(BaseSocialAdapter):
     API_VERSION = "v21.0"
+    BASE_URL = "https://graph.facebook.com/v21.0"
 
     def publish_post(self, post) -> dict:
-        if self.access_token.startswith("mock_"):
+        if self._is_mock():
             time.sleep(2)
-            return {
-                'status': 'success',
-                'platform_post_id': f"mock_ig_media_{post.id}"
-            }
+            return {'status': 'success', 'platform_post_id': f"mock_ig_{post.id}"}
 
         if not post.media_file:
-            return {
-                'status': 'failed',
-                'error_message': "Instagram requires an image or video file."
-            }
+            return {'status': 'failed', 'error_message': "Instagram requires an image or video."}
 
         ig_id = self.social_account.platform_account_id
         token = self.access_token
-        public_url = f"{settings.SITE_URL}{post.media_file.url}"
-        file_name = post.media_file.name.lower()
+
+        # Build public Cloudinary URL
+        public_url = self._get_public_url(post)
 
         try:
-            if file_name.endswith(('.mp4', '.mov', '.avi')):
+            name = post.media_file.name.lower()
+            if any(name.endswith(ext) for ext in VIDEO_EXTENSIONS):
                 return self._publish_video(post, ig_id, token, public_url)
-            else:
-                return self._publish_photo(post, ig_id, token, public_url)
+            return self._publish_photo(post, ig_id, token, public_url)
+
         except requests.RequestException as e:
-            return {
-                'status': 'failed',
-                'error_message': f"Instagram API network timeout: {str(e)}"
-            }
+            return {'status': 'failed', 'error_message': f"Instagram API timeout: {e}"}
+
+    def _get_public_url(self, post) -> str:
+        """
+        Return Cloudinary URL if available, otherwise fall back to SITE_URL.
+        Cloudinary storage returns an absolute URL directly via post.media_file.url.
+        """
+        url = post.media_file.url
+        if url.startswith('http'):
+            return url  # Already a Cloudinary absolute URL
+        return f"{settings.SITE_URL}{url}"
+
+    # --- Private helpers ---
 
     def _publish_photo(self, post, ig_id, token, public_url) -> dict:
-        container_url = f"https://graph.facebook.com/{self.API_VERSION}/{ig_id}/media"
-        container_payload = {
+        container_id = self._create_container(ig_id, token, {
             'image_url': public_url,
             'caption': post.content,
-            'access_token': token
-        }
-        container_res = requests.post(container_url, data=container_payload, timeout=30)
-        container_data = container_res.json()
-
-        if 'id' not in container_data:
-            error = container_data.get('error', {}).get('message', 'Container creation failed')
-            return {'status': 'failed', 'error_message': error}
-
-        return self._publish_container(ig_id, token, container_data['id'])
+            'access_token': token,
+        })
+        if not container_id:
+            return {'status': 'failed', 'error_message': 'Instagram photo container creation failed'}
+        return self._publish_container(ig_id, token, container_id)
 
     def _publish_video(self, post, ig_id, token, public_url) -> dict:
-        container_url = f"https://graph.facebook.com/{self.API_VERSION}/{ig_id}/media"
-        container_payload = {
+        container_id = self._create_container(ig_id, token, {
             'video_url': public_url,
             'caption': post.content,
             'media_type': 'REELS',
-            'access_token': token
-        }
-        container_res = requests.post(container_url, data=container_payload, timeout=60)
-        container_data = container_res.json()
+            'access_token': token,
+        })
+        if not container_id:
+            return {'status': 'failed', 'error_message': 'Instagram video container creation failed'}
+        return self._publish_container(ig_id, token, container_id)
 
-        if 'id' not in container_data:
-            error = container_data.get('error', {}).get('message', 'Video container failed')
-            return {'status': 'failed', 'error_message': error}
-
-        return self._publish_container(ig_id, token, container_data['id'])
+    def _create_container(self, ig_id, token, payload) -> str | None:
+        """Create media container and return its ID, or None on failure."""
+        url = f"{self.BASE_URL}/{ig_id}/media"
+        res = requests.post(url, data=payload, timeout=60)
+        data = res.json()
+        if 'id' in data:
+            return data['id']
+        error = data.get('error', {}).get('message', 'Unknown error')
+        raise ValueError(f"Container creation failed: {error}")
 
     def _publish_container(self, ig_id, token, creation_id) -> dict:
-        publish_url = f"https://graph.facebook.com/{self.API_VERSION}/{ig_id}/media_publish"
-        publish_payload = {
-            'creation_id': creation_id,
-            'access_token': token
-        }
-        publish_res = requests.post(publish_url, data=publish_payload, timeout=30)
-        publish_data = publish_res.json()
-
-        if 'id' in publish_data:
-            return {'status': 'success', 'platform_post_id': publish_data['id']}
-        else:
-            error = publish_data.get('error', {}).get('message', 'Publish failed')
-            return {'status': 'failed', 'error_message': error}
+        url = f"{self.BASE_URL}/{ig_id}/media_publish"
+        res = requests.post(url, data={'creation_id': creation_id, 'access_token': token}, timeout=30)
+        data = res.json()
+        if 'id' in data:
+            return {'status': 'success', 'platform_post_id': data['id']}
+        error = data.get('error', {}).get('message', 'Publish failed')
+        return {'status': 'failed', 'error_message': error}

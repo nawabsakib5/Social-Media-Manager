@@ -1,28 +1,19 @@
 from django.db import models
 from django.contrib.auth.models import User
 
-class Team(models.Model):
-    name = models.CharField(max_length=100)
+
+class UserProfile(models.Model):
+    """
+    Extends Django's built-in User model.
+    Admin can create up to 50 users.
+    """
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
+    avatar = models.ImageField(upload_to='avatars/', null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return self.name
+        return self.user.username
 
-class TeamMember(models.Model):
-    ROLE_CHOICES = [
-        ('admin', 'Admin'),
-        ('editor', 'Editor'),
-        ('viewer', 'Viewer'),
-    ]
-
-    
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='teammemberships')
-    team = models.ForeignKey(Team, on_delete=models.CASCADE, related_name='members')
-    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='editor')
-    joined_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        unique_together = ('user', 'team')
-
-    def __str__(self):
-        return f"{self.user.username} - {self.team.name} ({self.role})"
+    @property
+    def is_admin(self):
+        return self.user.is_superuser or self.user.is_staff

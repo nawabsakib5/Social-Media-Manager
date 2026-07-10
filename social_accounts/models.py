@@ -1,7 +1,7 @@
 from django.db import models
-from django.conf import settings
-from accounts.models import Team
+from django.contrib.auth.models import User
 from cryptography.fernet import Fernet
+from django.conf import settings
 
 
 def get_cipher():
@@ -13,28 +13,55 @@ def get_cipher():
 
 class SocialAccount(models.Model):
     PLATFORM_CHOICES = [
-        ('facebook', 'Facebook'),
+        ('facebook',  'Facebook'),
         ('instagram', 'Instagram'),
-        ('whatsapp', 'WhatsApp'),
+        ('twitter',   'Twitter / X'),
+        ('threads',   'Threads'),
+        ('youtube',   'YouTube'),
+        ('tiktok',    'TikTok'),
+        ('whatsapp',  'WhatsApp'),
+        ('linkedin',  'LinkedIn'),
+        ('gmail',     'Gmail'),
     ]
 
     STATUS_CHOICES = [
-        ('connected', 'Connected'),
-        ('expired', 'Expired'),
+        ('connected',    'Connected'),
+        ('expired',      'Expired'),
         ('disconnected', 'Disconnected'),
     ]
 
-    team = models.ForeignKey(Team, on_delete=models.CASCADE)
-    platform = models.CharField(max_length=20, choices=PLATFORM_CHOICES)
-    account_name = models.CharField(max_length=100)
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='disconnected')
+    # Owner — which admin/user connected this account
+    connected_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='social_accounts'
+    )
 
+    platform            = models.CharField(max_length=20, choices=PLATFORM_CHOICES)
+    account_name        = models.CharField(max_length=100)
+    account_username    = models.CharField(max_length=100, blank=True)
     platform_account_id = models.CharField(max_length=255, null=True, blank=True)
-    _access_token = models.TextField(null=True, blank=True, db_column='access_token')
+    profile_picture_url = models.URLField(null=True, blank=True)
+    status              = models.CharField(max_length=20, choices=STATUS_CHOICES, default='disconnected')
+
+    # Encrypted tokens
+    _access_token  = models.TextField(null=True, blank=True, db_column='access_token')
     _refresh_token = models.TextField(null=True, blank=True, db_column='refresh_token')
-    token_expiry = models.DateTimeField(null=True, blank=True)
+    token_expiry   = models.DateTimeField(null=True, blank=True)
+
+    # Extra fields
+    whatsapp_business_account_id = models.CharField(max_length=255, null=True, blank=True)
+    extra_data = models.JSONField(default=dict, blank=True)  # platform-specific extras
 
     connected_at = models.DateTimeField(auto_now_add=True)
+    updated_at   = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ('platform', 'platform_account_id')
+        ordering = ['platform']
+
+    # --- Token encryption ---
 
     @property
     def access_token(self):
@@ -49,7 +76,6 @@ class SocialAccount(models.Model):
     def access_token(self, value):
         if value:
             try:
-                # Already encrypted check
                 get_cipher().decrypt(value.encode())
                 self._access_token = value
             except Exception:

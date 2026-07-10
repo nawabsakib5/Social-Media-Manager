@@ -1,36 +1,236 @@
 {% extends "base.html" %}
 {% block title %}Accounts{% endblock %}
 {% block page_title %}Connected Accounts{% endblock %}
+
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h4 class="mb-0">Connected Accounts</h4>
-    {% if user_role == 'admin' %}
-    <a href="{% url 'account_create' %}" class="btn btn-primary btn-sm">
+
+<!-- Header -->
+<div class="d-flex justify-content-between align-items-center mb-4" id="accounts-header">
+    <div>
+        <h4 class="mb-0 fw-bold">Connected Accounts</h4>
+        <small class="text-muted">Manage your social media platform connections</small>
+    </div>
+    {% if user.is_staff or user.is_superuser %}
+    <a href="{% url 'social_accounts:facebook_login' %}" class="btn btn-primary btn-sm" id="connect-btn">
         <i class="fa-solid fa-plus me-1"></i>Connect Account
     </a>
     {% endif %}
 </div>
-<div class="card">
-    <ul class="list-group list-group-flush">
-        {% for acc in accounts %}
-        <li class="list-group-item py-3">
-            <div class="d-flex justify-content-between align-items-center">
-                <div>
-                    <i class="fa-brands fa-{{ acc.platform }} me-2"></i>
-                    <strong>{{ acc.account_name }}</strong>
-                    <span class="badge bg-secondary ms-2">{{ acc.platform }}</span>
+
+<!-- Platform Grid -->
+<div class="row g-3 mb-4" id="platform-grid">
+    {% for item in platform_data %}
+    <div class="col-6 col-sm-4 col-md-3 col-xl-2 platform-card-col"
+         style="opacity:0; transform:translateY(20px);">
+        <div class="platform-card card text-center p-3 h-100 position-relative">
+
+            <!-- Status dot -->
+            <div class="position-absolute"
+                 style="top:12px; right:12px; width:10px; height:10px; border-radius:50%;
+                        background: {% if item.account and item.account.status == 'connected' %}#22c55e
+                        {% elif item.account %}#f59e0b
+                        {% else %}#e2e8f0{% endif %};">
+            </div>
+
+            <!-- Icon -->
+            <div class="platform-icon mx-auto mb-2">
+                <i class="fa-brands fa-{{ item.name }}
+                    {% if item.name == 'facebook' %}text-primary
+                    {% elif item.name == 'instagram' %}text-danger
+                    {% elif item.name == 'twitter' %}text-info
+                    {% elif item.name == 'youtube' %}text-danger
+                    {% elif item.name == 'whatsapp' %}text-success
+                    {% elif item.name == 'linkedin' %}text-primary
+                    {% elif item.name == 'tiktok' %}text-dark
+                    {% elif item.name == 'threads' %}text-dark
+                    {% elif item.name == 'gmail' %}text-danger
+                    {% endif %}">
+                </i>
+            </div>
+
+            <!-- Name -->
+            <div class="fw-semibold" style="font-size:13px;">
+                {% if item.name == 'twitter' %}Twitter / X
+                {% elif item.name == 'tiktok' %}TikTok
+                {% elif item.name == 'linkedin' %}LinkedIn
+                {% elif item.name == 'gmail' %}Gmail
+                {% else %}{{ item.name|capfirst }}{% endif %}
+            </div>
+
+            <!-- Status -->
+            {% if item.account %}
+            <div class="mt-1">
+                <span class="badge rounded-pill px-2
+                    {% if item.account.status == 'connected' %}bg-success
+                    {% elif item.account.status == 'expired' %}bg-warning text-dark
+                    {% else %}bg-danger{% endif %}"
+                    style="font-size:10px;">
+                    {{ item.account.status|capfirst }}
+                </span>
+                <div style="font-size:11px; color:#64748b; margin-top:3px;">
+                    {{ item.account.account_name|truncatechars:18 }}
                 </div>
-                <span class="badge
-                    {% if acc.status == 'connected' %}bg-success
-                    {% elif acc.status == 'expired' %}bg-warning text-dark
-                    {% else %}bg-danger{% endif %}">
-                    {{ acc.status }}
+            </div>
+            {% else %}
+            <div class="mt-1">
+                <span class="badge rounded-pill px-2"
+                      style="font-size:10px; background:#f1f5f9; color:#94a3b8;">
+                    Not connected
                 </span>
             </div>
-        </li>
-        {% empty %}
-        <li class="list-group-item text-muted py-4 text-center">কোনো একাউন্ট কানেক্ট নেই।</li>
-        {% endfor %}
-    </ul>
+            {% endif %}
+
+        </div>
+    </div>
+    {% endfor %}
 </div>
+
+<!-- Account Detail List -->
+<div id="accounts-list">
+    <h6 class="fw-semibold text-muted mb-3"
+        style="font-size:12px; text-transform:uppercase; letter-spacing:0.8px;">
+        <i class="fa-solid fa-list me-2"></i>Account Details
+    </h6>
+
+    {% if accounts %}
+    <div class="card" style="border-radius:14px; overflow:hidden;">
+        {% for acc in accounts %}
+        <div class="account-row d-flex align-items-center justify-content-between px-4 py-3"
+             style="border-bottom:1px solid #f1f5f9; opacity:0; transform:translateX(-15px);">
+
+            <div class="d-flex align-items-center gap-3">
+                <div class="platform-bubble">
+                    <i class="fa-brands fa-{{ acc.platform }}
+                        {% if acc.platform == 'facebook' %}text-primary
+                        {% elif acc.platform == 'instagram' %}text-danger
+                        {% elif acc.platform == 'twitter' %}text-info
+                        {% elif acc.platform == 'youtube' %}text-danger
+                        {% elif acc.platform == 'whatsapp' %}text-success
+                        {% elif acc.platform == 'linkedin' %}text-primary
+                        {% elif acc.platform == 'tiktok' %}text-dark
+                        {% elif acc.platform == 'threads' %}text-dark
+                        {% elif acc.platform == 'gmail' %}text-danger
+                        {% endif %}">
+                    </i>
+                </div>
+                <div>
+                    <div class="fw-semibold" style="font-size:14px;">{{ acc.account_name }}</div>
+                    <div style="font-size:12px; color:#94a3b8;">
+                        {{ acc.platform|capfirst }}
+                        {% if acc.platform_account_id %}
+                        · ID: {{ acc.platform_account_id }}
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="d-flex align-items-center gap-3">
+                <span class="badge rounded-pill px-3 py-2
+                    {% if acc.status == 'connected' %}bg-success
+                    {% elif acc.status == 'expired' %}bg-warning text-dark
+                    {% else %}bg-danger{% endif %}"
+                    style="font-size:11px;">
+                    {% if acc.status == 'connected' %}
+                        <i class="fa-solid fa-circle-check me-1"></i>
+                    {% elif acc.status == 'expired' %}
+                        <i class="fa-solid fa-clock me-1"></i>
+                    {% else %}
+                        <i class="fa-solid fa-circle-xmark me-1"></i>
+                    {% endif %}
+                    {{ acc.status|capfirst }}
+                </span>
+                <small class="text-muted d-none d-md-block" style="font-size:11px;">
+                    Connected {{ acc.connected_at|date:"M d, Y" }}
+                </small>
+            </div>
+
+        </div>
+        {% endfor %}
+    </div>
+
+    {% else %}
+    <div id="empty-state" class="text-center py-5" style="opacity:0;">
+        <div style="width:64px; height:64px; background:#f1f5f9; border-radius:20px;
+                    display:flex; align-items:center; justify-content:center;
+                    margin:0 auto 16px; font-size:26px; color:#94a3b8;">
+            <i class="fa-solid fa-plug"></i>
+        </div>
+        <h6 class="fw-semibold text-muted">No accounts connected yet</h6>
+        <p class="text-muted small mb-3">Connect your social media platforms to get started.</p>
+        {% if user.is_staff or user.is_superuser %}
+        <a href="{% url 'social_accounts:facebook_login' %}" class="btn btn-primary btn-sm">
+            <i class="fa-solid fa-plus me-1"></i>Connect First Account
+        </a>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+
+<style>
+    .platform-card {
+        background: #fff;
+        border: 1.5px solid #f1f5f9 !important;
+        border-radius: 16px !important;
+        cursor: pointer;
+        transition: border-color 0.2s;
+    }
+    .platform-card:hover { border-color: #e0e7ff !important; }
+
+    .platform-icon {
+        width: 52px; height: 52px;
+        border-radius: 14px;
+        background: #f8fafc;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 22px;
+        transition: transform 0.2s;
+    }
+    .platform-card:hover .platform-icon { transform: scale(1.1); }
+
+    .platform-bubble {
+        width: 40px; height: 40px;
+        border-radius: 12px;
+        background: #f8fafc;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 17px;
+        flex-shrink: 0;
+    }
+    .account-row:last-child { border-bottom: none !important; }
+    .account-row:hover { background: #fafbff; }
+
+    #connect-btn { border-radius: 9px; font-size: 13px; padding: 7px 16px; }
+</style>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const tl = gsap.timeline({ defaults: { ease: 'power2.out' } });
+
+    tl.from('#accounts-header', { opacity: 0, y: -16, duration: 0.4 })
+
+      .to('.platform-card-col', {
+          opacity: 1, y: 0,
+          duration: 0.35, stagger: 0.06
+      }, '-=0.2')
+
+      .to('.account-row', {
+          opacity: 1, x: 0,
+          duration: 0.3, stagger: 0.07
+      }, '-=0.1');
+
+    const empty = document.getElementById('empty-state');
+    if (empty) tl.to(empty, { opacity: 1, duration: 0.4 }, '-=0.1');
+
+    document.querySelectorAll('.platform-card').forEach(card => {
+        card.addEventListener('mouseenter', () => gsap.to(card, { y: -4, duration: 0.2 }));
+        card.addEventListener('mouseleave', () => gsap.to(card, { y:  0, duration: 0.2 }));
+    });
+
+    const btn = document.getElementById('connect-btn');
+    if (btn) {
+        btn.addEventListener('mouseenter', () => gsap.to(btn, { scale: 1.04, duration: 0.15 }));
+        btn.addEventListener('mouseleave', () => gsap.to(btn, { scale: 1.00, duration: 0.15 }));
+    }
+});
+</script>
+
 {% endblock %}
