@@ -22,14 +22,19 @@
     {% for item in platform_data %}
     <div class="col-6 col-sm-4 col-md-3 col-xl-2 platform-card-col"
          style="opacity:0; transform:translateY(20px);">
+
+        {% if item.account and item.account.status == 'connected' %}
+        <a href="{% url 'social_accounts:workspace' item.name %}" style="text-decoration:none; color:inherit;">
+        {% else %}
+        <a href="{% url 'social_accounts:facebook_login' %}" style="text-decoration:none; color:inherit;">
+        {% endif %}
+
         <div class="platform-card card text-center p-3 h-100 position-relative">
 
             <!-- Status dot -->
             <div class="position-absolute"
                  style="top:12px; right:12px; width:10px; height:10px; border-radius:50%;
-                        background: {% if item.account and item.account.status == 'connected' %}#22c55e
-                        {% elif item.account %}#f59e0b
-                        {% else %}#e2e8f0{% endif %};">
+                        background:{% if item.account and item.account.status == 'connected' %}#22c55e{% elif item.account %}#f59e0b{% else %}#e2e8f0{% endif %};">
             </div>
 
             <!-- Icon -->
@@ -80,7 +85,17 @@
             </div>
             {% endif %}
 
+            <!-- Click hint -->
+            <div class="mt-2" style="font-size:10px; color:#cbd5e1;">
+                {% if item.account and item.account.status == 'connected' %}
+                <i class="fa-solid fa-arrow-right me-1"></i>Open
+                {% else %}
+                <i class="fa-solid fa-plug me-1"></i>Connect
+                {% endif %}
+            </div>
+
         </div>
+        </a>
     </div>
     {% endfor %}
 </div>
@@ -125,6 +140,10 @@
             </div>
 
             <div class="d-flex align-items-center gap-3">
+                <a href="{% url 'social_accounts:workspace' acc.platform %}"
+                   class="btn btn-sm btn-outline-primary" style="font-size:12px; border-radius:8px;">
+                    <i class="fa-solid fa-arrow-right me-1"></i>Open
+                </a>
                 <span class="badge rounded-pill px-3 py-2
                     {% if acc.status == 'connected' %}bg-success
                     {% elif acc.status == 'expired' %}bg-warning text-dark
@@ -143,7 +162,6 @@
                     Connected {{ acc.connected_at|date:"M d, Y" }}
                 </small>
             </div>
-
         </div>
         {% endfor %}
     </div>
@@ -175,7 +193,6 @@
         transition: border-color 0.2s;
     }
     .platform-card:hover { border-color: #e0e7ff !important; }
-
     .platform-icon {
         width: 52px; height: 52px;
         border-radius: 14px;
@@ -185,7 +202,6 @@
         transition: transform 0.2s;
     }
     .platform-card:hover .platform-icon { transform: scale(1.1); }
-
     .platform-bubble {
         width: 40px; height: 40px;
         border-radius: 12px;
@@ -196,7 +212,6 @@
     }
     .account-row:last-child { border-bottom: none !important; }
     .account-row:hover { background: #fafbff; }
-
     #connect-btn { border-radius: 9px; font-size: 13px; padding: 7px 16px; }
 </style>
 
@@ -206,16 +221,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const tl = gsap.timeline({ defaults: { ease: 'power2.out' } });
 
     tl.from('#accounts-header', { opacity: 0, y: -16, duration: 0.4 })
-
-      .to('.platform-card-col', {
-          opacity: 1, y: 0,
-          duration: 0.35, stagger: 0.06
-      }, '-=0.2')
-
-      .to('.account-row', {
-          opacity: 1, x: 0,
-          duration: 0.3, stagger: 0.07
-      }, '-=0.1');
+      .to('.platform-card-col', { opacity: 1, y: 0, duration: 0.35, stagger: 0.06 }, '-=0.2')
+      .to('.account-row', { opacity: 1, x: 0, duration: 0.3, stagger: 0.07 }, '-=0.1');
 
     const empty = document.getElementById('empty-state');
     if (empty) tl.to(empty, { opacity: 1, duration: 0.4 }, '-=0.1');

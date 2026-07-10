@@ -11,6 +11,23 @@ FB_APP_SECRET   = getattr(settings, 'FACEBOOK_APP_SECRET', '')
 FB_REDIRECT_URI = getattr(settings, 'FACEBOOK_REDIRECT_URI', 'http://localhost:8000/social/callback/')
 
 
+
+@login_required
+def workspace(request, platform):
+    try:
+        account = SocialAccount.objects.get(platform=platform, status='connected')
+    except SocialAccount.DoesNotExist:
+        messages.error(request, f"{platform.capitalize()} account not connected.")
+        return redirect('social_accounts:account_list')
+
+    return render(request, 'social_accounts/workspace.html', {
+        'account': account,
+        'platform': platform,
+    })
+
+
+
+
 @login_required
 def account_list(request):
     PLATFORMS = [
