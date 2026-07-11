@@ -1,0 +1,270 @@
+{% extends "base.html" %}
+{% block title %}Facebook Workspace{% endblock %}
+{% block page_title %}Facebook — {{ account.account_name }}{% endblock %}
+
+{% block content %}
+
+<!-- Header Section -->
+<div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-3 mb-4" id="ws-header" style="opacity:0; transform:translateY(-16px);">
+    <div class="d-flex align-items-center gap-3">
+        <div style="width:48px; height:48px; border-radius:14px; background:linear-gradient(135deg, #1877f2, #3b5998);
+                    display:flex; align-items:center; justify-content:center; font-size:22px; color:#fff; box-shadow: 0 4px 12px rgba(24, 119, 242, 0.3);">
+            <i class="fa-brands fa-facebook"></i>
+        </div>
+        <div>
+            <h4 class="mb-1 fw-bold text-dark">{{ account.account_name }}</h4>
+            <small class="text-muted d-block" style="font-size: 12px;">
+                <span class="badge bg-light text-secondary border me-1">Facebook Page</span> ID: {{ account.platform_account_id }}
+            </small>
+        </div>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{% url 'social_accounts:account_list' %}" class="btn btn-outline-secondary btn-sm px-3 py-2 fw-semibold border-light-subtle bg-white">
+            <i class="fa-solid fa-arrow-left me-1.5"></i>Back
+        </a>
+        <a href="{% url 'post_create' %}" class="btn btn-primary btn-sm px-3 py-2 fw-semibold shadow-sm">
+            <i class="fa-solid fa-plus me-1.5"></i>New Post
+        </a>
+    </div>
+</div>
+
+{% if error %}
+<div class="alert alert-danger mb-4 shadow-sm">
+    <i class="fa-solid fa-circle-xmark me-2"></i>{{ error }}
+</div>
+{% endif %}
+
+<!-- Workspace Tab Buttons -->
+<ul class="nav nav-pills gap-1.5 mb-4 p-1 bg-light rounded-3 d-inline-flex border" id="ws-tabs" style="opacity:0; transform:translateY(-8px);">
+    <li class="nav-item">
+        <button class="nav-link active px-4 py-2 fw-semibold d-flex align-items-center gap-2" onclick="showTab('posts')">
+            <i class="fa-solid fa-newspaper fs-6"></i>Posts
+        </button>
+    </li>
+    <li class="nav-item">
+        <button class="nav-link px-4 py-2 fw-semibold d-flex align-items-center gap-2" onclick="showTab('conversations')">
+            <i class="fa-brands fa-facebook-messenger fs-6"></i>Conversations
+            {% if conversations %}
+            <span class="badge bg-danger text-white rounded-circle ms-1 px-1.5 py-0.5" style="font-size: 10px;">{{ conversations|length }}</span>
+            {% endif %}
+        </button>
+    </li>
+</ul>
+
+<!-- ── Tab Content: Posts ── -->
+<div id="tab-posts">
+    {% if posts %}
+    {% for post in posts %}
+    <div class="post-item card mb-4 border-0 shadow-sm overflow-hidden" style="border-radius:16px; opacity:0; transform:translateY(20px);">
+        <div class="card-body p-4">
+
+            <!-- Post Content Body -->
+            <div class="d-flex flex-column flex-md-row gap-4 mb-4">
+                {% if post.full_picture %}
+                <div class="media-container flex-shrink-0" style="width: 120px; height: 120px; border-radius:12px; overflow:hidden; border:1px solid rgba(0,0,0,0.05);">
+                    <img src="{{ post.full_picture }}" alt="Post attachment image" class="w-100 h-100 object-fit-cover">
+                </div>
+                {% endif %}
+                <div class="flex-grow-1">
+                    <p class="mb-2 text-dark-emphasis" style="font-size:15px; line-height:1.6; font-weight: 400; white-space: pre-line;">
+                        {{ post.message|default:"(No caption)" }}
+                    </p>
+                    <div class="d-flex flex-wrap align-items-center gap-3 text-muted" style="font-size: 12px;">
+                        <span><i class="fa-regular fa-clock me-1.5 text-secondary"></i>{{ post.created_time|date:"M d, Y · H:i" }}</span>
+                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2.5 py-1 rounded-pill">
+                            <i class="fa-solid fa-thumbs-up me-1"></i> {{ post.likes.summary.total_count|default:0 }} Likes
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Comments Section -->
+            {% if post.comments.data %}
+            <div class="comments-section ps-4 border-start border-2 border-light">
+                <div class="text-uppercase tracking-wider text-secondary mb-3 d-flex align-items-center gap-1.5" style="font-size:11px; font-weight:700;">
+                    <i class="fa-regular fa-comments fs-6 text-primary"></i> Comments ({{ post.comments.data|length }})
+                </div>
+                
+                <div class="d-flex flex-column gap-2.5">
+                    {% for comment in post.comments.data %}
+                    <div class="comment-item p-3 rounded-3 border" style="background:#f8fafc; border-color: #f1f5f9;">
+                        <div class="d-flex gap-3">
+                            <div class="flex-shrink-0" style="width:32px; height:32px; border-radius:50%; background:linear-gradient(135deg, #e0e7ff, #c7d2fe);
+                                        display:flex; align-items:center; justify-content:center;
+                                        font-size:12px; font-weight:700; color:#4f46e5; box-shadow: 0 2px 4px rgba(0,0,0,0.03);">
+                                {{ comment.from.name|first|upper }}
+                            </div>
+                            <div class="flex-grow-1">
+                                <div class="d-flex flex-wrap align-items-center justify-content-between gap-1 mb-1">
+                                    <span class="fw-semibold text-dark-emphasis" style="font-size: 13px;">{{ comment.from.name }}</span>
+                                    <small class="text-muted" style="font-size: 11px;">{{ comment.created_time }}</small>
+                                </div>
+                                <div class="text-secondary mb-3" style="font-size:13.5px; line-height: 1.5;">{{ comment.message }}</div>
+
+                                <!-- Inline Reply Form -->
+                                <form method="post" action="{% url 'social_accounts:comment_reply' 'facebook' comment.id %}" class="comment-reply-form d-flex gap-2">
+                                    {% csrf_token %}
+                                    <input type="text" name="message" placeholder="Write an official reply..."
+                                           class="form-control form-control-sm px-3" style="border-radius:10px; font-size:13px; background: #ffffff;">
+                                    <button type="submit" class="btn btn-primary btn-sm px-3" style="border-radius:10px;">
+                                        <i class="fa-solid fa-reply me-1"></i>Reply
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% else %}
+            <div class="text-muted ps-4 py-2" style="font-size:13px;">
+                <i class="fa-regular fa-comment-dots me-1.5"></i>No comments yet
+            </div>
+            {% endif %}
+
+        </div>
+    </div>
+    {% endfor %}
+    {% else %}
+    <div class="text-center py-5 bg-white rounded-4 border p-4 shadow-sm" style="min-height: 250px;">
+        <i class="fa-regular fa-newspaper fa-3x text-muted mb-3 d-block"></i>
+        <h6 class="text-dark fw-bold mb-1">No Posts Discovered</h6>
+        <p class="text-muted small">No posts were found on this Facebook Page.</p>
+        <a href="{% url 'post_create' %}" class="btn btn-primary btn-sm px-3 py-2 fw-semibold mt-2 shadow-sm">
+            <i class="fa-solid fa-plus me-1.5"></i>Create First Post
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+<!-- ── Tab Content: Conversations ── -->
+<div id="tab-conversations" style="display:none; opacity: 0; transform: translateY(15px);">
+    {% if conversations %}
+    {% for conv in conversations %}
+    <div class="conv-item card mb-4 border-0 shadow-sm overflow-hidden" style="border-radius:16px;">
+        <div class="card-body p-4">
+            
+            <!-- Conversation Head -->
+            <div class="d-flex align-items-center gap-2 pb-3 mb-3 border-bottom" style="border-color: #f1f5f9 !important;">
+                <div class="p-2 rounded-circle bg-primary-subtle text-primary d-inline-flex align-items-center justify-content-center" style="width: 32px; height:32px;">
+                    <i class="fa-solid fa-comments text-xs"></i>
+                </div>
+                <div class="fw-bold text-dark-emphasis" style="font-size:13.5px;">
+                    {% for p in conv.participants.data %}{{ p.name }}{% if not forloop.last %}, {% endif %}{% endfor %}
+                </div>
+            </div>
+
+            <!-- Messages Thread Bubble Layout -->
+            {% if conv.messages.data %}
+            <div class="messages-list mb-4 pe-2" style="max-height:280px; overflow-y:auto; display:flex; flex-direction:column; gap:10px;">
+                {% for msg in conv.messages.data %}
+                <div class="msg-bubble p-3 rounded-3"
+                     style="background:#f1f5f9; font-size:13.5px; max-width:85%; align-self: flex-start; border-radius: 12px 12px 12px 2px !important; box-shadow: 0 1px 2px rgba(0,0,0,0.02);">
+                    <div style="font-size:11px; font-weight:700; color:#4f46e5; margin-bottom:3px;">
+                        {{ msg.from.name }}
+                    </div>
+                    <div class="text-dark-emphasis" style="line-height:1.5;">{{ msg.message }}</div>
+                    <div class="text-muted mt-1.5 d-flex align-items-center gap-1" style="font-size:10px;">
+                        <i class="fa-regular fa-clock"></i>{{ msg.created_time }}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <!-- Quick Reply Panel -->
+            <form method="post" action="{% url 'social_accounts:messenger_reply' %}" class="d-flex gap-2 bg-light p-2 rounded-3 border">
+                {% csrf_token %}
+                <input type="hidden" name="recipient_id" value="{{ conv.participants.data.0.id }}">
+                <input type="text" name="message" placeholder="Type a message to reply instantly..."
+                       class="form-control form-control-sm px-3 py-2 border-0 bg-transparent shadow-none" style="font-size: 13.5px;">
+                <button type="submit" class="btn btn-primary btn-sm px-4 py-2" style="border-radius:8px;">
+                    <i class="fa-solid fa-paper-plane me-1.5"></i>Send
+                </button>
+            </form>
+        </div>
+    </div>
+    {% endfor %}
+    {% else %}
+    <div class="text-center py-5 bg-white rounded-4 border p-4 shadow-sm" style="min-height: 250px;">
+        <i class="fa-brands fa-facebook-messenger fa-3x text-muted mb-3 d-block"></i>
+        <h6 class="text-dark fw-bold mb-1">No Conversations Found</h6>
+        <p class="text-muted small">No inbox threads were pulled for this page.</p>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+    /* Tab pill aesthetics */
+    .nav-pills .nav-link { 
+        border-radius: 8px; 
+        font-size: 13px; 
+        color: #64748b; 
+        transition: all 0.2s ease;
+    }
+    .nav-pills .nav-link.active { 
+        background: #6366f1; 
+        color: #fff; 
+        box-shadow: 0 4px 10px rgba(99, 102, 241, 0.25);
+    }
+    .comment-item { 
+        transition: all 0.2s ease; 
+    }
+    .comment-item:hover { 
+        background: #f1f5f9 !important; 
+        border-color: #cbd5e1 !important;
+    }
+    .messages-list::-webkit-scrollbar {
+        width: 4px;
+    }
+    .messages-list::-webkit-scrollbar-thumb {
+        background: rgba(0, 0, 0, 0.08);
+        border-radius: 10px;
+    }
+</style>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script>
+function showTab(tab) {
+    const postsTab = document.getElementById('tab-posts');
+    const conversationsTab = document.getElementById('tab-conversations');
+    
+    // Toggle active classes in pills dynamically
+    document.querySelectorAll('#ws-tabs .nav-link').forEach((btn, idx) => {
+        btn.classList.toggle('active', (tab === 'posts' && idx === 0) || (tab === 'conversations' && idx === 1));
+    });
+
+    if (tab === 'posts') {
+        // Smooth slide-fade out of Conversations, then show Posts
+        gsap.to(conversationsTab, { opacity: 0, y: 15, duration: 0.2, onComplete: () => {
+            conversationsTab.style.display = 'none';
+            postsTab.style.display = 'block';
+            gsap.fromTo(postsTab, { opacity: 0, y: 15 }, { opacity: 1, y: 0, duration: 0.35, ease: 'power2.out' });
+        }});
+    } else {
+        // Smooth slide-fade out of Posts, then show Conversations
+        gsap.to(postsTab, { opacity: 0, y: 15, duration: 0.2, onComplete: () => {
+            postsTab.style.display = 'none';
+            conversationsTab.style.display = 'block';
+            gsap.fromTo(conversationsTab, { opacity: 0, y: 15 }, { opacity: 1, y: 0, duration: 0.35, ease: 'power2.out' });
+            
+            // Stagger animation for inside conversations
+            gsap.fromTo('.conv-item', 
+                { opacity: 0, y: 15 }, 
+                { opacity: 1, y: 0, duration: 0.4, stagger: 0.06, ease: 'power3.out' }
+            );
+        }});
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    // GSAP Master timeline sequence
+    const tl = gsap.timeline({ defaults: { ease: 'power3.out' } });
+    
+    tl.to('#ws-header', { opacity: 1, y: 0, duration: 0.5 })
+      .to('#ws-tabs',   { opacity: 1, y: 0, duration: 0.4 }, '-=0.3')
+      .to('.post-item', { opacity: 1, y: 0, duration: 0.5, stagger: 0.08, ease: 'back.out(1.1)' }, '-=0.2');
+});
+</script>
+
+{% endblock %}

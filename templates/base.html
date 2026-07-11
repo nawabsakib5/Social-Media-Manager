@@ -4,32 +4,57 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{% block title %}SocialManager{% endblock %}</title>
+    
+    <!-- Fonts & Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+    
     <style>
         :root {
-            --sidebar-width: 240px;
-            --sidebar-bg: #0f0f1a;
-            --sidebar-hover: rgba(255,255,255,0.06);
-            --sidebar-active: rgba(99,102,241,0.15);
+            --sidebar-width: 240px; /* আপনার রিকোয়েস্ট অনুযায়ী ২৪০ পিক্সেল করা হয়েছে */
+            --sidebar-bg: #09090f;
+            --sidebar-border: rgba(255, 255, 255, 0.05);
+            --sidebar-hover: rgba(255, 255, 255, 0.04);
+            --sidebar-active: rgba(99, 102, 241, 0.1);
             --accent: #6366f1;
-            --accent-glow: rgba(99,102,241,0.3);
-            --topbar-bg: #ffffff;
-            --body-bg: #f4f6fb;
+            --accent-glow: rgba(99, 102, 241, 0.25);
+            --topbar-bg: rgba(255, 255, 255, 0.8);
+            --body-bg: #f8fafc;
             --card-bg: #ffffff;
-            --text-muted-custom: #94a3b8;
+            --text-sidebar-muted: #71717a;
+            --text-sidebar-light: #e4e4e7;
         }
 
-        * { box-sizing: border-box; }
+        * { 
+            box-sizing: border-box; 
+            font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+        }
 
         body {
             background: var(--body-bg);
-            font-family: 'Inter', system-ui, -apple-system, sans-serif;
             margin: 0;
             overflow-x: hidden;
+            color: #0f172a;
         }
 
-        /* ── Sidebar ── */
+        /* ── Modern Custom Scrollbar ── */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        /* ── Sidebar Style ── */
         .sidebar {
             position: fixed;
             top: 0; left: 0;
@@ -38,225 +63,240 @@
             background: var(--sidebar-bg);
             display: flex;
             flex-direction: column;
-            z-index: 100;
+            z-index: 1000;
             padding: 0;
+            border-right: 1px solid var(--sidebar-border);
             overflow: hidden;
         }
 
         .sidebar-glow {
             position: absolute;
-            width: 200px; height: 200px;
+            width: 250px; height: 250px;
             background: var(--accent-glow);
             border-radius: 50%;
-            filter: blur(80px);
-            top: -60px; left: -60px;
+            filter: blur(90px);
+            top: -80px; left: -80px;
             pointer-events: none;
         }
 
         .sidebar-brand {
             display: flex;
             align-items: center;
-            gap: 10px;
-            padding: 24px 20px 20px;
+            gap: 12px;
+            padding: 24px 24px;
             color: #fff;
-            font-size: 17px;
+            font-size: 18px;
             font-weight: 700;
-            letter-spacing: -0.3px;
+            letter-spacing: -0.5px;
             text-decoration: none;
-            border-bottom: 1px solid rgba(255,255,255,0.06);
-            margin-bottom: 12px;
+            border-bottom: 1px solid var(--sidebar-border);
+            margin-bottom: 16px;
         }
 
         .sidebar-brand .brand-icon {
-            width: 34px; height: 34px;
+            width: 36px; height: 36px;
             background: linear-gradient(135deg, var(--accent), #818cf8);
-            border-radius: 9px;
+            border-radius: 10px;
             display: flex; align-items: center; justify-content: center;
-            font-size: 15px;
-            box-shadow: 0 4px 12px var(--accent-glow);
+            font-size: 16px;
+            box-shadow: 0 4px 14px var(--accent-glow);
+            color: #fff;
         }
 
         .nav-section-label {
             font-size: 10px;
-            font-weight: 600;
-            letter-spacing: 1.2px;
-            color: rgba(255,255,255,0.25);
-            padding: 16px 20px 6px;
+            font-weight: 700;
+            letter-spacing: 1.5px;
+            color: var(--text-sidebar-muted);
+            padding: 16px 24px 8px;
             text-transform: uppercase;
         }
 
         .sidebar-link {
             display: flex;
             align-items: center;
-            gap: 10px;
-            padding: 10px 16px;
-            margin: 2px 10px;
-            border-radius: 9px;
-            color: var(--text-muted-custom);
+            gap: 12px;
+            padding: 11px 20px;
+            margin: 3px 14px;
+            border-radius: 10px;
+            color: #a1a1aa;
             text-decoration: none;
-            font-size: 13.5px;
+            font-size: 14px;
             font-weight: 500;
-            transition: background 0.15s, color 0.15s;
+            transition: background 0.2s ease, color 0.2s ease;
             position: relative;
         }
 
         .sidebar-link i {
-            width: 18px;
+            width: 20px;
             text-align: center;
-            font-size: 13px;
+            font-size: 15px;
+            transition: transform 0.2s ease;
         }
 
         .sidebar-link:hover {
             background: var(--sidebar-hover);
-            color: #fff;
+            color: #ffffff;
+        }
+
+        .sidebar-link:hover i {
+            transform: scale(1.1);
         }
 
         .sidebar-link.active {
             background: var(--sidebar-active);
-            color: #a5b4fc;
+            color: #c7d2fe;
+            font-weight: 600;
         }
 
         .sidebar-link.active::before {
             content: '';
             position: absolute;
-            left: 0; top: 20%; height: 60%;
-            width: 3px;
+            left: 0; top: 25%; height: 50%;
+            width: 4px;
             background: var(--accent);
-            border-radius: 0 3px 3px 0;
-            margin-left: -10px;
+            border-radius: 0 4px 4px 0;
+            margin-left: -14px;
         }
 
         .sidebar-bottom {
             margin-top: auto;
-            padding: 16px 10px;
-            border-top: 1px solid rgba(255,255,255,0.06);
+            padding: 20px 14px;
+            border-top: 1px solid var(--sidebar-border);
         }
 
-        /* ── Main ── */
+        /* ── Main Panel ── */
         .main-wrapper {
             margin-left: var(--sidebar-width);
             min-height: 100vh;
             display: flex;
             flex-direction: column;
+            transition: margin-left 0.3s ease;
         }
 
-        /* ── Topbar ── */
+        /* ── Modern Blurred Topbar ── */
         .topbar {
             background: var(--topbar-bg);
-            padding: 0 28px;
-            height: 60px;
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            padding: 0 32px;
+            height: 64px;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            border-bottom: 1px solid #e8ecf4;
+            border-bottom: 1px solid rgba(15, 23, 42, 0.06);
             position: sticky;
             top: 0;
-            z-index: 50;
+            z-index: 900;
         }
 
         .topbar-title {
-            font-size: 15px;
-            font-weight: 600;
-            color: #1e293b;
+            font-size: 16px;
+            font-weight: 700;
+            color: #0f172a;
+            letter-spacing: -0.2px;
         }
 
         .topbar-right {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 16px;
         }
 
         .user-pill {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 10px;
             background: #f1f5f9;
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-size: 13px;
-            font-weight: 500;
-            color: #475569;
+            padding: 5px 14px 5px 6px;
+            border-radius: 30px;
+            font-size: 13.5px;
+            font-weight: 600;
+            color: #334155;
+            border: 1px solid rgba(0, 0, 0, 0.02);
         }
 
         .user-avatar {
-            width: 26px; height: 26px;
+            width: 28px; height: 28px;
             background: linear-gradient(135deg, var(--accent), #818cf8);
             border-radius: 50%;
             display: flex; align-items: center; justify-content: center;
-            font-size: 11px;
+            font-size: 12px;
             color: #fff;
             font-weight: 700;
+            box-shadow: 0 2px 6px rgba(99, 102, 241, 0.2);
         }
 
         .btn-logout {
-            font-size: 12px;
-            padding: 5px 14px;
-            border-radius: 7px;
-            border: 1px solid #e2e8f0;
-            color: #64748b;
-            background: transparent;
+            font-size: 13px;
+            font-weight: 600;
+            padding: 6px 16px;
+            border-radius: 8px;
+            border: 1px solid #cbd5e1;
+            color: #475569;
+            background: #ffffff;
             text-decoration: none;
-            transition: all 0.15s;
+            transition: all 0.2s ease;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
         }
 
         .btn-logout:hover {
             background: #f8fafc;
-            color: #1e293b;
+            color: #0f172a;
+            border-color: #94a3b8;
         }
 
-        /* ── Page content ── */
+        /* ── Page Content Container ── */
         .page-content {
-            padding: 28px 30px;
+            padding: 40px;
             flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
         }
 
-        /* ── Alerts ── */
+        /* ── Modern Dismissible Alerts ── */
         .alert {
-            border: none;
-            border-radius: 10px;
-            font-size: 13.5px;
-            padding: 12px 16px;
+            border: 1px solid transparent;
+            border-radius: 12px;
+            font-size: 14px;
+            padding: 14px 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.02);
         }
+        .alert-info    { background: #f0f9ff; color: #0369a1; border-color: #bae6fd; }
+        .alert-success { background: #f0fdf4; color: #15803d; border-color: #bbf7d0; }
+        .alert-warning { background: #fffbeb; color: #a16207; border-color: #fef08a; }
+        .alert-danger  { background: #fef2f2; color: #b91c1c; border-color: #fecaca; }
 
-        .alert-info    { background: #eff6ff; color: #1d4ed8; }
-        .alert-success { background: #f0fdf4; color: #15803d; }
-        .alert-warning { background: #fffbeb; color: #b45309; }
-        .alert-danger  { background: #fef2f2; color: #b91c1c; }
-
-        /* ── Cards ── */
-        .card {
-            border: none;
-            border-radius: 14px;
-            box-shadow: 0 1px 4px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04);
-        }
-
-        /* ── Page load overlay ── */
+        /* ── Premium Fullscreen Screen Loader ── */
         #page-loader {
             position: fixed;
             inset: 0;
             background: var(--sidebar-bg);
-            z-index: 9999;
+            z-index: 10000;
             display: flex;
             align-items: center;
             justify-content: center;
             flex-direction: column;
-            gap: 16px;
+            gap: 20px;
         }
 
         .loader-logo {
-            width: 48px; height: 48px;
+            width: 56px; height: 56px;
             background: linear-gradient(135deg, var(--accent), #818cf8);
-            border-radius: 14px;
+            border-radius: 16px;
             display: flex; align-items: center; justify-content: center;
-            font-size: 22px;
+            font-size: 24px;
             color: #fff;
+            box-shadow: 0 8px 24px var(--accent-glow);
         }
 
         .loader-bar {
-            width: 160px; height: 3px;
-            background: rgba(255,255,255,0.1);
+            width: 180px; height: 4px;
+            background: rgba(255,255,255,0.08);
             border-radius: 10px;
             overflow: hidden;
+            position: relative;
         }
 
         .loader-bar-fill {
@@ -269,21 +309,21 @@
 </head>
 <body>
 
-<!-- Page loader -->
+<!-- Interactive page loader -->
 <div id="page-loader">
-    <div class="loader-logo"><i class="fa-solid fa-share-nodes"></i></div>
+    <div class="loader-logo" id="loader-icon"><i class="fa-solid fa-share-nodes"></i></div>
     <div class="loader-bar"><div class="loader-bar-fill" id="loader-fill"></div></div>
 </div>
 
-<div id="app-shell" style="opacity:0;">
+<div id="app-shell" style="opacity:0; transform: scale(0.98);">
     <div class="d-flex">
 
-        <!-- ── Sidebar ── -->
+        <!-- ── Navigation Sidebar ── -->
         <div class="sidebar" id="sidebar">
             <div class="sidebar-glow"></div>
 
             <a href="{% url 'post_list' %}" class="sidebar-brand">
-                <div class="brand-icon"><i class="fa-solid fa-share-nodes"></i></div>
+                <div class="brand-icon" id="brand-logo"><i class="fa-solid fa-share-nodes"></i></div>
                 SocialManager
             </a>
 
@@ -300,7 +340,7 @@
                 <i class="fa-solid fa-inbox"></i> Inbox
             </a>
 
-            <a href="{% url 'account_list' %}"
+            <a href="{% url 'social_accounts:account_list' %}"
                class="sidebar-link {% if request.resolver_match.url_name == 'account_list' %}active{% endif %}">
                 <i class="fa-solid fa-plug"></i> Accounts
             </a>
@@ -318,14 +358,14 @@
             {% endif %}
 
             <div class="sidebar-bottom">
-                <a href="{% url 'logout' %}" class="sidebar-link" style="color:#f87171;">
+                <a href="{% url 'logout' %}" class="sidebar-link text-danger-hover" style="color:#ef4444;">
                     <i class="fa-solid fa-right-from-bracket"></i> Logout
                 </a>
             </div>
             {% endif %}
         </div>
 
-        <!-- ── Main ── -->
+        <!-- ── Main Layout Panel ── -->
         <div class="main-wrapper" id="main-wrapper">
 
             {% if user.is_authenticated %}
@@ -334,112 +374,177 @@
                 <div class="topbar-right">
                     <div class="user-pill">
                         <div class="user-avatar">{{ user.username|first|upper }}</div>
-                        {{ user.username }}
+                        <span>{{ user.username }}</span>
                     </div>
                     <a href="{% url 'logout' %}" class="btn-logout">Logout</a>
                 </div>
             </div>
             {% endif %}
 
+            <!-- Dynamic content injection -->
             <div class="page-content">
-                {% if messages %}
-                <div id="messages-container">
-                    {% for message in messages %}
-                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show mb-3"
-                         style="opacity:0; transform:translateY(-8px);">
-                        <i class="fa-solid
-                            {% if message.tags == 'success' %}fa-circle-check
-                            {% elif message.tags == 'error' or message.tags == 'danger' %}fa-circle-xmark
-                            {% elif message.tags == 'warning' %}fa-triangle-exclamation
-                            {% else %}fa-circle-info{% endif %} me-2"></i>
-                        {{ message }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                <!-- কন্টেন্ট অতিরিক্ত চওড়া হওয়া প্রতিরোধে 960px ম্যাক্স-উইডথ রেডিমেড র্যাপার -->
+                <div style="max-width: 960px; width: 100%;">
+                    {% if messages %}
+                    <div id="messages-container" class="mb-4">
+                        {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show shadow-sm"
+                             style="opacity:0; transform:translateY(-12px);" role="alert">
+                            <i class="fa-solid
+                                {% if message.tags == 'success' %}fa-circle-check
+                                {% elif message.tags == 'error' or message.tags == 'danger' %}fa-circle-xmark
+                                {% elif message.tags == 'warning' %}fa-triangle-exclamation
+                                {% else %}fa-circle-info{% endif %} me-2"></i>
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                        {% endfor %}
                     </div>
-                    {% endfor %}
-                </div>
-                {% endif %}
+                    {% endif %}
 
-                <div id="page-body" style="opacity:0; transform:translateY(16px);">
-                    {% block content %}{% endblock %}
+                    <div id="page-body">
+                        {% block content %}{% endblock %}
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
+<!-- JS Core Bundle -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+
 <script>
-const tl = gsap.timeline();
+document.addEventListener('DOMContentLoaded', () => {
+    // GSAP global config
+    gsap.config({ force3D: true });
 
-// 1. Loader bar fill
-tl.to('#loader-fill', {
-    width: '100%',
-    duration: 0.6,
-    ease: 'power2.inOut'
-})
+    const masterTimeline = gsap.timeline({ defaults: { ease: 'power4.out' } });
 
-// 2. Loader fade out
-.to('#page-loader', {
-    opacity: 0,
-    duration: 0.3,
-    ease: 'power2.in',
-    onComplete: () => document.getElementById('page-loader').style.display = 'none'
-})
+    // Step 1: Smooth loadbar completion
+    masterTimeline.to('#loader-fill', {
+        width: '100%',
+        duration: 0.5,
+        ease: 'power3.inOut'
+    })
 
-// 3. App shell fade in
-.to('#app-shell', { opacity: 1, duration: 0.01 })
+    // Step 2: Dynamic zoom & scale on loader icon before exit
+    .to('#loader-icon', {
+        scale: 0.8,
+        rotate: -15,
+        opacity: 0,
+        duration: 0.3,
+        ease: 'power2.in'
+    }, '-=0.1')
 
-// 4. Sidebar slide in
-.from('#sidebar', {
-    x: -30,
-    opacity: 0,
-    duration: 0.45,
-    ease: 'power3.out'
-})
+    // Step 3: Sleek Slide-up slide wipe overlay animation
+    .to('#page-loader', {
+        yPercent: -100,
+        duration: 0.65,
+        ease: 'power4.inOut',
+        onComplete: () => {
+            document.getElementById('page-loader').style.display = 'none';
+        }
+    }, '-=0.15')
 
-// 5. Topbar drop in
-.from('#topbar', {
-    y: -20,
-    opacity: 0,
-    duration: 0.35,
-    ease: 'power2.out'
-}, '-=0.25')
+    // Step 4: Scale and fade in the complete dashboard container
+    .to('#app-shell', { 
+        opacity: 1, 
+        scale: 1,
+        duration: 0.75,
+        ease: 'power4.out'
+    }, '-=0.4')
 
-// 6. Sidebar links stagger
-.from('.sidebar-link', {
-    x: -15,
-    opacity: 0,
-    duration: 0.25,
-    stagger: 0.05,
-    ease: 'power2.out'
-}, '-=0.3')
+    // Step 5: Reveal sidebar with a unique slide & soft perspective twist
+    .from('#sidebar', {
+        x: -40,
+        rotationY: 10,
+        transformOrigin: "left center",
+        duration: 0.6,
+        ease: 'power3.out'
+    }, '-=0.6')
 
-// 7. Page body
-.to('#page-body', {
-    opacity: 1,
-    y: 0,
-    duration: 0.4,
-    ease: 'power2.out'
-}, '-=0.15')
+    // Step 6: Topbar slide-down header sequence
+    .from('#topbar', {
+        y: -15,
+        opacity: 0,
+        duration: 0.45,
+        ease: 'power2.out'
+    }, '-=0.45')
 
-// 8. Alert messages
-.to('.alert', {
-    opacity: 1,
-    y: 0,
-    duration: 0.3,
-    stagger: 0.07,
-    ease: 'back.out(1.5)'
-}, '-=0.2');
+    // Step 7: Staggered entry for individual sidebar links
+    .from('.sidebar-link', {
+        x: -20,
+        opacity: 0,
+        duration: 0.4,
+        stagger: 0.04,
+        ease: 'power2.out'
+    }, '-=0.4')
 
-// Sidebar link hover micro-animation
-document.querySelectorAll('.sidebar-link').forEach(link => {
-    link.addEventListener('mouseenter', () => {
-        gsap.to(link, { x: 3, duration: 0.15, ease: 'power2.out' });
+    // Step 8: Morph transitions for incoming message alerts
+    .to('.alert', {
+        opacity: 1,
+        y: 0,
+        duration: 0.45,
+        stagger: 0.06,
+        ease: 'back.out(1.4)'
+    }, '-=0.2');
+
+    // Sidebar Interactive Magnetic and spring effect
+    document.querySelectorAll('.sidebar-link').forEach(link => {
+        link.addEventListener('mouseenter', () => {
+            gsap.to(link, { 
+                x: 6, 
+                backgroundColor: 'rgba(255, 255, 255, 0.06)',
+                color: '#ffffff',
+                duration: 0.25, 
+                ease: 'power2.out' 
+            });
+            gsap.to(link.querySelector('i'), {
+                scale: 1.15,
+                color: '#818cf8',
+                duration: 0.2,
+                ease: 'back.out(1.5)'
+            });
+        });
+        
+        link.addEventListener('mouseleave', () => {
+            const isActive = link.classList.contains('active');
+            gsap.to(link, { 
+                x: 0, 
+                backgroundColor: isActive ? 'var(--sidebar-active)' : 'transparent',
+                color: isActive ? '#c7d2fe' : '#a1a1aa',
+                duration: 0.25, 
+                ease: 'power2.out' 
+            });
+            gsap.to(link.querySelector('i'), {
+                scale: 1,
+                color: isActive ? '#a5b4fc' : '#a1a1aa',
+                duration: 0.2,
+                ease: 'power2.out'
+            });
+        });
     });
-    link.addEventListener('mouseleave', () => {
-        gsap.to(link, { x: 0, duration: 0.15, ease: 'power2.out' });
-    });
+
+    // Brand Logo soft rotation interaction
+    const brand = document.querySelector('.sidebar-brand');
+    if (brand) {
+        brand.addEventListener('mouseenter', () => {
+            gsap.to('#brand-logo', {
+                rotate: 45,
+                duration: 0.4,
+                ease: 'back.out(1.8)'
+            });
+        });
+        brand.addEventListener('mouseleave', () => {
+            gsap.to('#brand-logo', {
+                rotate: 0,
+                duration: 0.3,
+                ease: 'power2.out'
+            });
+        });
+    }
 });
 </script>
 </body>

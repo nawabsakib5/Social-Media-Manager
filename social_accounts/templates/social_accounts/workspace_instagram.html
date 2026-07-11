@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+{% block title %}Instagram Workspace{% endblock %}
+{% block page_title %}Instagram — {{ account.account_name }}{% endblock %}
+
+{% block content %}
+
+<!-- Header -->
+<div class="d-flex justify-content-between align-items-center mb-4" id="ws-header">
+    <div class="d-flex align-items-center gap-3">
+        <div style="width:44px; height:44px; border-radius:12px;
+                    background:linear-gradient(45deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888);
+                    display:flex; align-items:center; justify-content:center; font-size:20px; color:#fff;">
+            <i class="fa-brands fa-instagram"></i>
+        </div>
+        <div>
+            <h5 class="mb-0 fw-bold">{{ account.account_name }}</h5>
+            <small class="text-muted">Instagram Business · ID: {{ account.platform_account_id }}</small>
+        </div>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{% url 'post_create' %}" class="btn btn-primary btn-sm">
+            <i class="fa-solid fa-plus me-1"></i>New Post
+        </a>
+        <a href="{% url 'social_accounts:account_list' %}" class="btn btn-outline-secondary btn-sm">
+            <i class="fa-solid fa-arrow-left me-1"></i>Back
+        </a>
+    </div>
+</div>
+
+{% if error %}
+<div class="alert alert-danger">
+    <i class="fa-solid fa-circle-xmark me-2"></i>{{ error }}
+</div>
+{% endif %}
+
+<!-- Posts Grid -->
+{% if posts %}
+<div class="row g-3" id="ig-grid">
+    {% for post in posts %}
+    <div class="col-sm-6 col-md-4 col-lg-3 ig-card-col" style="opacity:0; transform:translateY(16px);">
+        <div class="card" style="border-radius:14px; overflow:hidden; border:none;">
+
+            <!-- Media -->
+            {% if post.media_type == 'VIDEO' or post.media_type == 'REELS' %}
+            <div style="position:relative; padding-top:100%; background:#000;">
+                <video src="{{ post.media_url }}"
+                       style="position:absolute; inset:0; width:100%; height:100%; object-fit:cover;"
+                       muted playsinline></video>
+                <div style="position:absolute; top:8px; right:8px; background:rgba(0,0,0,0.6);
+                            color:#fff; border-radius:6px; padding:2px 7px; font-size:11px;">
+                    <i class="fa-solid fa-video me-1"></i>Reel
+                </div>
+            </div>
+            {% elif post.media_url %}
+            <img src="{{ post.media_url }}" alt="Post"
+                 style="width:100%; aspect-ratio:1; object-fit:cover;">
+            {% else %}
+            <div style="width:100%; aspect-ratio:1; background:#f1f5f9;
+                        display:flex; align-items:center; justify-content:center;">
+                <i class="fa-regular fa-image fa-2x text-muted"></i>
+            </div>
+            {% endif %}
+
+            <!-- Info -->
+            <div class="p-3">
+                <p class="mb-2" style="font-size:12px; color:#475569; line-height:1.5;">
+                    {{ post.caption|default:"(No caption)"|truncatewords:15 }}
+                </p>
+                <div class="d-flex gap-3 mb-2" style="font-size:12px; color:#94a3b8;">
+                    <span><i class="fa-solid fa-heart me-1 text-danger"></i>{{ post.like_count|default:0 }}</span>
+                    <span><i class="fa-regular fa-comment me-1"></i>{{ post.comments_count|default:0 }}</span>
+                </div>
+
+                <!-- Comments -->
+                {% if post.comments.data %}
+                <div class="border-top pt-2 mt-1">
+                    {% for comment in post.comments.data %}
+                    <div class="mb-2" style="font-size:12px;">
+                        <span class="fw-semibold">{{ comment.username }}</span>
+                        <span class="text-muted ms-1">{{ comment.text|truncatewords:10 }}</span>
+
+                        <form method="post"
+                              action="{% url 'social_accounts:comment_reply' 'instagram' comment.id %}"
+                              class="d-flex gap-1 mt-1">
+                            {% csrf_token %}
+                            <input type="text" name="message" placeholder="Reply..."
+                                   class="form-control form-control-sm" style="border-radius:8px; font-size:11px;">
+                            <button type="submit" class="btn btn-sm btn-outline-primary" style="border-radius:8px;">
+                                <i class="fa-solid fa-reply" style="font-size:10px;"></i>
+                            </button>
+                        </form>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+{% else %}
+<div class="text-center py-5 text-muted">
+    <i class="fa-brands fa-instagram fa-3x mb-3 d-block"></i>
+    <p>No posts found on this account.</p>
+    <a href="{% url 'post_create' %}" class="btn btn-primary btn-sm">Create First Post</a>
+</div>
+{% endif %}
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const tl = gsap.timeline({ defaults: { ease: 'power2.out' } });
+    tl.from('#ws-header', { opacity: 0, y: -16, duration: 0.4 })
+      .to('.ig-card-col', { opacity: 1, y: 0, duration: 0.35, stagger: 0.07 }, '-=0.2');
+
+    document.querySelectorAll('.ig-card-col .card').forEach(card => {
+        card.addEventListener('mouseenter', () => gsap.to(card, { y: -4, duration: 0.2 }));
+        card.addEventListener('mouseleave', () => gsap.to(card, { y:  0, duration: 0.2 }));
+    });
+});
+</script>
+
+{% endblock %}

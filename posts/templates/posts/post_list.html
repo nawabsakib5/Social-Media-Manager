@@ -3,6 +3,7 @@
 {% block page_title %}Posts{% endblock %}
 
 {% block content %}
+
 <!-- Header -->
 <div class="d-flex justify-content-between align-items-center mb-4" id="page-header">
     <div>
@@ -10,22 +11,24 @@
         <small class="text-muted">Manage your scheduled and published content</small>
     </div>
     <div class="d-flex gap-2">
+        {% if user.is_staff or user.is_superuser %}
         <a href="{% url 'accounts:invite_member' %}" class="btn btn-outline-primary btn-sm">
             <i class="fa-solid fa-user-plus me-1"></i>Invite Member
         </a>
+        {% endif %}
         <a href="{% url 'post_create' %}" class="btn btn-primary btn-sm" id="new-post-btn">
             <i class="fa-solid fa-plus me-1"></i>New Post
         </a>
     </div>
 </div>
 
-<!-- Post Cards -->
+<!-- Post List -->
 <div id="posts-container">
     {% for post in posts %}
-    <div class="post-card card mb-3 border-0 shadow-sm" style="opacity:0; transform:translateY(30px);">
-        <div class="card-body">
+    <div class="post-card card mb-3" style="opacity:0; transform:translateY(20px); border-radius:14px;">
+        <div class="card-body px-4 py-3">
 
-            <!-- Top row: platform badges + overall status -->
+            <!-- Top: platform badges + status -->
             <div class="d-flex justify-content-between align-items-start mb-2">
                 <div class="d-flex flex-wrap gap-2">
                     {% for ps in post.platform_statuses.all %}
@@ -38,10 +41,11 @@
                         <i class="fa-brands fa-{{ ps.social_account.platform }} me-1"></i>
                         {{ ps.social_account.account_name }}
                     </span>
+                    {% empty %}
+                    <span class="badge bg-secondary rounded-pill">No platform</span>
                     {% endfor %}
                 </div>
 
-                <!-- Overall post status pill -->
                 <span class="status-pill badge rounded-pill px-3 py-2
                     {% if post.status == 'published' %}bg-success
                     {% elif post.status == 'scheduled' %}bg-warning text-dark
@@ -55,17 +59,16 @@
                 </span>
             </div>
 
-            <!-- Content preview -->
+            <!-- Content -->
             <p class="mb-3 text-dark" style="font-size:14px; line-height:1.6;">
-                {{ post.content|truncatewords:30 }}
+                {{ post.content|truncatewords:25 }}
             </p>
 
-            <!-- Per-platform status breakdown -->
-            <div class="platform-status-row d-flex flex-wrap gap-2 mb-2">
+            <!-- Per-platform status -->
+            <div class="d-flex flex-wrap gap-2 mb-3">
                 {% for ps in post.platform_statuses.all %}
-                <div class="platform-status-item d-flex align-items-center gap-1 px-2 py-1 rounded-2"
+                <div class="d-flex align-items-center gap-1 px-2 py-1 rounded-2"
                      style="font-size:12px; background:#f8f9fa; border:1px solid #e9ecef;">
-
                     <i class="fa-brands fa-{{ ps.social_account.platform }}
                         {% if ps.social_account.platform == 'facebook' %}text-primary
                         {% elif ps.social_account.platform == 'instagram' %}text-danger
@@ -73,11 +76,11 @@
                         {% elif ps.social_account.platform == 'whatsapp' %}text-success
                         {% else %}text-secondary{% endif %}">
                     </i>
-
                     <span class="text-muted">{{ ps.social_account.platform|capfirst }}:</span>
-
                     {% if ps.status == 'published' %}
-                        <span class="text-success fw-semibold"><i class="fa-solid fa-circle-check"></i> Published</span>
+                        <span class="text-success fw-semibold">
+                            <i class="fa-solid fa-circle-check"></i> Published
+                        </span>
                         {% if ps.published_at %}
                         <span class="text-muted">· {{ ps.published_at|date:"M d, H:i" }}</span>
                         {% endif %}
@@ -103,15 +106,15 @@
                 {% endfor %}
             </div>
 
-            <!-- Footer: scheduled time + created by -->
-            <div class="d-flex justify-content-between align-items-center mt-1">
+            <!-- Footer -->
+            <div class="d-flex justify-content-between align-items-center pt-2"
+                 style="border-top:1px solid #f1f5f9;">
                 <small class="text-muted">
+                    <i class="fa-regular fa-calendar me-1"></i>
                     {% if post.scheduled_time %}
-                    <i class="fa-regular fa-calendar me-1"></i>
-                    Scheduled: {{ post.scheduled_time|date:"M d, Y · H:i" }}
+                        {{ post.scheduled_time|date:"M d, Y · H:i" }}
                     {% else %}
-                    <i class="fa-regular fa-calendar me-1"></i>
-                    Created: {{ post.created_at|date:"M d, Y · H:i" }}
+                        {{ post.created_at|date:"M d, Y · H:i" }}
                     {% endif %}
                 </small>
                 {% if post.created_by %}
@@ -123,6 +126,7 @@
 
         </div>
     </div>
+
     {% empty %}
     <div id="empty-state" class="text-center py-5" style="opacity:0;">
         <i class="fa-regular fa-newspaper fa-3x text-muted mb-3 d-block"></i>
@@ -135,97 +139,39 @@
     {% endfor %}
 </div>
 
-<!-- Instagram gradient badge style -->
 <style>
     .bg-instagram {
-        background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888);
+        background: linear-gradient(45deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888);
         color: white;
     }
     .post-card {
-        border-radius: 12px !important;
-        transition: box-shadow 0.2s ease;
+        border: none;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04);
+        transition: box-shadow 0.2s, transform 0.2s;
     }
     .post-card:hover {
-        box-shadow: 0 4px 20px rgba(0,0,0,0.1) !important;
-    }
-    .platform-status-item {
-        transition: background 0.2s;
-    }
-    .platform-status-item:hover {
-        background: #e9ecef !important;
-    }
-    #new-post-btn {
-        transition: transform 0.2s ease;
-    }
-    #new-post-btn:hover {
-        transform: scale(1.05);
+        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
     }
 </style>
 
-<!-- GSAP Animation -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-    const tl = gsap.timeline();
+    const tl = gsap.timeline({ defaults: { ease: 'power2.out' } });
 
-    // Header fade in
-    tl.from('#page-header', {
-        opacity: 0,
-        y: -20,
-        duration: 0.5,
-        ease: 'power2.out'
-    });
+    tl.from('#page-header', { opacity: 0, y: -20, duration: 0.4 })
+      .to('.post-card', { opacity: 1, y: 0, duration: 0.35, stagger: 0.07 }, '-=0.2')
+      .from('.platform-badge', { scale: 0.7, opacity: 0, duration: 0.2, stagger: 0.04, ease: 'back.out(1.7)' }, '-=0.2')
+      .from('.status-pill', { x: 15, opacity: 0, duration: 0.25, stagger: 0.05 }, '-=0.3');
 
-    // Post cards stagger in
-    const cards = document.querySelectorAll('.post-card');
-    if (cards.length > 0) {
-        tl.to(cards, {
-            opacity: 1,
-            y: 0,
-            duration: 0.4,
-            stagger: 0.08,
-            ease: 'power2.out'
-        }, '-=0.2');
+    const empty = document.getElementById('empty-state');
+    if (empty) tl.to(empty, { opacity: 1, duration: 0.4 });
 
-        // Platform badges pop in after cards
-        tl.from('.platform-badge', {
-            scale: 0.7,
-            opacity: 0,
-            duration: 0.25,
-            stagger: 0.04,
-            ease: 'back.out(1.7)'
-        }, '-=0.2');
-
-        // Status pills slide in from right
-        tl.from('.status-pill', {
-            x: 15,
-            opacity: 0,
-            duration: 0.3,
-            stagger: 0.06,
-            ease: 'power2.out'
-        }, '-=0.3');
-    }
-
-    // Empty state
-    const emptyState = document.getElementById('empty-state');
-    if (emptyState) {
-        tl.to(emptyState, {
-            opacity: 1,
-            y: 0,
-            duration: 0.5,
-            ease: 'power2.out'
-        });
-    }
-
-    // Hover lift effect on cards
-    cards.forEach(card => {
-        card.addEventListener('mouseenter', () => {
-            gsap.to(card, { y: -3, duration: 0.2, ease: 'power2.out' });
-        });
-        card.addEventListener('mouseleave', () => {
-            gsap.to(card, { y: 0, duration: 0.2, ease: 'power2.out' });
-        });
+    document.querySelectorAll('.post-card').forEach(card => {
+        card.addEventListener('mouseenter', () => gsap.to(card, { y: -3, duration: 0.2 }));
+        card.addEventListener('mouseleave', () => gsap.to(card, { y:  0, duration: 0.2 }));
     });
 });
 </script>
+
 {% endblock %}
