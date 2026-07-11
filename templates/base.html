@@ -11,19 +11,24 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
     
     <style>
+        /* ── Image-based Minimalist Light Color Token ── */
         :root {
-            --sidebar-width: 240px; /* আপনার রিকোয়েস্ট অনুযায়ী ২৪০ পিক্সেল করা হয়েছে */
-            --sidebar-bg: #09090f;
-            --sidebar-border: rgba(255, 255, 255, 0.05);
-            --sidebar-hover: rgba(255, 255, 255, 0.04);
-            --sidebar-active: rgba(99, 102, 241, 0.1);
-            --accent: #6366f1;
-            --accent-glow: rgba(99, 102, 241, 0.25);
-            --topbar-bg: rgba(255, 255, 255, 0.8);
-            --body-bg: #f8fafc;
+            --sidebar-width: 240px; 
+            --sidebar-bg: #ffffff; /* স্ক্রিনশট অনুযায়ী ক্লিন হোয়াইট সাইডবার */
+            --sidebar-border: #f1f3f7;
+            --sidebar-hover: #f8fafc;
+            
+            /* স্ক্রিনশটের ড্যাশবোর্ড বাটনটির সিগনেচার কোরাল-অরেঞ্জ কালার স্কিম */
+            --sidebar-active-bg: rgba(242, 92, 56, 0.08); 
+            --sidebar-active-color: #f25c38; 
+            
+            --accent: #f25c38;
+            --accent-glow: rgba(242, 92, 56, 0.15);
+            --topbar-bg: rgba(255, 255, 255, 0.95);
+            --body-bg: #f8fafc; /* আল্ট্রা-লাইট সফট ব্যাকগ্রাউন্ড */
             --card-bg: #ffffff;
-            --text-sidebar-muted: #71717a;
-            --text-sidebar-light: #e4e4e7;
+            --text-dark: #1e293b;
+            --text-muted-custom: #64748b;
         }
 
         * { 
@@ -35,26 +40,27 @@
             background: var(--body-bg);
             margin: 0;
             overflow-x: hidden;
-            color: #0f172a;
+            color: var(--text-dark);
+            -webkit-font-smoothing: antialiased;
         }
 
-        /* ── Modern Custom Scrollbar ── */
+        /* ── Modern Scrollbar ── */
         ::-webkit-scrollbar {
-            width: 6px;
-            height: 6px;
+            width: 5px;
+            height: 5px;
         }
         ::-webkit-scrollbar-track {
             background: transparent;
         }
         ::-webkit-scrollbar-thumb {
-            background: rgba(0, 0, 0, 0.1);
+            background: #cbd5e1;
             border-radius: 10px;
         }
         ::-webkit-scrollbar-thumb:hover {
-            background: rgba(0, 0, 0, 0.2);
+            background: #94a3b8;
         }
 
-        /* ── Sidebar Style ── */
+        /* ── Sidebar Style (Minimalist White Layout) ── */
         .sidebar {
             position: fixed;
             top: 0; left: 0;
@@ -69,112 +75,120 @@
             overflow: hidden;
         }
 
-        .sidebar-glow {
-            position: absolute;
-            width: 250px; height: 250px;
-            background: var(--accent-glow);
-            border-radius: 50%;
-            filter: blur(90px);
-            top: -80px; left: -80px;
-            pointer-events: none;
-        }
-
         .sidebar-brand {
             display: flex;
             align-items: center;
             gap: 12px;
             padding: 24px 24px;
-            color: #fff;
-            font-size: 18px;
+            color: var(--text-dark);
+            font-size: 17px;
             font-weight: 700;
-            letter-spacing: -0.5px;
+            letter-spacing: -0.4px;
             text-decoration: none;
             border-bottom: 1px solid var(--sidebar-border);
-            margin-bottom: 16px;
+            flex-shrink: 0;
         }
 
         .sidebar-brand .brand-icon {
-            width: 36px; height: 36px;
-            background: linear-gradient(135deg, var(--accent), #818cf8);
-            border-radius: 10px;
+            width: 34px; height: 34px;
+            background: linear-gradient(135deg, var(--accent), #ff7a59);
+            border-radius: 9px;
             display: flex; align-items: center; justify-content: center;
-            font-size: 16px;
-            box-shadow: 0 4px 14px var(--accent-glow);
+            font-size: 15px;
+            box-shadow: 0 4px 12px var(--accent-glow);
             color: #fff;
         }
 
-        .nav-section-label {
-            font-size: 10px;
-            font-weight: 700;
-            letter-spacing: 1.5px;
-            color: var(--text-sidebar-muted);
-            padding: 16px 24px 8px;
-            text-transform: uppercase;
+        /* স্ক্রোলযোগ্য মেনু এরিয়া */
+        .sidebar-menu {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding-top: 16px;
+            padding-bottom: 16px;
         }
 
+        .sidebar-menu::-webkit-scrollbar {
+            width: 0px;
+            background: transparent;
+        }
+
+        /* স্ক্রিনশট অনুযায়ী ক্যাটাগরি লেবেলের প্রফেশনাল টাইপোগ্রাফি */
+        .nav-section-label {
+            font-size: 13px;
+            font-weight: 600;
+            color: #1e293b;
+            padding: 18px 24px 8px;
+            text-transform: none; /* স্ক্রিনশটে "Main" এবং "Account" এর মতো স্বাভাবিক কেস */
+        }
+
+        /* স্ক্রিনশট অনুযায়ী লিঙ্ক স্টাইলিং */
         .sidebar-link {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 14px;
             padding: 11px 20px;
             margin: 3px 14px;
-            border-radius: 10px;
-            color: #a1a1aa;
+            border-radius: 10px; /* প্রিমিয়াম পিল-আকৃতির রাউন্ডেড শেপ */
+            color: #475569;
             text-decoration: none;
-            font-size: 14px;
+            font-size: 14.5px;
             font-weight: 500;
-            transition: background 0.2s ease, color 0.2s ease;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
             position: relative;
         }
 
         .sidebar-link i {
             width: 20px;
             text-align: center;
-            font-size: 15px;
-            transition: transform 0.2s ease;
+            font-size: 16px;
+            color: #475569;
+            transition: transform 0.2s ease, color 0.2s ease;
         }
 
         .sidebar-link:hover {
             background: var(--sidebar-hover);
-            color: #ffffff;
+            color: var(--sidebar-active-color);
         }
 
         .sidebar-link:hover i {
-            transform: scale(1.1);
+            color: var(--sidebar-active-color);
+            transform: scale(1.05);
         }
 
+        /* স্ক্রিনশট অনুযায়ী একটিভ স্টেট ডিজাইন */
         .sidebar-link.active {
-            background: var(--sidebar-active);
-            color: #c7d2fe;
+            background: var(--sidebar-active-bg) !important;
+            color: var(--sidebar-active-color) !important;
             font-weight: 600;
         }
 
+        .sidebar-link.active i {
+            color: var(--sidebar-active-color) !important;
+        }
+
+        /* পূর্বের ইন্ডিকেটর বার বা কালারড ডট বাদ দেওয়া হয়েছে স্ক্রিনশট অনুযায়ী */
         .sidebar-link.active::before {
-            content: '';
-            position: absolute;
-            left: 0; top: 25%; height: 50%;
-            width: 4px;
-            background: var(--accent);
-            border-radius: 0 4px 4px 0;
-            margin-left: -14px;
+            display: none !important;
         }
 
         .sidebar-bottom {
             margin-top: auto;
             padding: 20px 14px;
             border-top: 1px solid var(--sidebar-border);
+            flex-shrink: 0;
         }
 
-        /* ── Main Panel ── */
+        /* ── Main Work Area ── */
         .main-wrapper {
             margin-left: var(--sidebar-width);
             min-height: 100vh;
             display: flex;
             flex-direction: column;
             transition: margin-left 0.3s ease;
+            width: calc(100% - var(--sidebar-width));
         }
 
-        /* ── Modern Blurred Topbar ── */
+        /* ── Glassmorphism Topbar ── */
         .topbar {
             background: var(--topbar-bg);
             backdrop-filter: blur(12px);
@@ -184,17 +198,17 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+            border-bottom: 1px solid var(--sidebar-border);
             position: sticky;
             top: 0;
             z-index: 900;
         }
 
         .topbar-title {
-            font-size: 16px;
+            font-size: 15px;
             font-weight: 700;
-            color: #0f172a;
-            letter-spacing: -0.2px;
+            color: var(--text-dark);
+            letter-spacing: -0.1px;
         }
 
         .topbar-right {
@@ -206,53 +220,52 @@
         .user-pill {
             display: flex;
             align-items: center;
-            gap: 10px;
-            background: #f1f5f9;
-            padding: 5px 14px 5px 6px;
+            gap: 8px;
+            background: #fafbfe;
+            padding: 5px 12px 5px 6px;
             border-radius: 30px;
-            font-size: 13.5px;
+            font-size: 13px;
             font-weight: 600;
             color: #334155;
-            border: 1px solid rgba(0, 0, 0, 0.02);
+            border: 1px solid var(--sidebar-border);
         }
 
         .user-avatar {
-            width: 28px; height: 28px;
-            background: linear-gradient(135deg, var(--accent), #818cf8);
+            width: 26px; height: 26px;
+            background: linear-gradient(135deg, var(--accent), #ff7a59);
             border-radius: 50%;
             display: flex; align-items: center; justify-content: center;
-            font-size: 12px;
+            font-size: 11px;
             color: #fff;
             font-weight: 700;
-            box-shadow: 0 2px 6px rgba(99, 102, 241, 0.2);
+            box-shadow: 0 2px 6px var(--accent-glow);
         }
 
         .btn-logout {
-            font-size: 13px;
+            font-size: 12.5px;
             font-weight: 600;
-            padding: 6px 16px;
+            padding: 6px 14px;
             border-radius: 8px;
-            border: 1px solid #cbd5e1;
+            border: 1px solid var(--sidebar-border);
             color: #475569;
             background: #ffffff;
             text-decoration: none;
             transition: all 0.2s ease;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
         }
 
         .btn-logout:hover {
-            background: #f8fafc;
-            color: #0f172a;
-            border-color: #94a3b8;
+            background: var(--sidebar-hover);
+            color: var(--accent);
+            border-color: var(--accent);
         }
 
-        /* ── Page Content Container ── */
+        /* ── Page Content Layout Casing (Centered) ── */
         .page-content {
-            padding: 40px;
+            padding: 32px 40px;
             flex: 1;
             display: flex;
             flex-direction: column;
-            align-items: flex-start;
+            align-items: center; /* কন্টেন্ট ডানে বামে সমান মার্জিন রেখে সেন্টারে রাখার জন্য */
         }
 
         /* ── Modern Dismissible Alerts ── */
@@ -260,7 +273,7 @@
             border: 1px solid transparent;
             border-radius: 12px;
             font-size: 14px;
-            padding: 14px 20px;
+            padding: 12px 18px;
             box-shadow: 0 4px 12px rgba(0,0,0,0.02);
         }
         .alert-info    { background: #f0f9ff; color: #0369a1; border-color: #bae6fd; }
@@ -268,11 +281,11 @@
         .alert-warning { background: #fffbeb; color: #a16207; border-color: #fef08a; }
         .alert-danger  { background: #fef2f2; color: #b91c1c; border-color: #fecaca; }
 
-        /* ── Premium Fullscreen Screen Loader ── */
+        /* ── Modern Bright Screen Loader ── */
         #page-loader {
             position: fixed;
             inset: 0;
-            background: var(--sidebar-bg);
+            background: #ffffff;
             z-index: 10000;
             display: flex;
             align-items: center;
@@ -282,18 +295,18 @@
         }
 
         .loader-logo {
-            width: 56px; height: 56px;
-            background: linear-gradient(135deg, var(--accent), #818cf8);
-            border-radius: 16px;
+            width: 52px; height: 52px;
+            background: linear-gradient(135deg, var(--accent), #ff7a59);
+            border-radius: 14px;
             display: flex; align-items: center; justify-content: center;
-            font-size: 24px;
+            font-size: 22px;
             color: #fff;
             box-shadow: 0 8px 24px var(--accent-glow);
         }
 
         .loader-bar {
-            width: 180px; height: 4px;
-            background: rgba(255,255,255,0.08);
+            width: 160px; height: 3.5px;
+            background: #edf2f9;
             border-radius: 10px;
             overflow: hidden;
             position: relative;
@@ -302,63 +315,80 @@
         .loader-bar-fill {
             height: 100%;
             width: 0%;
-            background: linear-gradient(90deg, var(--accent), #818cf8);
+            background: linear-gradient(90deg, var(--accent), #ff7a59);
             border-radius: 10px;
         }
     </style>
 </head>
 <body>
 
-<!-- Interactive page loader -->
+<!-- Interactive InApp Screen Loader -->
 <div id="page-loader">
     <div class="loader-logo" id="loader-icon"><i class="fa-solid fa-share-nodes"></i></div>
     <div class="loader-bar"><div class="loader-bar-fill" id="loader-fill"></div></div>
 </div>
 
-<div id="app-shell" style="opacity:0; transform: scale(0.98);">
+<div id="app-shell" style="opacity:0; transform: scale(0.985);">
     <div class="d-flex">
 
         <!-- ── Navigation Sidebar ── -->
         <div class="sidebar" id="sidebar">
-            <div class="sidebar-glow"></div>
-
             <a href="{% url 'post_list' %}" class="sidebar-brand">
                 <div class="brand-icon" id="brand-logo"><i class="fa-solid fa-share-nodes"></i></div>
                 SocialManager
             </a>
 
+            <!-- স্ক্রোলযোগ্য নেভিগেশন লিংক এরিয়া -->
+            <div class="sidebar-menu">
+                {% if user.is_authenticated %}
+                <div class="nav-section-label">Main</div>
+
+                <a href="{% url 'post_list' %}"
+                   class="sidebar-link {% if request.resolver_match.url_name == 'post_list' %}active{% endif %}">
+                    <i class="fa-solid fa-pen-to-square"></i> Posts
+                </a>
+
+                <a href="{% url 'inbox_list' %}"
+                   class="sidebar-link {% if request.resolver_match.url_name == 'inbox_list' %}active{% endif %}">
+                    <i class="fa-solid fa-inbox"></i> Inbox
+                </a>
+
+                <a href="{% url 'account_list' %}"
+                   class="sidebar-link {% if request.resolver_match.url_name == 'account_list' %}active{% endif %}">
+                    <i class="fa-solid fa-plug"></i> Accounts
+                </a>
+
+                <!-- সোশ্যাল মিডিয়া চ্যানেলসমূহ প্রদর্শন করার নতুন ইন্টারেক্টিভ সেকশন -->
+                <div class="nav-section-label">Channels</div>
+
+                <a href="{% url 'social_accounts:workspace' 'facebook' %}"
+                   class="sidebar-link {% if request.resolver_match.url_name == 'workspace' and platform == 'facebook' %}active{% endif %}">
+                    <i class="fa-brands fa-facebook" style="color: #1877f2;"></i> Facebook Page
+                </a>
+
+                <a href="{% url 'social_accounts:workspace' 'instagram' %}"
+                   class="sidebar-link {% if request.resolver_match.url_name == 'workspace' and platform == 'instagram' %}active{% endif %}">
+                    <i class="fa-brands fa-instagram" style="color: #e1306c;"></i> Instagram Feed
+                </a>
+
+                {% if user.is_staff or user.is_superuser %}
+                <div class="nav-section-label">Admin</div>
+                <a href="{% url 'accounts:user_list' %}"
+                   class="sidebar-link {% if request.resolver_match.url_name == 'user_list' %}active{% endif %}">
+                    <i class="fa-solid fa-users"></i> Users
+                </a>
+                <a href="{% url 'accounts:invite_member' %}"
+                   class="sidebar-link {% if request.resolver_match.url_name == 'invite_member' %}active{% endif %}">
+                    <i class="fa-solid fa-user-plus"></i> Invite Member
+                </a>
+                {% endif %}
+                {% endif %}
+            </div>
+
+            <!-- ফিক্সড ফুটার (লগআউট) -->
             {% if user.is_authenticated %}
-            <div class="nav-section-label">Workspace</div>
-
-            <a href="{% url 'post_list' %}"
-               class="sidebar-link {% if request.resolver_match.url_name == 'post_list' %}active{% endif %}">
-                <i class="fa-solid fa-pen-to-square"></i> Posts
-            </a>
-
-            <a href="{% url 'inbox_list' %}"
-               class="sidebar-link {% if request.resolver_match.url_name == 'inbox_list' %}active{% endif %}">
-                <i class="fa-solid fa-inbox"></i> Inbox
-            </a>
-
-            <a href="{% url 'social_accounts:account_list' %}"
-               class="sidebar-link {% if request.resolver_match.url_name == 'account_list' %}active{% endif %}">
-                <i class="fa-solid fa-plug"></i> Accounts
-            </a>
-
-            {% if user.is_staff or user.is_superuser %}
-            <div class="nav-section-label">Admin</div>
-            <a href="{% url 'accounts:user_list' %}"
-               class="sidebar-link {% if request.resolver_match.url_name == 'user_list' %}active{% endif %}">
-                <i class="fa-solid fa-users"></i> Users
-            </a>
-            <a href="{% url 'accounts:invite_member' %}"
-               class="sidebar-link {% if request.resolver_match.url_name == 'invite_member' %}active{% endif %}">
-                <i class="fa-solid fa-user-plus"></i> Invite Member
-            </a>
-            {% endif %}
-
             <div class="sidebar-bottom">
-                <a href="{% url 'logout' %}" class="sidebar-link text-danger-hover" style="color:#ef4444;">
+                <a href="{% url 'logout' %}" class="sidebar-link text-danger-hover" style="color:#ef4444; margin: 0;">
                     <i class="fa-solid fa-right-from-bracket"></i> Logout
                 </a>
             </div>
@@ -456,11 +486,9 @@ document.addEventListener('DOMContentLoaded', () => {
         ease: 'power4.out'
     }, '-=0.4')
 
-    // Step 5: Reveal sidebar with a unique slide & soft perspective twist
+    // Step 5: Reveal sidebar with a unique slide
     .from('#sidebar', {
         x: -40,
-        rotationY: 10,
-        transformOrigin: "left center",
         duration: 0.6,
         ease: 'power3.out'
     }, '-=0.6')
@@ -496,14 +524,13 @@ document.addEventListener('DOMContentLoaded', () => {
         link.addEventListener('mouseenter', () => {
             gsap.to(link, { 
                 x: 6, 
-                backgroundColor: 'rgba(255, 255, 255, 0.06)',
-                color: '#ffffff',
+                backgroundColor: 'var(--sidebar-hover)',
+                color: 'var(--sidebar-active-color)',
                 duration: 0.25, 
                 ease: 'power2.out' 
             });
             gsap.to(link.querySelector('i'), {
-                scale: 1.15,
-                color: '#818cf8',
+                scale: 1.1,
                 duration: 0.2,
                 ease: 'back.out(1.5)'
             });
@@ -513,14 +540,13 @@ document.addEventListener('DOMContentLoaded', () => {
             const isActive = link.classList.contains('active');
             gsap.to(link, { 
                 x: 0, 
-                backgroundColor: isActive ? 'var(--sidebar-active)' : 'transparent',
-                color: isActive ? '#c7d2fe' : '#a1a1aa',
+                backgroundColor: isActive ? 'var(--sidebar-active-bg)' : 'transparent',
+                color: isActive ? 'var(--sidebar-active-color)' : '#475569',
                 duration: 0.25, 
                 ease: 'power2.out' 
             });
             gsap.to(link.querySelector('i'), {
                 scale: 1,
-                color: isActive ? '#a5b4fc' : '#a1a1aa',
                 duration: 0.2,
                 ease: 'power2.out'
             });
