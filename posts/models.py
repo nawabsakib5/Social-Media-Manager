@@ -18,7 +18,7 @@ class Post(models.Model):
         through='PostPlatformStatus',
         related_name='posts'
     )
-    content        = models.TextField()
+    content = models.TextField(blank=True, null=True)
     media_file     = models.FileField(upload_to='post_media/', null=True, blank=True)
     scheduled_time = models.DateTimeField(null=True, blank=True)
     status         = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft')

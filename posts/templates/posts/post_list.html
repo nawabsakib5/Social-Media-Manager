@@ -25,6 +25,7 @@
 <!-- Post List -->
 <div id="posts-container">
     {% for post in posts %}
+    <a href="{% url 'post_detail' post.id %}" style="text-decoration:none; color:inherit;">
     <div class="post-card card mb-3" style="opacity:0; transform:translateY(20px); border-radius:14px;">
         <div class="card-body px-4 py-3">
 
@@ -60,9 +61,13 @@
             </div>
 
             <!-- Content -->
+            {% if post.content %}
             <p class="mb-3 text-dark" style="font-size:14px; line-height:1.6;">
                 {{ post.content|truncatewords:25 }}
             </p>
+            {% else %}
+            <p class="mb-3 text-muted fst-italic" style="font-size:14px;">Media only post</p>
+            {% endif %}
 
             <!-- Per-platform status -->
             <div class="d-flex flex-wrap gap-2 mb-3">
@@ -117,15 +122,21 @@
                         {{ post.created_at|date:"M d, Y · H:i" }}
                     {% endif %}
                 </small>
-                {% if post.created_by %}
-                <small class="text-muted">
-                    <i class="fa-regular fa-user me-1"></i>{{ post.created_by.username }}
-                </small>
-                {% endif %}
+                <div class="d-flex align-items-center gap-3">
+                    {% if post.created_by %}
+                    <small class="text-muted">
+                        <i class="fa-regular fa-user me-1"></i>{{ post.created_by.username }}
+                    </small>
+                    {% endif %}
+                    <small class="text-muted">
+                        <i class="fa-solid fa-chevron-right"></i>
+                    </small>
+                </div>
             </div>
 
         </div>
     </div>
+    </a>
 
     {% empty %}
     <div id="empty-state" class="text-center py-5" style="opacity:0;">
@@ -148,6 +159,7 @@
         border: none;
         box-shadow: 0 1px 4px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04);
         transition: box-shadow 0.2s, transform 0.2s;
+        cursor: pointer;
     }
     .post-card:hover {
         box-shadow: 0 4px 20px rgba(0,0,0,0.1);

@@ -17,3 +17,8 @@ class PostForm(forms.ModelForm):
         widgets = {
             'scheduled_time': forms.DateTimeInput(attrs={'type': 'datetime-local'}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['content'].required = False  # optional করা হলো
+        self.fields['content'].label = 'Content'

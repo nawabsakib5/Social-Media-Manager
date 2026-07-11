@@ -6,31 +6,34 @@ from integrations import get_social_adapter
 
 @shared_task
 def check_and_publish_scheduled_posts():
-    """
-    Celery Beat runs this every minute.
-    Finds all due scheduled posts and fires a separate
-    publish_post_task for each account that hasn't been
-    published or is not already processing.
-    """
+    from django.utils import timezone
     now = timezone.now()
+    
     due_posts = Post.objects.filter(
         status='scheduled',
         scheduled_time__lte=now
     ).prefetch_related('social_accounts', 'platform_statuses')
-
+    
+    print(f"[DEBUG] Now: {now}")
+    print(f"[DEBUG] Due posts count: {due_posts.count()}")
+    
     fired = 0
     for post in due_posts:
+        print(f"[DEBUG] Post {post.id} scheduled_time: {post.scheduled_time}")
         for account in post.social_accounts.all():
             already_handled = post.platform_statuses.filter(
                 social_account=account,
                 status__in=['published', 'processing']
             ).exists()
+            print(f"[DEBUG] Account {account.id} already_handled: {already_handled}")
             if not already_handled:
                 publish_post_task.delay(post.id, account.id)
                 fired += 1
 
     return f"Queued {fired} publish tasks for due scheduled posts"
 
+
+    
 
 @shared_task(bind=True, max_retries=3, default_retry_delay=60)
 def publish_post_task(self, post_id, account_id):
