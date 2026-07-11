@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
 from social_accounts.models import SocialAccount
+from django.conf import settings
 
 
 class InboxItem(models.Model):
@@ -24,7 +25,7 @@ class InboxItem(models.Model):
 class Reply(models.Model):
     inbox_item = models.ForeignKey(InboxItem, on_delete=models.CASCADE, related_name='replies')
     content = models.TextField()
-    sent_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    sent_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, null=True, blank=True)
     sent_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

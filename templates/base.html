@@ -14,18 +14,18 @@
         /* ── Image-based Minimalist Light Color Token ── */
         :root {
             --sidebar-width: 240px; 
-            --sidebar-bg: #ffffff; /* স্ক্রিনশট অনুযায়ী ক্লিন হোয়াইট সাইডবার */
+            --sidebar-bg: #ffffff; /* হোয়াইট সাইডবার */
             --sidebar-border: #f1f3f7;
             --sidebar-hover: #f8fafc;
             
-            /* স্ক্রিনশটের ড্যাশবোর্ড বাটনটির সিগনেচার কোরাল-অরেঞ্জ কালার স্কিম */
+            /* কোরাল-অরেঞ্জ একটিভ কালার থিম */
             --sidebar-active-bg: rgba(242, 92, 56, 0.08); 
             --sidebar-active-color: #f25c38; 
             
             --accent: #f25c38;
             --accent-glow: rgba(242, 92, 56, 0.15);
             --topbar-bg: rgba(255, 255, 255, 0.95);
-            --body-bg: #f8fafc; /* আল্ট্রা-লাইট সফট ব্যাকগ্রাউন্ড */
+            --body-bg: #f8fafc; /* আল্ট্রা-লাইট সফট গ্রে ব্যাকগ্রাউন্ড */
             --card-bg: #ffffff;
             --text-dark: #1e293b;
             --text-muted-custom: #64748b;
@@ -44,7 +44,7 @@
             -webkit-font-smoothing: antialiased;
         }
 
-        /* ── Modern Scrollbar ── */
+        /* ── Modern Custom Scrollbar ── */
         ::-webkit-scrollbar {
             width: 5px;
             height: 5px;
@@ -112,28 +112,28 @@
             background: transparent;
         }
 
-        /* স্ক্রিনশট অনুযায়ী ক্যাটাগরি লেবেলের প্রফেশনাল টাইপোগ্রাফি */
+        /* ক্যাটাগরি লেবেলের প্রফেশনাল টাইপোগ্রাফি */
         .nav-section-label {
             font-size: 13px;
             font-weight: 600;
             color: #1e293b;
             padding: 18px 24px 8px;
-            text-transform: none; /* স্ক্রিনশটে "Main" এবং "Account" এর মতো স্বাভাবিক কেস */
+            text-transform: none;
         }
 
-        /* স্ক্রিনশট অনুযায়ী লিঙ্ক স্টাইলিং */
+        /* লিঙ্ক স্টাইলিং - Fail-Safe CSS Transitions (জাভাস্ক্রিপ্ট নির্ভরতা মুক্ত) */
         .sidebar-link {
             display: flex;
             align-items: center;
             gap: 14px;
             padding: 11px 20px;
             margin: 3px 14px;
-            border-radius: 10px; /* প্রিমিয়াম পিল-আকৃতির রাউন্ডেড শেপ */
+            border-radius: 10px;
             color: #475569;
             text-decoration: none;
             font-size: 14.5px;
             font-weight: 500;
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
             position: relative;
         }
 
@@ -141,23 +141,23 @@
             width: 20px;
             text-align: center;
             font-size: 16px;
-            color: #475569;
-            transition: transform 0.2s ease, color 0.2s ease;
+            transition: transform 0.2s ease;
         }
 
+        /* মাউস হোভার ইফেক্টস */
         .sidebar-link:hover {
-            background: var(--sidebar-hover);
-            color: var(--sidebar-active-color);
+            background-color: var(--sidebar-hover);
+            color: var(--sidebar-active-color) !important;
+            transform: translateX(4px); /* ডানদিকে মৃদু স্লাইড */
         }
 
         .sidebar-link:hover i {
-            color: var(--sidebar-active-color);
-            transform: scale(1.05);
+            transform: scale(1.15); /* আইকন জুম বাউন্স */
         }
 
-        /* স্ক্রিনশট অনুযায়ী একটিভ স্টেট ডিজাইন */
+        /* একটিভ স্টেট ডিজাইন */
         .sidebar-link.active {
-            background: var(--sidebar-active-bg) !important;
+            background-color: var(--sidebar-active-bg) !important;
             color: var(--sidebar-active-color) !important;
             font-weight: 600;
         }
@@ -166,7 +166,6 @@
             color: var(--sidebar-active-color) !important;
         }
 
-        /* পূর্বের ইন্ডিকেটর বার বা কালারড ডট বাদ দেওয়া হয়েছে স্ক্রিনশট অনুযায়ী */
         .sidebar-link.active::before {
             display: none !important;
         }
@@ -178,7 +177,7 @@
             flex-shrink: 0;
         }
 
-        /* ── Main Work Area ── */
+        /* ── Main Layout Panel ── */
         .main-wrapper {
             margin-left: var(--sidebar-width);
             min-height: 100vh;
@@ -188,7 +187,7 @@
             width: calc(100% - var(--sidebar-width));
         }
 
-        /* ── Glassmorphism Topbar ── */
+        /* ── Modern Blurred Topbar ── */
         .topbar {
             background: var(--topbar-bg);
             backdrop-filter: blur(12px);
@@ -244,7 +243,7 @@
         .btn-logout {
             font-size: 12.5px;
             font-weight: 600;
-            padding: 6px 14px;
+            padding: 6px 16px;
             border-radius: 8px;
             border: 1px solid var(--sidebar-border);
             color: #475569;
@@ -259,7 +258,7 @@
             border-color: var(--accent);
         }
 
-        /* ── Page Content Layout Casing (Centered) ── */
+        /* ── Page Content Container (Centered) ── */
         .page-content {
             padding: 32px 40px;
             flex: 1;
@@ -322,6 +321,11 @@
 </head>
 <body>
 
+<!-- Hidden Global Logout Form to comply with Django 5.x/6.0 specs -->
+<form method="post" action="{% url 'logout' %}" id="logout-form" class="d-none">
+    {% csrf_token %}
+</form>
+
 <!-- Interactive InApp Screen Loader -->
 <div id="page-loader">
     <div class="loader-logo" id="loader-icon"><i class="fa-solid fa-share-nodes"></i></div>
@@ -353,23 +357,44 @@
                     <i class="fa-solid fa-inbox"></i> Inbox
                 </a>
 
-                <a href="{% url 'account_list' %}"
+                <!-- আপনার নেমস্পেস রাউট অনুযায়ী রাউটিং ফিক্স করা হয়েছে -->
+                <a href="{% url 'social_accounts:account_list' %}"
                    class="sidebar-link {% if request.resolver_match.url_name == 'account_list' %}active{% endif %}">
                     <i class="fa-solid fa-plug"></i> Accounts
                 </a>
 
-                <!-- সোশ্যাল মিডিয়া চ্যানেলসমূহ প্রদর্শন করার নতুন ইন্টারেক্টিভ সেকশন -->
+                <!-- আপনার ডাইনামিক Channels সেকশনটি এখানে রেন্ডার হবে -->
                 <div class="nav-section-label">Channels</div>
 
-                <a href="{% url 'social_accounts:workspace' 'facebook' %}"
-                   class="sidebar-link {% if request.resolver_match.url_name == 'workspace' and platform == 'facebook' %}active{% endif %}">
-                    <i class="fa-brands fa-facebook" style="color: #1877f2;"></i> Facebook Page
-                </a>
+                {% for acc in connected_accounts %}
+                <a href="{% url 'social_accounts:workspace' acc.platform %}"
+                   class="sidebar-link {% if request.resolver_match.url_name == 'workspace' and platform == acc.platform %}active{% endif %}">
 
-                <a href="{% url 'social_accounts:workspace' 'instagram' %}"
-                   class="sidebar-link {% if request.resolver_match.url_name == 'workspace' and platform == 'instagram' %}active{% endif %}">
-                    <i class="fa-brands fa-instagram" style="color: #e1306c;"></i> Instagram Feed
+                    <i class="fa-brands fa-{{ acc.platform }}"
+                       style="color:
+                           {% if acc.platform == 'facebook' %}#1877f2
+                           {% elif acc.platform == 'instagram' %}#e1306c
+                           {% elif acc.platform == 'twitter' %}#1da1f2
+                           {% elif acc.platform == 'youtube' %}#ff0000
+                           {% elif acc.platform == 'whatsapp' %}#25d366
+                           {% elif acc.platform == 'linkedin' %}#0077b5
+                           {% elif acc.platform == 'tiktok' %}#000000
+                           {% elif acc.platform == 'threads' %}#000000
+                           {% elif acc.platform == 'gmail' %}#ea4335
+                           {% else %}#64748b{% endif %};">
+                    </i>
+
+                    {{ acc.account_name|truncatechars:20 }}
+
+                    <span class="ms-auto" style="width:7px; height:7px; border-radius:50%;
+                                                  background:#22c55e; display:inline-block; flex-shrink:0;">
+                    </span>
                 </a>
+                {% empty %}
+                <div class="sidebar-link" style="color:#94a3b8; font-size:13px; cursor:default;">
+                    <i class="fa-solid fa-plug"></i> No accounts connected
+                </div>
+                {% endfor %}
 
                 {% if user.is_staff or user.is_superuser %}
                 <div class="nav-section-label">Admin</div>
@@ -385,10 +410,10 @@
                 {% endif %}
             </div>
 
-            <!-- ফিক্সড ফুটার (লগআউট) -->
+            <!-- ফিক্সড ফুটার (নিরাপদ POST রিকোয়েস্ট সাবমিশনের জন্য onclick সংযুক্ত) -->
             {% if user.is_authenticated %}
             <div class="sidebar-bottom">
-                <a href="{% url 'logout' %}" class="sidebar-link text-danger-hover" style="color:#ef4444; margin: 0;">
+                <a href="#" onclick="document.getElementById('logout-form').submit(); return false;" class="sidebar-link text-danger-hover" style="color:#ef4444; margin: 0;">
                     <i class="fa-solid fa-right-from-bracket"></i> Logout
                 </a>
             </div>
@@ -406,7 +431,8 @@
                         <div class="user-avatar">{{ user.username|first|upper }}</div>
                         <span>{{ user.username }}</span>
                     </div>
-                    <a href="{% url 'logout' %}" class="btn-logout">Logout</a>
+                    <!-- টপবার লগআউট বাটনেও নিরাপদ POST রিকোয়েস্ট যুক্ত করা হয়েছে -->
+                    <a href="#" onclick="document.getElementById('logout-form').submit(); return false;" class="btn-logout">Logout</a>
                 </div>
             </div>
             {% endif %}
@@ -518,40 +544,6 @@ document.addEventListener('DOMContentLoaded', () => {
         stagger: 0.06,
         ease: 'back.out(1.4)'
     }, '-=0.2');
-
-    // Sidebar Interactive Magnetic and spring effect
-    document.querySelectorAll('.sidebar-link').forEach(link => {
-        link.addEventListener('mouseenter', () => {
-            gsap.to(link, { 
-                x: 6, 
-                backgroundColor: 'var(--sidebar-hover)',
-                color: 'var(--sidebar-active-color)',
-                duration: 0.25, 
-                ease: 'power2.out' 
-            });
-            gsap.to(link.querySelector('i'), {
-                scale: 1.1,
-                duration: 0.2,
-                ease: 'back.out(1.5)'
-            });
-        });
-        
-        link.addEventListener('mouseleave', () => {
-            const isActive = link.classList.contains('active');
-            gsap.to(link, { 
-                x: 0, 
-                backgroundColor: isActive ? 'var(--sidebar-active-bg)' : 'transparent',
-                color: isActive ? 'var(--sidebar-active-color)' : '#475569',
-                duration: 0.25, 
-                ease: 'power2.out' 
-            });
-            gsap.to(link.querySelector('i'), {
-                scale: 1,
-                duration: 0.2,
-                ease: 'power2.out'
-            });
-        });
-    });
 
     // Brand Logo soft rotation interaction
     const brand = document.querySelector('.sidebar-brand');

@@ -54,6 +54,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'social_accounts.context_processors.connected_accounts',   
             ],
         },
     },
@@ -203,3 +204,6 @@ ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'dev-rolls-contrast-jamie.trycloudfla
 
 
 WHATSAPP_RECIPIENT_NUMBER = os.getenv('WHATSAPP_RECIPIENT_NUMBER', '')
+
+
+AUTH_USER_MODEL = 'accounts.CustomUserModel'

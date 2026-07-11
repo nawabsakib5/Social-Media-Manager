@@ -4,6 +4,7 @@ from cryptography.fernet import Fernet
 from django.conf import settings
 
 
+
 def get_cipher():
     key = settings.FIELD_ENCRYPTION_KEY
     if isinstance(key, str):
@@ -30,9 +31,10 @@ class SocialAccount(models.Model):
         ('disconnected', 'Disconnected'),
     ]
 
-    # Owner — which admin/user connected this account
+    
+    
     connected_by = models.ForeignKey(
-        User,
+        settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
         null=True,
         related_name='social_accounts'
