@@ -2,7 +2,10 @@ from django.db import models
 from django.contrib.auth.models import User
 from social_accounts.models import SocialAccount
 from django.conf import settings
+from cloudinary_storage.storage import MediaCloudinaryStorage
 
+
+from cloudinary_storage.storage import MediaCloudinaryStorage
 
 
 class Post(models.Model):
@@ -18,22 +21,27 @@ class Post(models.Model):
         through='PostPlatformStatus',
         related_name='posts'
     )
-    content = models.TextField(blank=True, null=True)
-    media_file     = models.FileField(upload_to='post_media/', null=True, blank=True)
+    content        = models.TextField(blank=True, null=True)
+    media_file     = models.FileField(
+        upload_to='post_media/',
+        null=True,
+        blank=True,
+        storage=MediaCloudinaryStorage()
+    )
     scheduled_time = models.DateTimeField(null=True, blank=True)
     status         = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft')
-    
+
     created_by = models.ForeignKey(
-        settings.AUTH_USER_MODEL, 
+        settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name='created_posts',
         null=True,
         blank=True
     )
-    created_at     = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.content[:30]}"
+        return f"{self.content[:30] if self.content else 'Media only post'}"
 
 
 class PostPlatformStatus(models.Model):
