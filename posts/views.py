@@ -5,6 +5,69 @@ from django.utils import timezone
 from .models import Post, PostPlatformStatus
 from .forms import PostForm
 from .tasks import publish_post_task
+import requests
+
+
+def _delete_from_platform(platform_status):
+    """Delete a post from its social media platform."""
+    platform = platform_status.social_account.platform
+    post_id = platform_status.platform_post_id
+    token = platform_status.social_account.access_token
+
+    if not post_id or platform_status.status != 'published':
+        return True, "Not published — skipping"
+
+    try:
+        if platform == 'facebook':
+            res = requests.delete(
+                f"https://graph.facebook.com/v21.0/{post_id}",
+                params={'access_token': token},
+                timeout=15
+            ).json()
+            if res.get('success'):
+                return True, "Deleted from Facebook ✓"
+            error = res.get('error', {}).get('message', 'Unknown error')
+            return False, f"Facebook delete failed: {error}"
+
+        elif platform == 'instagram':
+            # Instagram API does not support post deletion
+            return True, "Instagram: please delete manually from the app"
+
+        return True, f"{platform}: deletion not supported"
+
+    except requests.RequestException as e:
+        return False, f"Network error: {e}"
+
+
+def _update_on_platform(platform_status, new_content):
+    """Update post caption on its social media platform."""
+    platform = platform_status.social_account.platform
+    post_id = platform_status.platform_post_id
+    token = platform_status.social_account.access_token
+
+    if not post_id or platform_status.status != 'published':
+        return True, "Not published — skipping"
+
+    try:
+        if platform == 'facebook':
+            res = requests.post(
+                f"https://graph.facebook.com/v21.0/{post_id}",
+                data={'message': new_content, 'access_token': token},
+                timeout=15
+            ).json()
+            if res.get('success'):
+                return True, "Updated on Facebook ✓"
+            error = res.get('error', {}).get('message', 'Unknown error')
+            return False, f"Facebook update failed: {error}"
+
+        elif platform == 'instagram':
+            # Instagram API does not support caption editing
+            return False, "Instagram caption edit requires manual update — open Instagram app"
+
+        return True, f"{platform}: editing not supported"
+
+    except requests.RequestException as e:
+        return False, f"Network error: {e}"
 
 
 @login_required
@@ -70,19 +133,22 @@ def post_detail(request, post_id):
 def post_edit(request, post_id):
     post = get_object_or_404(Post, id=post_id)
 
-    if post.status == 'published':
-        messages.error(request, "Published posts cannot be edited.")
-        return redirect('post_detail', post_id=post_id)
-
     if request.method == 'POST':
         form = PostForm(request.POST, request.FILES, instance=post)
         if form.is_valid():
+            new_content = form.cleaned_data.get('content', '')
+
+            # Update on platforms if already published
+            platform_results = []
+            for ps in post.platform_statuses.filter(status='published'):
+                success, msg = _update_on_platform(ps, new_content)
+                platform_results.append(msg)
+
             post = form.save(commit=False)
-            post.status = 'scheduled'
             post.save()
             form.save_m2m()
 
-            # Update platform statuses
+            # Rebuild platform statuses
             post.platform_statuses.all().delete()
             for account in form.cleaned_data['social_accounts']:
                 PostPlatformStatus.objects.create(
@@ -91,6 +157,8 @@ def post_edit(request, post_id):
                     status='scheduled'
                 )
 
+            if platform_results:
+                messages.info(request, " | ".join(platform_results))
             messages.success(request, "Post updated successfully.")
             return redirect('post_detail', post_id=post.id)
     else:
@@ -107,8 +175,16 @@ def post_edit(request, post_id):
 def post_delete(request, post_id):
     post = get_object_or_404(Post, id=post_id)
     if request.method == 'POST':
+        results = []
+        for ps in post.platform_statuses.all():
+            success, msg = _delete_from_platform(ps)
+            results.append(msg)
+
         post.delete()
-        messages.success(request, "Post deleted.")
+
+        if results:
+            messages.info(request, " | ".join(results))
+        messages.success(request, "Post deleted from SocialManager.")
         return redirect('post_list')
     return redirect('post_detail', post_id=post_id)
 

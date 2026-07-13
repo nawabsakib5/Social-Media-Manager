@@ -1,6 +1,8 @@
 from pathlib import Path
 from decouple import config
 import os
+from cryptography.fernet import Fernet
+
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -154,3 +156,11 @@ EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
 WHATSAPP_RECIPIENT_NUMBER = config('WHATSAPP_RECIPIENT_NUMBER', default='')
+
+
+
+FIELD_ENCRYPTION_KEY = os.getenv('FIELD_ENCRYPTION_KEY')
+if not FIELD_ENCRYPTION_KEY:
+    FIELD_ENCRYPTION_KEY = Fernet.generate_key().decode()
+    print(f"🔑 Generated encryption key: {FIELD_ENCRYPTION_KEY}")
+    print("Add this to your .env file")
