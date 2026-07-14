@@ -5,6 +5,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from urllib.parse import urlencode
 from .models import SocialAccount
+from integrations.facebook_adapter import FacebookAdapter
 
 FB_APP_ID       = getattr(settings, 'FACEBOOK_APP_ID', '')
 FB_APP_SECRET   = getattr(settings, 'FACEBOOK_APP_SECRET', '')
@@ -13,122 +14,187 @@ FB_REDIRECT_URI = getattr(settings, 'FACEBOOK_REDIRECT_URI', 'http://localhost:8
 
 @login_required
 def account_list(request):
+    """List all connected accounts for the user"""
     PLATFORMS = [
         'facebook', 'instagram', 'twitter', 'threads',
         'youtube', 'tiktok', 'whatsapp', 'linkedin', 'gmail',
     ]
-    connected = {acc.platform: acc for acc in SocialAccount.objects.all()}
+    
+    # Get user's connected accounts
+    user_accounts = SocialAccount.objects.filter(connected_by=request.user)
+    connected = {acc.platform: acc for acc in user_accounts}
     platform_data = [{'name': p, 'account': connected.get(p)} for p in PLATFORMS]
+    
     return render(request, 'social_accounts/account_list.html', {
-        'accounts': SocialAccount.objects.all().order_by('platform'),
+        'accounts': user_accounts.order_by('platform'),
         'platform_data': platform_data,
+        'total_connected': user_accounts.count(),
     })
 
 
 @login_required
-def workspace(request, platform):
-    try:
-        account = SocialAccount.objects.get(platform=platform, status='connected')
-    except SocialAccount.DoesNotExist:
-        messages.error(request, f"{platform.capitalize()} account not connected.")
-        return redirect('social_accounts:account_list')
-
-    context = {'account': account, 'platform': platform}
-
-    if platform == 'facebook':
-        context.update(_get_facebook_data(account))
-    elif platform == 'instagram':
-        context.update(_get_instagram_data(account))
-
-    return render(request, f'social_accounts/workspace_{platform}.html', context)
-
-
-def _get_facebook_data(account):
-    token   = account.access_token
-    page_id = account.platform_account_id
-    base    = "https://graph.facebook.com/v21.0"
+def workspace(request, account_id=None):
+    """Workspace view for specific social account"""
+    # Get all connected accounts for the user
+    accounts = SocialAccount.objects.filter(connected_by=request.user, status='connected')
     
-    # 'messages' কি-টি পরিবর্তন করে 'conversations' করা হয়েছে
-    data    = {'posts': [], 'conversations': [], 'error': None}
+    if not accounts.exists():
+        messages.warning(request, "Please connect a social media account first.")
+        return redirect('social_accounts:account_list')
+    
+    # If account_id provided, use that account
+    if account_id:
+        try:
+            current_account = accounts.get(id=account_id)
+        except SocialAccount.DoesNotExist:
+            messages.error(request, "Account not found.")
+            return redirect('social_accounts:workspace')
+    else:
+        # Use first account as default
+        current_account = accounts.first()
+    
+    # Get data based on platform
+    context = {
+        'connected_accounts': accounts,
+        'current_account': current_account,
+        'platform': current_account.platform,
+        'all_platform_accounts': accounts.filter(platform=current_account.platform),
+    }
+    
+    # Fetch platform-specific data
+    if current_account.platform == 'facebook':
+        context.update(get_facebook_workspace_data(current_account))
+        template = 'social_accounts/workspace_facebook.html'
+    elif current_account.platform == 'instagram':
+        context.update(get_instagram_workspace_data(current_account))
+        template = 'social_accounts/workspace_instagram.html'
+    else:
+        context['error'] = f"{current_account.platform.capitalize()} workspace not implemented yet."
+        template = 'social_accounts/workspace_base.html'
+    
+    return render(request, template, context)
 
+
+def get_facebook_workspace_data(account):
+    """Fetch Facebook page data with proper page token"""
+    data = {'posts': [], 'conversations': [], 'error': None}
+    
     try:
-        # Step 1: Get page access token from system user token
-        accounts_res = requests.get(
-            f"{base}/me/accounts",
-            params={'access_token': token},
-            timeout=15
-        ).json()
-
-        page_token = token  # fallback
-        for page in accounts_res.get('data', []):
-            if page.get('id') == page_id:
-                page_token = page['access_token']
-                break
-
-        # Step 2: Fetch posts with page token
-        posts_res = requests.get(
-            f"{base}/{page_id}/posts",
-            params={
-                'access_token': page_token,
-                'fields': 'id,message,created_time,full_picture,'
-                          'likes.summary(true),'
-                          'comments{id,message,from,created_time}',
-                'limit': 10,
-            },
-            timeout=15
-        ).json()
-
-        if 'error' in posts_res:
-            data['error'] = posts_res['error'].get('message', 'Facebook API error')
-        else:
-            data['posts'] = posts_res.get('data', [])
-
-        # Step 3: Fetch conversations
-        conv_res = requests.get(
-            f"{base}/{page_id}/conversations",
-            params={
-                'access_token': page_token,
-                'fields': 'participants,messages{message,from,created_time}',
-                'limit': 10,
-            },
-            timeout=15
-        ).json()
+        # Get page token using adapter
+        adapter = FacebookAdapter()
+        page_token, error = adapter.get_page_token(account)
         
-        # 'messages' থেকে পরিবর্তন করে 'conversations' কী-তে ডেটা এসাইন করা হয়েছে
-        data['conversations'] = conv_res.get('data', [])
-
+        if error:
+            data['error'] = error
+            return data
+        
+        # Fetch posts with comments
+        page_id = account.platform_account_id
+        url = f"https://graph.facebook.com/v21.0/{page_id}/feed"
+        params = {
+            'access_token': page_token,
+            'fields': 'id,message,created_time,full_picture,'
+                     'likes.summary(true),'
+                     'comments{id,message,from,created_time},'
+                     'shares,permalink_url',
+            'limit': 20
+        }
+        
+        response = requests.get(url, params=params, timeout=15)
+        if response.status_code == 200:
+            data['posts'] = response.json().get('data', [])
+        else:
+            data['error'] = f"Failed to fetch posts: {response.text}"
+            return data
+        
+        # Fetch conversations (Messenger)
+        conv_url = f"https://graph.facebook.com/v21.0/{page_id}/conversations"
+        conv_params = {
+            'access_token': page_token,
+            'fields': 'participants,messages{message,from,created_time}',
+            'limit': 10,
+        }
+        
+        conv_response = requests.get(conv_url, params=conv_params, timeout=15)
+        if conv_response.status_code == 200:
+            data['conversations'] = conv_response.json().get('data', [])
+        
+        # Add page info
+        data['page_info'] = {
+            'name': account.account_name,
+            'id': page_id,
+            'platform': 'facebook',
+            'page_token': page_token[:20] + '...'  # Mask for display
+        }
+        
     except requests.RequestException as e:
-        data['error'] = f"Network error: {e}"
-
+        data['error'] = f"Network error: {str(e)}"
+    
     return data
 
 
-def _get_instagram_data(account):
-    """Fetch posts + comments for Instagram workspace."""
-    token   = account.access_token
-    ig_id   = account.platform_account_id
-    base    = "https://graph.facebook.com/v21.0"
-    data    = {'posts': [], 'error': None}
-
+def get_instagram_workspace_data(account):
+    """Fetch Instagram posts and comments"""
+    data = {'posts': [], 'error': None, 'page_info': {}}
+    
     try:
-        posts_res = requests.get(
-            f"{base}/{ig_id}/media",
-            params={
-                'access_token': token,
-                'fields': 'id,caption,media_type,media_url,thumbnail_url,timestamp,like_count,comments_count,comments{id,text,username,timestamp}',
-                'limit': 10,
-            },
-            timeout=15
-        ).json()
-
-        if 'error' in posts_res:
-            data['error'] = posts_res['error'].get('message', 'Instagram API error')
+        # Get page token first (Instagram is managed through Facebook pages)
+        adapter = FacebookAdapter()
+        page_token, error = adapter.get_page_token(account)
+        
+        if error:
+            data['error'] = error
+            return data
+        
+        # Get Instagram Business Account ID
+        page_id = account.platform_account_id
+        url = f"https://graph.facebook.com/v21.0/{page_id}"
+        params = {
+            'access_token': page_token,
+            'fields': 'instagram_business_account{id,username,profile_picture_url}'
+        }
+        
+        response = requests.get(url, params=params, timeout=15)
+        if response.status_code != 200:
+            data['error'] = f"Failed to get Instagram ID: {response.text}"
+            return data
+        
+        ig_data = response.json().get('instagram_business_account', {})
+        ig_id = ig_data.get('id')
+        
+        if not ig_id:
+            data['error'] = 'No Instagram Business Account connected to this page'
+            return data
+        
+        # Fetch Instagram media
+        media_url = f"https://graph.facebook.com/v21.0/{ig_id}/media"
+        media_params = {
+            'access_token': page_token,
+            'fields': 'id,caption,media_type,media_url,thumbnail_url,timestamp,'
+                     'like_count,comments_count,'
+                     'comments{id,text,username,timestamp}',
+            'limit': 20
+        }
+        
+        media_response = requests.get(media_url, params=media_params, timeout=15)
+        if media_response.status_code == 200:
+            data['posts'] = media_response.json().get('data', [])
         else:
-            data['posts'] = posts_res.get('data', [])
-
+            data['error'] = f"Failed to fetch Instagram posts: {media_response.text}"
+            return data
+        
+        # Add page info
+        data['page_info'] = {
+            'name': account.account_name,
+            'id': page_id,
+            'instagram_id': ig_id,
+            'instagram_username': ig_data.get('username', ''),
+            'platform': 'instagram',
+        }
+        
     except requests.RequestException as e:
-        data['error'] = f"Network error: {e}"
-
+        data['error'] = f"Network error: {str(e)}"
+    
     return data
 
 
@@ -137,46 +203,58 @@ def post_comment_reply(request, platform, comment_id):
     """Reply to a comment on Facebook or Instagram."""
     if request.method != 'POST':
         return redirect('social_accounts:account_list')
-
+    
     message = request.POST.get('message', '').strip()
     if not message:
         messages.error(request, "Reply cannot be empty.")
-        return redirect('social_accounts:workspace', platform=platform)
-
+        return redirect('social_accounts:workspace')
+    
     try:
-        account = SocialAccount.objects.get(platform=platform, status='connected')
+        account = SocialAccount.objects.get(
+            platform=platform, 
+            status='connected', 
+            connected_by=request.user
+        )
     except SocialAccount.DoesNotExist:
-        messages.error(request, "Account not connected.")
+        messages.error(request, f"{platform.capitalize()} account not connected.")
         return redirect('social_accounts:account_list')
-
-    token = account.access_token
-    base  = "https://graph.facebook.com/v21.0"
-
+    
+    # Get page token for API calls
+    adapter = FacebookAdapter()
+    page_token, error = adapter.get_page_token(account)
+    
+    if error:
+        messages.error(request, f"Failed to get page token: {error}")
+        return redirect('social_accounts:workspace')
+    
+    base = "https://graph.facebook.com/v21.0"
+    
     try:
         if platform == 'facebook':
             res = requests.post(
                 f"{base}/{comment_id}/comments",
-                data={'message': message, 'access_token': token},
+                data={'message': message, 'access_token': page_token},
                 timeout=15
             ).json()
         elif platform == 'instagram':
             res = requests.post(
                 f"{base}/{comment_id}/replies",
-                data={'message': message, 'access_token': token},
+                data={'message': message, 'access_token': page_token},
                 timeout=15
             ).json()
         else:
-            res = {'error': {'message': 'Platform not supported'}}
-
+            messages.error(request, 'Platform not supported for replies')
+            return redirect('social_accounts:workspace')
+        
         if 'error' in res:
             messages.error(request, res['error'].get('message', 'Reply failed.'))
         else:
             messages.success(request, "Reply posted successfully.")
-
+            
     except requests.RequestException as e:
-        messages.error(request, f"Network error: {e}")
-
-    return redirect('social_accounts:workspace', platform=platform)
+        messages.error(request, f"Network error: {str(e)}")
+    
+    return redirect('social_accounts:workspace')
 
 
 @login_required
@@ -184,131 +262,228 @@ def send_messenger_reply(request):
     """Reply to a Facebook Messenger conversation."""
     if request.method != 'POST':
         return redirect('social_accounts:account_list')
-
+    
     recipient_id = request.POST.get('recipient_id', '').strip()
-    message      = request.POST.get('message', '').strip()
-
+    message = request.POST.get('message', '').strip()
+    
     if not message or not recipient_id:
         messages.error(request, "Message and recipient are required.")
         return redirect('social_accounts:workspace', platform='facebook')
-
+    
     try:
-        account = SocialAccount.objects.get(platform='facebook', status='connected')
+        account = SocialAccount.objects.get(
+            platform='facebook', 
+            status='connected', 
+            connected_by=request.user
+        )
     except SocialAccount.DoesNotExist:
         messages.error(request, "Facebook account not connected.")
         return redirect('social_accounts:account_list')
-
-    token   = account.access_token
-    page_id = account.platform_account_id
-    base    = "https://graph.facebook.com/v21.0"
-
+    
+    # Get page token
+    adapter = FacebookAdapter()
+    page_token, error = adapter.get_page_token(account)
+    
+    if error:
+        messages.error(request, f"Failed to get page token: {error}")
+        return redirect('social_accounts:workspace')
+    
     try:
+        base = "https://graph.facebook.com/v21.0"
         res = requests.post(
-            f"{base}/{page_id}/messages",
-            params={'access_token': token},
+            f"{base}/me/messages",
+            params={'access_token': page_token},
             json={
                 'recipient': {'id': recipient_id},
-                'message':   {'text': message},
+                'message': {'text': message},
             },
             timeout=15
         ).json()
-
+        
         if 'error' in res:
             messages.error(request, res['error'].get('message', 'Message failed.'))
         else:
             messages.success(request, "Message sent successfully.")
-
+            
     except requests.RequestException as e:
-        messages.error(request, f"Network error: {e}")
-
-    return redirect('social_accounts:workspace', platform='facebook')
+        messages.error(request, f"Network error: {str(e)}")
+    
+    return redirect('social_accounts:workspace')
 
 
 @login_required
 def facebook_login(request):
+    """Initiate Facebook OAuth flow"""
     scopes = [
-        'pages_show_list', 'pages_read_engagement',
-        'pages_manage_posts', 'business_management',
-        'instagram_basic', 'instagram_content_publish',
+        'pages_show_list', 
+        'pages_read_engagement',
+        'pages_manage_posts', 
+        'business_management',
+        'instagram_basic', 
+        'instagram_content_publish',
         'pages_messaging',
+        'pages_manage_metadata',
     ]
+    
     params = {
-        'client_id':     FB_APP_ID,
-        'redirect_uri':  FB_REDIRECT_URI,
-        'scope':         ','.join(scopes),
+        'client_id': FB_APP_ID,
+        'redirect_uri': FB_REDIRECT_URI,
+        'scope': ','.join(scopes),
         'response_type': 'code',
-        'state':         str(request.user.id),
+        'state': str(request.user.id),
+        'auth_type': 'rerequest',
     }
+    
     return redirect(f"https://www.facebook.com/v21.0/dialog/oauth?{urlencode(params)}")
 
 
 @login_required
 def facebook_callback(request):
-    code  = request.GET.get('code')
+    """Handle Facebook OAuth callback"""
+    code = request.GET.get('code')
     state = request.GET.get('state')
     error = request.GET.get('error')
-
+    error_reason = request.GET.get('error_reason', '')
+    error_description = request.GET.get('error_description', '')
+    
     if error or not code:
-        messages.error(request, f"Facebook login failed: {error or 'No code received.'}")
-        return redirect('post_list')
-
+        error_msg = error_description or error_reason or error or 'No code received.'
+        messages.error(request, f"Facebook login failed: {error_msg}")
+        return redirect('social_accounts:account_list')
+    
+    # Verify state matches user
     if state != str(request.user.id):
-        messages.error(request, "Security check failed.")
-        return redirect('post_list')
-
+        messages.error(request, "Security check failed. Please try again.")
+        return redirect('social_accounts:account_list')
+    
     try:
+        # Exchange code for short-lived token
         token_res = requests.get(
             "https://graph.facebook.com/v21.0/oauth/access_token",
             params={
-                'client_id': FB_APP_ID, 'redirect_uri': FB_REDIRECT_URI,
-                'client_secret': FB_APP_SECRET, 'code': code,
-            }, timeout=15
+                'client_id': FB_APP_ID,
+                'redirect_uri': FB_REDIRECT_URI,
+                'client_secret': FB_APP_SECRET,
+                'code': code,
+            },
+            timeout=15
         ).json()
-
+        
         if 'access_token' not in token_res:
-            messages.error(request, token_res.get('error', {}).get('message', 'Token exchange failed.'))
-            return redirect('post_list')
-
+            error_msg = token_res.get('error', {}).get('message', 'Token exchange failed.')
+            messages.error(request, f"Token exchange failed: {error_msg}")
+            return redirect('social_accounts:account_list')
+        
         short_token = token_res['access_token']
+        
+        # Exchange for long-lived token
         long_res = requests.get(
             "https://graph.facebook.com/v21.0/oauth/access_token",
             params={
-                'grant_type': 'fb_exchange_token', 'client_id': FB_APP_ID,
-                'client_secret': FB_APP_SECRET, 'fb_exchange_token': short_token,
-            }, timeout=15
+                'grant_type': 'fb_exchange_token',
+                'client_id': FB_APP_ID,
+                'client_secret': FB_APP_SECRET,
+                'fb_exchange_token': short_token,
+            },
+            timeout=15
         ).json()
+        
         long_token = long_res.get('access_token', short_token)
-
+        
+        # Get user's pages
         pages_data = requests.get(
             "https://graph.facebook.com/v21.0/me/accounts",
-            params={'access_token': long_token}, timeout=15
+            params={'access_token': long_token},
+            timeout=15
         ).json()
-
+        
         if 'data' not in pages_data:
-            messages.error(request, "No Facebook Pages found.")
-            return redirect('post_list')
-
-        connected = []
+            messages.error(request, "No Facebook Pages found. Please create a page first.")
+            return redirect('social_accounts:account_list')
+        
+        if not pages_data['data']:
+            messages.warning(request, "No pages found to connect.")
+            return redirect('social_accounts:account_list')
+        
+        # Save each page as a separate social account
+        connected_pages = []
         for page in pages_data['data']:
-            account, _ = SocialAccount.objects.update_or_create(
+            page_id = page['id']
+            page_name = page['name']
+            page_token = page.get('access_token', long_token)
+            
+            # Create or update the social account
+            account, created = SocialAccount.objects.update_or_create(
                 platform='facebook',
-                platform_account_id=page['id'],
+                platform_account_id=page_id,
                 defaults={
-                    'account_name': page['name'],
+                    'account_name': page_name,
                     'status': 'connected',
                     'connected_by': request.user,
                 }
             )
-            account.access_token = page['access_token']
+            
+            # Store the page-specific token (using property setter)
+            account.access_token = page_token
             account.save()
-            connected.append(page['name'])
-
-        if connected:
-            messages.success(request, f"Connected: {', '.join(connected)}")
+            
+            connected_pages.append(page_name)
+            
+            # Check if it has Instagram Business Account
+            instagram_check = requests.get(
+                f"https://graph.facebook.com/v21.0/{page_id}",
+                params={
+                    'access_token': page_token,
+                    'fields': 'instagram_business_account'
+                },
+                timeout=10
+            ).json()
+            
+            ig_data = instagram_check.get('instagram_business_account')
+            if ig_data and ig_data.get('id'):
+                ig_id = ig_data['id']
+                ig_username = ig_data.get('username', page_name)
+                
+                # Save Instagram account
+                ig_account, _ = SocialAccount.objects.update_or_create(
+                    platform='instagram',
+                    platform_account_id=ig_id,
+                    defaults={
+                        'account_name': f"{page_name} (Instagram)",
+                        'account_username': ig_username,
+                        'status': 'connected',
+                        'connected_by': request.user,
+                    }
+                )
+                # Store page token for Instagram (same as Facebook page token)
+                ig_account.access_token = page_token
+                ig_account.save()
+                
+                connected_pages.append(f"📸 {ig_username} (Instagram)")
+        
+        if connected_pages:
+            messages.success(request, f"Successfully connected: {', '.join(connected_pages)}")
         else:
-            messages.warning(request, "No pages connected.")
-
+            messages.warning(request, "No pages were connected.")
+            
     except requests.RequestException as e:
-        messages.error(request, f"Network error: {e}")
+        messages.error(request, f"Network error: {str(e)}")
+    
+    return redirect('social_accounts:account_list')
 
-    return redirect('post_list')
+
+@login_required
+def disconnect_account(request, account_id):
+    """Disconnect a social account"""
+    if request.method != 'POST':
+        return redirect('social_accounts:account_list')
+    
+    try:
+        account = SocialAccount.objects.get(id=account_id, connected_by=request.user)
+        account.status = 'disconnected'
+        account.save()
+        messages.success(request, f"{account.account_name} disconnected successfully.")
+    except SocialAccount.DoesNotExist:
+        messages.error(request, "Account not found.")
+    
+    return redirect('social_accounts:account_list')
