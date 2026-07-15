@@ -321,8 +321,8 @@ def facebook_login(request):
         'business_management',
         'instagram_basic', 
         'instagram_content_publish',
-        
-        
+        'pages_messaging',
+        'pages_manage_metadata',
     ]
     
     params = {
