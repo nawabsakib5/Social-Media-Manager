@@ -321,8 +321,8 @@ def facebook_login(request):
         'business_management',
         'instagram_basic', 
         'instagram_content_publish',
-        'pages_messaging',
-        'pages_manage_metadata',
+        
+        
     ]
     
     params = {
@@ -337,9 +337,21 @@ def facebook_login(request):
     return redirect(f"https://www.facebook.com/v21.0/dialog/oauth?{urlencode(params)}")
 
 
+import requests
+from django.conf import settings
+from django.shortcuts import redirect
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from social_accounts.models import SocialAccount
+
+# settings.py থেকে ক্রেডেনশিয়াল লোড করা হচ্ছে
+FB_APP_ID = getattr(settings, 'FACEBOOK_APP_ID', None)
+FB_APP_SECRET = getattr(settings, 'FACEBOOK_APP_SECRET', None)
+FB_REDIRECT_URI = getattr(settings, 'FACEBOOK_REDIRECT_URI', None)
+
 @login_required
 def facebook_callback(request):
-    """Handle Facebook OAuth callback"""
+    """Handle Facebook OAuth callback and generate Never-Expiring Page & Instagram tokens"""
     code = request.GET.get('code')
     state = request.GET.get('state')
     error = request.GET.get('error')
@@ -351,15 +363,15 @@ def facebook_callback(request):
         messages.error(request, f"Facebook login failed: {error_msg}")
         return redirect('social_accounts:account_list')
     
-    # Verify state matches user
+    # Security: Verify state matches logged in user id
     if state != str(request.user.id):
         messages.error(request, "Security check failed. Please try again.")
         return redirect('social_accounts:account_list')
     
     try:
-        # Exchange code for short-lived token
+        # ১. ওয়ান-টাইম কোড এক্সচেঞ্জ করে শর্ট-লাইভড ইউজার টোকেন (১-২ ঘণ্টা) সংগ্রহ
         token_res = requests.get(
-            "https://graph.facebook.com/v21.0/oauth/access_token",
+            "https://graph.facebook.com/v22.0/oauth/access_token",
             params={
                 'client_id': FB_APP_ID,
                 'redirect_uri': FB_REDIRECT_URI,
@@ -376,9 +388,9 @@ def facebook_callback(request):
         
         short_token = token_res['access_token']
         
-        # Exchange for long-lived token
+        # ২. শর্ট-লাইভড ইউজার টোকেন এক্সচেঞ্জ করে ৬০ দিনের দীর্ঘমেয়াদী লং-লাইভড টোকেন সংগ্রহ
         long_res = requests.get(
-            "https://graph.facebook.com/v21.0/oauth/access_token",
+            "https://graph.facebook.com/v22.0/oauth/access_token",
             params={
                 'grant_type': 'fb_exchange_token',
                 'client_id': FB_APP_ID,
@@ -390,10 +402,13 @@ def facebook_callback(request):
         
         long_token = long_res.get('access_token', short_token)
         
-        # Get user's pages
+        # ৩. ৬০ দিনের লং-লাইভড টোকেন ব্যবহার করে মেটা থেকে আজীবন সচল (Never Expiring) পেজ টোকেন সংগ্রহ
         pages_data = requests.get(
-            "https://graph.facebook.com/v21.0/me/accounts",
-            params={'access_token': long_token},
+            "https://graph.facebook.com/v22.0/me/accounts",
+            params={
+                'access_token': long_token,
+                'limit': 100
+            },
             timeout=15
         ).json()
         
@@ -405,14 +420,16 @@ def facebook_callback(request):
             messages.warning(request, "No pages found to connect.")
             return redirect('social_accounts:account_list')
         
-        # Save each page as a separate social account
         connected_pages = []
         for page in pages_data['data']:
             page_id = page['id']
             page_name = page['name']
-            page_token = page.get('access_token', long_token)
             
-            # Create or update the social account
+            page_token = page.get('access_token')
+            
+            if not page_token:
+                page_token = long_token 
+
             account, created = SocialAccount.objects.update_or_create(
                 platform='facebook',
                 platform_account_id=page_id,
@@ -423,18 +440,16 @@ def facebook_callback(request):
                 }
             )
             
-            # Store the page-specific token (using property setter)
             account.access_token = page_token
             account.save()
             
             connected_pages.append(page_name)
             
-            # Check if it has Instagram Business Account
             instagram_check = requests.get(
-                f"https://graph.facebook.com/v21.0/{page_id}",
+                f"https://graph.facebook.com/v22.0/{page_id}",
                 params={
                     'access_token': page_token,
-                    'fields': 'instagram_business_account'
+                    'fields': 'instagram_business_account{id,username,name}'
                 },
                 timeout=10
             ).json()
@@ -443,19 +458,20 @@ def facebook_callback(request):
             if ig_data and ig_data.get('id'):
                 ig_id = ig_data['id']
                 ig_username = ig_data.get('username', page_name)
+                ig_name = ig_data.get('name', f"{page_name} (Instagram)")
                 
-                # Save Instagram account
+                
                 ig_account, _ = SocialAccount.objects.update_or_create(
                     platform='instagram',
                     platform_account_id=ig_id,
                     defaults={
-                        'account_name': f"{page_name} (Instagram)",
+                        'account_name': ig_name,
                         'account_username': ig_username,
                         'status': 'connected',
                         'connected_by': request.user,
                     }
                 )
-                # Store page token for Instagram (same as Facebook page token)
+                
                 ig_account.access_token = page_token
                 ig_account.save()
                 
@@ -467,7 +483,7 @@ def facebook_callback(request):
             messages.warning(request, "No pages were connected.")
             
     except requests.RequestException as e:
-        messages.error(request, f"Network error: {str(e)}")
+        messages.error(request, f"Network error during authentication: {str(e)}")
     
     return redirect('social_accounts:account_list')
 

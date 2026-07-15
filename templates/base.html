@@ -11,7 +11,7 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
     
     <style>
-        /* ── Image-based Minimalist Light Color Token ── */
+        /* ── Minimalist Light SaaS Color Tokens ── */
         :root {
             --sidebar-width: 240px; 
             --sidebar-bg: #ffffff; /* হোয়াইট সাইডবার */
@@ -25,7 +25,7 @@
             --accent: #f25c38;
             --accent-glow: rgba(242, 92, 56, 0.15);
             --topbar-bg: rgba(255, 255, 255, 0.95);
-            --body-bg: #f8fafc; /* আল্ট্রা-লাইট সফট গ্রে ব্যাকগ্রাউন্ড */
+            --body-bg: #f8fafc; /* সফট আল্ট্রা-লাইট গ্রে ব্যাকগ্রাউন্ড */
             --card-bg: #ffffff;
             --text-dark: #1e293b;
             --text-muted-custom: #64748b;
@@ -44,7 +44,7 @@
             -webkit-font-smoothing: antialiased;
         }
 
-        /* ── Modern Custom Scrollbar ── */
+        /* ── Modern Scrollbar ── */
         ::-webkit-scrollbar {
             width: 5px;
             height: 5px;
@@ -60,7 +60,7 @@
             background: #94a3b8;
         }
 
-        /* ── Sidebar Style (Minimalist White Layout) ── */
+        /* ── Sidebar Style (InApp White Layout) ── */
         .sidebar {
             position: fixed;
             top: 0; left: 0;
@@ -99,7 +99,7 @@
             color: #fff;
         }
 
-        /* স্ক্রোলযোগ্য মেনু এরিয়া */
+        /* স্ক্রোলযোগ্য নেভিগেশন এরিয়া */
         .sidebar-menu {
             flex-grow: 1;
             overflow-y: auto;
@@ -112,7 +112,6 @@
             background: transparent;
         }
 
-        /* ক্যাটাগরি লেবেলের প্রফেশনাল টাইপোগ্রাফি */
         .nav-section-label {
             font-size: 13px;
             font-weight: 600;
@@ -121,7 +120,7 @@
             text-transform: none;
         }
 
-        /* লিঙ্ক স্টাইলিং - Fail-Safe CSS Transitions (জাভাস্ক্রিপ্ট নির্ভরতা মুক্ত) */
+        /* লিঙ্ক স্টাইলিং - Fail-Safe CSS Transitions */
         .sidebar-link {
             display: flex;
             align-items: center;
@@ -148,11 +147,11 @@
         .sidebar-link:hover {
             background-color: var(--sidebar-hover);
             color: var(--sidebar-active-color) !important;
-            transform: translateX(4px); /* ডানদিকে মৃদু স্লাইড */
+            transform: translateX(4px);
         }
 
         .sidebar-link:hover i {
-            transform: scale(1.15); /* আইকন জুম বাউন্স */
+            transform: scale(1.15);
         }
 
         /* একটিভ স্টেট ডিজাইন */
@@ -322,7 +321,7 @@
 <body>
 
 <!-- Hidden Global Logout Form to comply with Django 5.x/6.0 specs -->
-<form method="post" action="{% url 'logout' %}" id="logout-form" class="d-none">
+<form method="post" action="{% url 'accounts:logout' %}" id="logout-form" class="d-none">
     {% csrf_token %}
 </form>
 
@@ -357,18 +356,17 @@
                     <i class="fa-solid fa-inbox"></i> Inbox
                 </a>
 
-                <!-- আপনার নেমস্পেস রাউট অনুযায়ী রাউটিং ফিক্স করা হয়েছে -->
                 <a href="{% url 'social_accounts:account_list' %}"
                    class="sidebar-link {% if request.resolver_match.url_name == 'account_list' %}active{% endif %}">
                     <i class="fa-solid fa-plug"></i> Accounts
                 </a>
 
-                <!-- আপনার ডাইনামিক Channels সেকশনটি এখানে রেন্ডার হবে -->
+                <!-- আপনার ডাইনামিক Channels সেকশন -->
                 <div class="nav-section-label">Channels</div>
 
                 {% for acc in connected_accounts %}
-                <a href="{% url 'social_accounts:workspace' acc.platform %}"
-                   class="sidebar-link {% if request.resolver_match.url_name == 'workspace' and platform == acc.platform %}active{% endif %}">
+                <a href="{% url 'social_accounts:workspace' acc.id %}"
+                   class="sidebar-link {% if request.resolver_match.url_name == 'workspace' and request.GET.account_id == acc.id|stringformat:'s' %}active{% endif %}">
 
                     <i class="fa-brands fa-{{ acc.platform }}"
                        style="color:
@@ -410,7 +408,7 @@
                 {% endif %}
             </div>
 
-            <!-- ফিক্সড ফুটার (নিরাপদ POST রিকোয়েস্ট সাবমিশনের জন্য onclick সংযুক্ত) -->
+            <!-- ফিক্সড ফুটার (লগআউট) -->
             {% if user.is_authenticated %}
             <div class="sidebar-bottom">
                 <a href="#" onclick="document.getElementById('logout-form').submit(); return false;" class="sidebar-link text-danger-hover" style="color:#ef4444; margin: 0;">
@@ -431,7 +429,6 @@
                         <div class="user-avatar">{{ user.username|first|upper }}</div>
                         <span>{{ user.username }}</span>
                     </div>
-                    <!-- টপবার লগআউট বাটনেও নিরাপদ POST রিকোয়েস্ট যুক্ত করা হয়েছে -->
                     <a href="#" onclick="document.getElementById('logout-form').submit(); return false;" class="btn-logout">Logout</a>
                 </div>
             </div>
@@ -500,7 +497,8 @@ document.addEventListener('DOMContentLoaded', () => {
         duration: 0.65,
         ease: 'power4.inOut',
         onComplete: () => {
-            document.getElementById('page-loader').style.display = 'none';
+            const loader = document.getElementById('page-loader');
+            if (loader) loader.style.display = 'none';
         }
     }, '-=0.15')
 
@@ -510,44 +508,49 @@ document.addEventListener('DOMContentLoaded', () => {
         scale: 1,
         duration: 0.75,
         ease: 'power4.out'
-    }, '-=0.4')
+    }, '-=0.4');
 
-    // Step 5: Reveal sidebar with a unique slide
-    .from('#sidebar', {
-        x: -40,
-        duration: 0.6,
-        ease: 'power3.out'
-    }, '-=0.6')
+    // Safe Animation Blocks (Failsafe checks for Login Page)
+    if (document.getElementById('sidebar')) {
+        masterTimeline.from('#sidebar', {
+            x: -40,
+            duration: 0.6,
+            ease: 'power3.out'
+        }, '-=0.6');
+    }
 
-    // Step 6: Topbar slide-down header sequence
-    .from('#topbar', {
-        y: -15,
-        opacity: 0,
-        duration: 0.45,
-        ease: 'power2.out'
-    }, '-=0.45')
+    if (document.getElementById('topbar')) {
+        masterTimeline.from('#topbar', {
+            y: -15,
+            opacity: 0,
+            duration: 0.45,
+            ease: 'power2.out'
+        }, '-=0.45');
+    }
 
-    // Step 7: Staggered entry for individual sidebar links
-    .from('.sidebar-link', {
-        x: -20,
-        opacity: 0,
-        duration: 0.4,
-        stagger: 0.04,
-        ease: 'power2.out'
-    }, '-=0.4')
+    if (document.querySelectorAll('.sidebar-link').length > 0) {
+        masterTimeline.from('.sidebar-link', {
+            x: -20,
+            opacity: 0,
+            duration: 0.4,
+            stagger: 0.04,
+            ease: 'power2.out'
+        }, '-=0.4');
+    }
 
-    // Step 8: Morph transitions for incoming message alerts
-    .to('.alert', {
-        opacity: 1,
-        y: 0,
-        duration: 0.45,
-        stagger: 0.06,
-        ease: 'back.out(1.4)'
-    }, '-=0.2');
+    if (document.querySelector('.alert')) {
+        masterTimeline.to('.alert', {
+            opacity: 1,
+            y: 0,
+            duration: 0.45,
+            stagger: 0.06,
+            ease: 'back.out(1.4)'
+        }, '-=0.2');
+    }
 
     // Brand Logo soft rotation interaction
     const brand = document.querySelector('.sidebar-brand');
-    if (brand) {
+    if (brand && document.getElementById('brand-logo')) {
         brand.addEventListener('mouseenter', () => {
             gsap.to('#brand-logo', {
                 rotate: 45,
