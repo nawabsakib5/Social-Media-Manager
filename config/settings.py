@@ -1,8 +1,6 @@
 from pathlib import Path
 from decouple import config
 import os
-from cryptography.fernet import Fernet
-
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -106,9 +104,6 @@ STORAGES = {
     },
 }
 
-
-
-
 SITE_URL = config('SITE_URL', default='http://localhost:8000')
 
 # ── Auth ──
@@ -117,6 +112,7 @@ LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'post_list'
 LOGOUT_REDIRECT_URL = 'login'
 
+# ডট-এনভ (.env) থেকে সফলভাবে প্রজেক্টের সঠিক এবং একমাত্র এনক্রিপশন কি লোড করা হচ্ছে
 FIELD_ENCRYPTION_KEY = config('FIELD_ENCRYPTION_KEY')
 
 # ── Celery ──
@@ -144,7 +140,7 @@ CELERY_BEAT_SCHEDULE = {
 # ── Facebook / Meta ──
 FACEBOOK_APP_ID = config('FACEBOOK_APP_ID', default='')
 FACEBOOK_APP_SECRET = config('FACEBOOK_APP_SECRET', default='')
-FACEBOOK_REDIRECT_URI = config('FACEBOOK_REDIRECT_URI', default='http://localhost:8000/social/callback/')
+FACEBOOK_REDIRECT_URI = config('FACEBOOK_REDIRECT_URI', default='http://localhost:8000/posts/accounts/callback/')
 
 # ── Email ──
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
@@ -156,12 +152,3 @@ EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
 WHATSAPP_RECIPIENT_NUMBER = config('WHATSAPP_RECIPIENT_NUMBER', default='')
-
-
-
-
-FIELD_ENCRYPTION_KEY = os.getenv('FIELD_ENCRYPTION_KEY')
-if not FIELD_ENCRYPTION_KEY:
-    FIELD_ENCRYPTION_KEY = Fernet.generate_key().decode()
-    print(f"🔑 Generated encryption key: {FIELD_ENCRYPTION_KEY}")
-    print("Add this to your .env file")
