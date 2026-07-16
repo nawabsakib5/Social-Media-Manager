@@ -24,7 +24,7 @@
          style="opacity:0; transform:translateY(20px);">
 
         {% if item.account and item.account.status == 'connected' %}
-        <a href="{% url 'social_accounts:workspace' item.name %}" style="text-decoration:none; color:inherit;">
+        <a href="{% url 'social_accounts:workspace' item.account.id %}" style="text-decoration:none; color:inherit;">
         {% else %}
         <a href="{% url 'social_accounts:facebook_login' %}" style="text-decoration:none; color:inherit;">
         {% endif %}
@@ -140,7 +140,8 @@
             </div>
 
             <div class="d-flex align-items-center gap-3">
-                <a href="{% url 'social_accounts:workspace' acc.platform %}"
+                <!-- সংশোধিত লাইন: acc.platform এর জায়গায় acc.id ব্যবহার করা হয়েছে -->
+                <a href="{% url 'social_accounts:workspace' acc.id %}"
                    class="btn btn-sm btn-outline-primary" style="font-size:12px; border-radius:8px;">
                     <i class="fa-solid fa-arrow-right me-1"></i>Open
                 </a>

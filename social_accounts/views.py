@@ -1,15 +1,17 @@
 import requests
+import urllib.parse
+from urllib.parse import urlencode
 from django.conf import settings
-from django.shortcuts import redirect, render
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from urllib.parse import urlencode
 from .models import SocialAccount
 from integrations.facebook_adapter import FacebookAdapter
 
+# settings.py থেকে ক্রেডেনশিয়াল লোড করা হচ্ছে (ফেইল-সেফ ব্যাকআপসহ)
 FB_APP_ID       = getattr(settings, 'FACEBOOK_APP_ID', '')
 FB_APP_SECRET   = getattr(settings, 'FACEBOOK_APP_SECRET', '')
-FB_REDIRECT_URI = getattr(settings, 'FACEBOOK_REDIRECT_URI', 'http://localhost:8000/social/callback/')
+FB_REDIRECT_URI = getattr(settings, 'FACEBOOK_REDIRECT_URI', 'http://localhost:8000/posts/accounts/callback/')
 
 
 @login_required
@@ -90,7 +92,7 @@ def get_facebook_workspace_data(account):
         
         # Fetch posts with comments
         page_id = account.platform_account_id
-        url = f"https://graph.facebook.com/v21.0/{page_id}/feed"
+        url = f"https://graph.facebook.com/v22.0/{page_id}/feed"
         params = {
             'access_token': page_token,
             'fields': 'id,message,created_time,full_picture,'
@@ -108,7 +110,7 @@ def get_facebook_workspace_data(account):
             return data
         
         # Fetch conversations (Messenger)
-        conv_url = f"https://graph.facebook.com/v21.0/{page_id}/conversations"
+        conv_url = f"https://graph.facebook.com/v22.0/{page_id}/conversations"
         conv_params = {
             'access_token': page_token,
             'fields': 'participants,messages{message,from,created_time}',
@@ -148,7 +150,7 @@ def get_instagram_workspace_data(account):
         
         # Get Instagram Business Account ID
         page_id = account.platform_account_id
-        url = f"https://graph.facebook.com/v21.0/{page_id}"
+        url = f"https://graph.facebook.com/v22.0/{page_id}"
         params = {
             'access_token': page_token,
             'fields': 'instagram_business_account{id,username,profile_picture_url}'
@@ -167,7 +169,7 @@ def get_instagram_workspace_data(account):
             return data
         
         # Fetch Instagram media
-        media_url = f"https://graph.facebook.com/v21.0/{ig_id}/media"
+        media_url = f"https://graph.facebook.com/v22.0/{ig_id}/media"
         media_params = {
             'access_token': page_token,
             'fields': 'id,caption,media_type,media_url,thumbnail_url,timestamp,'
@@ -227,7 +229,7 @@ def post_comment_reply(request, platform, comment_id):
         messages.error(request, f"Failed to get page token: {error}")
         return redirect('social_accounts:workspace')
     
-    base = "https://graph.facebook.com/v21.0"
+    base = "https://graph.facebook.com/v22.0"
     
     try:
         if platform == 'facebook':
@@ -289,7 +291,7 @@ def send_messenger_reply(request):
         return redirect('social_accounts:workspace')
     
     try:
-        base = "https://graph.facebook.com/v21.0"
+        base = "https://graph.facebook.com/v22.0"
         res = requests.post(
             f"{base}/me/messages",
             params={'access_token': page_token},
@@ -313,7 +315,7 @@ def send_messenger_reply(request):
 
 @login_required
 def facebook_login(request):
-    """Initiate Facebook OAuth flow"""
+    """Initiate Facebook OAuth flow with clean and modern scopes"""
     scopes = [
         'pages_show_list', 
         'pages_read_engagement',
@@ -321,8 +323,7 @@ def facebook_login(request):
         'business_management',
         'instagram_basic', 
         'instagram_content_publish',
-        'pages_messaging',
-        'pages_manage_metadata',
+        'instagram_manage_comments', # শুধুমাত্র কোর কমেন্ট এবং পেজ এডিটিং স্কোপগুলো রাখা হয়েছে
     ]
     
     params = {
@@ -334,20 +335,8 @@ def facebook_login(request):
         'auth_type': 'rerequest',
     }
     
-    return redirect(f"https://www.facebook.com/v21.0/dialog/oauth?{urlencode(params)}")
+    return redirect(f"https://www.facebook.com/v22.0/dialog/oauth?{urlencode(params)}")
 
-
-import requests
-from django.conf import settings
-from django.shortcuts import redirect
-from django.contrib import messages
-from django.contrib.auth.decorators import login_required
-from social_accounts.models import SocialAccount
-
-# settings.py থেকে ক্রেডেনশিয়াল লোড করা হচ্ছে
-FB_APP_ID = getattr(settings, 'FACEBOOK_APP_ID', None)
-FB_APP_SECRET = getattr(settings, 'FACEBOOK_APP_SECRET', None)
-FB_REDIRECT_URI = getattr(settings, 'FACEBOOK_REDIRECT_URI', None)
 
 @login_required
 def facebook_callback(request):
@@ -369,7 +358,7 @@ def facebook_callback(request):
         return redirect('social_accounts:account_list')
     
     try:
-        # ১. ওয়ান-টাইম কোড এক্সচেঞ্জ করে শর্ট-লাইভড ইউজার টোকেন (১-২ ঘণ্টা) সংগ্রহ
+        # ১. ওয়ান-টাইম কোড এক্সচেঞ্জ করে শর্ট-লাইভড ইউজার টোকেন সংগ্রহ
         token_res = requests.get(
             "https://graph.facebook.com/v22.0/oauth/access_token",
             params={
@@ -430,6 +419,7 @@ def facebook_callback(request):
             if not page_token:
                 page_token = long_token 
 
+            # ফেসবুক পেজটি সোশ্যাল অ্যাকাউন্ট হিসেবে সেভ বা আপডেট করা হচ্ছে
             account, created = SocialAccount.objects.update_or_create(
                 platform='facebook',
                 platform_account_id=page_id,
@@ -445,6 +435,7 @@ def facebook_callback(request):
             
             connected_pages.append(page_name)
             
+            # ৪. পেজের সাথে কোনো Instagram Business Account কানেক্টেড আছে কি না তা চেক করা
             instagram_check = requests.get(
                 f"https://graph.facebook.com/v22.0/{page_id}",
                 params={
@@ -460,7 +451,7 @@ def facebook_callback(request):
                 ig_username = ig_data.get('username', page_name)
                 ig_name = ig_data.get('name', f"{page_name} (Instagram)")
                 
-                
+                # ইনস্টাগ্রাম অ্যাকাউন্টটি সোশ্যাল অ্যাকাউন্ট হিসেবে সেভ বা আপডেট করা হচ্ছে
                 ig_account, _ = SocialAccount.objects.update_or_create(
                     platform='instagram',
                     platform_account_id=ig_id,

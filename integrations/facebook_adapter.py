@@ -12,73 +12,15 @@ class FacebookAdapter(BaseSocialAdapter):
     def get_page_token(self, social_account):
         """
         Get page access token for a specific page.
-        Handles both stored page tokens and fetching fresh ones.
+        Since we store the Never-Expiring Page Token directly in the model,
+        we can safely and directly return the stored token.
         """
-        # Try to get token from the account
-        stored_token = social_account.get_token()
+        stored_token = social_account.access_token if hasattr(social_account, 'access_token') else None
         
         if stored_token:
-            # Verify token is still valid
-            check_url = "https://graph.facebook.com/v21.0/me/accounts"
-            try:
-                check_resp = requests.get(
-                    check_url, 
-                    params={'access_token': stored_token},
-                    timeout=10
-                )
-                
-                if check_resp.status_code == 200:
-                    pages = check_resp.json().get('data', [])
-                    for page in pages:
-                        if str(page.get('id')) == str(social_account.platform_account_id):
-                            # Return the page-specific token
-                            page_token = page.get('access_token')
-                            if page_token:
-                                # Update stored token if it's a page token
-                                social_account.access_token = page_token
-                                social_account.save()
-                                return page_token, None
-                            
-                # If we get here, token might be invalid or page not found
-                # We'll try to refresh using the user token
-            except requests.RequestException:
-                pass
-        
-        # If we don't have a valid token, try to get one using the user token
-        user_token = social_account.get_token()
-        if not user_token:
-            return None, "No access token available. Please reconnect the account."
-        
-        # Get pages with access tokens
-        url = "https://graph.facebook.com/v21.0/me/accounts"
-        params = {
-            'access_token': user_token,
-            'fields': 'id,name,access_token'
-        }
-        
-        try:
-            response = requests.get(url, params=params, timeout=15)
+            return stored_token, None
             
-            if response.status_code != 200:
-                error_data = response.json() if response.text else {}
-                error_msg = error_data.get('error', {}).get('message', response.text)
-                return None, f"Could not fetch pages: {error_msg}"
-            
-            pages = response.json().get('data', [])
-            
-            for page in pages:
-                if str(page.get('id')) == str(social_account.platform_account_id):
-                    page_token = page.get('access_token')
-                    if page_token:
-                        # Store the page token for future use
-                        social_account.access_token = page_token
-                        social_account.save()
-                        return page_token, None
-            
-            return None, f"Page ID {social_account.platform_account_id} not found in user's pages"
-            
-        except requests.RequestException as e:
-            return None, f"Network error: {str(e)}"
+        return None, "No access token available. Please reconnect the account."
     
     def publish_post(self, post, platform_status):
         """Publish post to Facebook page"""
@@ -89,15 +31,21 @@ class FacebookAdapter(BaseSocialAdapter):
             return False, error
         
         page_id = social_account.platform_account_id
-        url = f"https://graph.facebook.com/v21.0/{page_id}/feed"
+        url = f"https://graph.facebook.com/v22.0/{page_id}/feed"
+        
+        # আপনার মডেল অনুযায়ী post.content ব্যবহার করা হয়েছে
+        post_content = getattr(post, 'content', '') or getattr(post, 'text_content', '')
         
         data = {
             'access_token': page_token,
-            'message': post.text_content or ''
+            'message': post_content or ''
         }
         
-        # Handle media
-        if post.media:
+        # আপনার মডেল অনুযায়ী post.media_file ব্যবহার করা হয়েছে
+        media_file = getattr(post, 'media_file', None) or getattr(post, 'media', None)
+        
+        # মিডিয়া আপলোড হ্যান্ডেল করা হচ্ছে
+        if media_file:
             media_id = self.upload_media(post, page_token)
             if media_id:
                 data['attached_media'] = f'{{"media_fbid":"{media_id}"}}'
@@ -117,20 +65,17 @@ class FacebookAdapter(BaseSocialAdapter):
     
     def upload_media(self, post, page_token):
         """Upload media to Facebook"""
-        if not post.media:
+        media_file = getattr(post, 'media_file', None) or getattr(post, 'media', None)
+        if not media_file:
             return None
         
-        # Get media URL from Cloudinary
-        media_url = post.media.url
-        
-        # Determine media type
+        media_url = media_file.url
         media_url_lower = media_url.lower()
         is_video = any(ext in media_url_lower for ext in ['.mp4', '.mov', '.avi', '.webm'])
         
         try:
             if not is_video:
-                # Upload image
-                url = "https://graph.facebook.com/v21.0/me/photos"
+                url = "https://graph.facebook.com/v22.0/me/photos"
                 data = {
                     'access_token': page_token,
                     'url': media_url,
@@ -138,16 +83,15 @@ class FacebookAdapter(BaseSocialAdapter):
                 }
                 response = requests.post(url, data=data, timeout=30)
             else:
-                # For videos, we need to download and upload
-                # This is a simplified version - you might want to handle this differently
-                url = "https://graph.facebook.com/v21.0/me/videos"
+                url = "https://graph.facebook.com/v22.0/me/videos"
+                post_content = getattr(post, 'content', '') or getattr(post, 'text_content', '')
+                post_title = getattr(post, 'title', 'Social Media Post')
+                
                 data = {
                     'access_token': page_token,
-                    'title': post.title or 'Social Media Post',
-                    'description': post.text_content or ''
+                    'title': post_title,
+                    'description': post_content or ''
                 }
-                # Download video first (optional - can also use URL)
-                # For now, we'll try with URL
                 data['file_url'] = media_url
                 response = requests.post(url, data=data, timeout=60)
             
@@ -167,7 +111,7 @@ class FacebookAdapter(BaseSocialAdapter):
             return False, error
         
         post_id = platform_status.platform_post_id
-        url = f"https://graph.facebook.com/v21.0/{post_id}"
+        url = f"https://graph.facebook.com/v22.0/{post_id}"
         params = {'access_token': page_token}
         
         try:
@@ -186,7 +130,7 @@ class FacebookAdapter(BaseSocialAdapter):
             return False, error
         
         post_id = platform_status.platform_post_id
-        url = f"https://graph.facebook.com/v21.0/{post_id}"
+        url = f"https://graph.facebook.com/v22.0/{post_id}"
         data = {
             'access_token': page_token,
             'message': new_text

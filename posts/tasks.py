@@ -33,8 +33,6 @@ def check_and_publish_scheduled_posts():
     return f"Queued {fired} publish tasks for due scheduled posts"
 
 
-    
-
 @shared_task(bind=True, max_retries=3, default_retry_delay=60)
 def publish_post_task(self, post_id, account_id):
     """
@@ -71,11 +69,14 @@ def publish_post_task(self, post_id, account_id):
     # --- Publish ---
     try:
         adapter = get_social_adapter(account)
-        result = adapter.publish_post(post)
+        
+        # সংশোধিত লাইন: (post এবং status_obj উভয় প্যারামিটার পাস করা হচ্ছে এবং টাপল রিটার্ন রিসিভ করা হচ্ছে)
+        success, res_val = adapter.publish_post(post, status_obj)
 
-        if result['status'] == 'success':
-            platform_post_id = result.get('platform_post_id', '')
+        if success:
+            platform_post_id = res_val
 
+            # মক টোকেন প্রটেকশন চেক
             if not platform_post_id or str(platform_post_id).startswith('mock_'):
                 status_obj.status = 'failed'
                 status_obj.error_message = 'Mock token detected — provide a real access token'
@@ -88,7 +89,7 @@ def publish_post_task(self, post_id, account_id):
             status_obj.published_at = timezone.now()
             status_obj.save(update_fields=['status', 'platform_post_id', 'error_message', 'published_at'])
 
-            # Mark Post itself as published if all platforms are done
+            # সব প্ল্যাটফর্মে পাবলিশ করা শেষ হলে মূল পোস্টের স্ট্যাটাস 'published' করা হচ্ছে
             all_statuses = post.platform_statuses.values_list('status', flat=True)
             if all(s == 'published' for s in all_statuses):
                 post.status = 'published'
@@ -97,11 +98,13 @@ def publish_post_task(self, post_id, account_id):
             return f"Published: post {post_id} → {account.platform} (ID: {platform_post_id})"
 
         else:
-            error_msg = result.get('error_message', 'Unknown error')
+            # টাপল থেকে ফেইলুর এরর মেসেজ নিয়ে স্ট্যাটাস ফেইলড করা হচ্ছে
+            error_msg = res_val
             status_obj.status = 'failed'
             status_obj.error_message = error_msg
             status_obj.save(update_fields=['status', 'error_message'])
 
+            # নেটওয়ার্ক সমস্যা বা টাইমআউট হলে পুনরায় চেষ্টা (Retry) করা হবে
             if 'connection' in error_msg.lower() or 'timeout' in error_msg.lower():
                 raise self.retry(exc=Exception(error_msg), countdown=60 * (self.request.retries + 1))
 
