@@ -1,34 +1,180 @@
 {% extends "base.html" %}
-{% block title %}Inbox{% endblock %}
-{% block page_title %}Inbox{% endblock %}
+{% block title %}Social Inbox{% endblock %}
+{% block page_title %}Social Inbox{% endblock %}
+
 {% block content %}
-<h4 class="mb-4">Inbox</h4>
-<div class="card">
-    <ul class="list-group list-group-flush">
-        {% for item in items %}
-        <li class="list-group-item py-3">
-            <div class="d-flex justify-content-between align-items-center">
-                <div>
-                    <span class="badge bg-info text-dark me-2">{{ item.type }}</span>
-                    <strong>{{ item.sender_name }}</strong>
-                    <p class="mb-0 text-muted mt-1" style="font-size:13px;">{{ item.content }}</p>
-                </div>
-                <div class="text-end">
-                    {% if item.is_replied %}
-                        <span class="badge bg-success mb-1">Replied</span>
+<div class="container-fluid px-0" style="margin-top: -15px;">
+    
+    <!-- Top Filter & Sync Bar -->
+    <div class="d-flex justify-content-between align-items-center mb-4 bg-white p-3 rounded-4 border border-1 border-light shadow-sm">
+        <div class="d-flex align-items-center gap-3">
+            <h5 class="mb-0 fw-bold text-dark"><i class="fa-solid fa-inbox text-orange me-2" style="color: var(--accent);"></i>Social Inbox</h5>
+            {% if unread_count > 0 %}
+                <span class="badge bg-danger rounded-pill" style="font-size: 11px;">{{ unread_count }} Unread</span>
+            {% endif %}
+        </div>
+        <a href="{% url 'sync_inbox' %}" class="btn btn-primary btn-sm px-4" style="border-radius: 9px; font-weight: 600; background: var(--accent); border: none;">
+            <i class="fa-solid fa-rotate me-1"></i>Sync Inbox
+        </a>
+    </div>
+
+    <!-- Main Two-Column Inbox Layout -->
+    <div class="row g-3" style="height: calc(100vh - 200px);">
+        
+        <!-- Left Column: Scrollable Conversations List -->
+        <div class="col-md-5 d-flex flex-column h-100">
+            
+            <!-- Filters Tabs -->
+            <div class="d-flex gap-2 mb-3 bg-white p-2 rounded-3 border border-light shadow-sm flex-shrink-0">
+                <a href="?platform={{ selected_platform }}" class="px-3 py-1.5 rounded-3 text-sm text-decoration-none {% if not selected_type %}bg-orange-light text-orange font-semibold{% else %}text-muted{% endif %}" style="font-size: 12.5px;">All</a>
+                <a href="?type=comment&platform={{ selected_platform }}" class="px-3 py-1.5 rounded-3 text-sm text-decoration-none {% if selected_type == 'comment' %}bg-orange-light text-orange font-semibold{% else %}text-muted{% endif %}" style="font-size: 12.5px;">Comments</a>
+                <a href="?type=message&platform={{ selected_platform }}" class="px-3 py-1.5 rounded-3 text-sm text-decoration-none {% if selected_type == 'message' %}bg-orange-light text-orange font-semibold{% else %}text-muted{% endif %}" style="font-size: 12.5px;">DMs</a>
+            </div>
+
+            <!-- Conversations List Container -->
+            <div class="card flex-grow-1 border-0 shadow-sm rounded-4 overflow-hidden d-flex flex-column" style="background: #ffffff; border: 1px solid var(--sidebar-border) !important;">
+                <div class="overflow-y-auto flex-grow-1" style="max-height: 500px;">
+                    {% if items %}
+                        <div class="divide-y">
+                            {% for item in items %}
+                                <a href="?item_id={{ item.id }}&platform={{ selected_platform }}&type={{ selected_type }}" 
+                                   class="conversation-item d-flex align-items-center justify-content-between p-3 border-bottom text-decoration-none {% if active_item.id == item.id %}active-chat{% endif %}"
+                                   style="display: flex; transition: all 0.2s ease; border-bottom: 1px solid #f1f3f7 !important;">
+                                    <div class="d-flex align-items-center gap-3 overflow-hidden">
+                                        <!-- Avatar -->
+                                        <div class="avatar-bubble">{{ item.sender_name|first|upper }}</div>
+                                        <div class="overflow-hidden">
+                                            <h6 class="mb-0 fw-semibold text-dark text-truncate" style="font-size: 14px;">{{ item.sender_name }}</h6>
+                                            <span class="text-truncate text-muted d-block mt-1" style="font-size: 12.5px; max-width: 220px;">{{ item.content }}</span>
+                                        </div>
+                                    </div>
+                                    <div class="text-end flex-shrink-0">
+                                        <i class="fa-brands fa-{{ item.social_account.platform }} fs-6 mb-1" 
+                                           style="color: {% if item.social_account.platform == 'facebook' %}#1877f2{% else %}#e1306c{% endif %};">
+                                        </i>
+                                        <div class="d-flex align-items-center gap-2 mt-1 justify-content-end">
+                                            {% if not item.is_read %}
+                                                <span class="unread-dot"></span>
+                                            {% endif %}
+                                            <span class="text-muted" style="font-size: 10px;">{{ item.received_at|date:"h:i A" }}</span>
+                                        </div>
+                                    </div>
+                                </a>
+                            {% endfor %}
+                        </div>
                     {% else %}
-                        <span class="badge bg-danger mb-1">Not Replied</span>
+                        <div class="p-5 text-center text-muted">
+                            <i class="fa-solid fa-folder-open fs-2 mb-2 text-muted"></i>
+                            <p class="mb-0 small">No messages or comments found.</p>
+                        </div>
                     {% endif %}
-                    <br>
-                    <a href="{% url 'inbox_reply' item.id %}" class="btn btn-outline-primary btn-sm mt-1">
-                        <i class="fa-solid fa-reply me-1"></i>Reply
-                    </a>
                 </div>
             </div>
-        </li>
-        {% empty %}
-        <li class="list-group-item text-muted py-4 text-center">ইনবক্স খালি।</li>
-        {% endfor %}
-    </ul>
+        </div>
+
+        <!-- Right Column: Selected Thread Chat View -->
+        <div class="col-md-7 h-100 d-flex flex-column">
+            {% if active_item %}
+                <div class="card border-0 shadow-sm rounded-4 flex-grow-1 d-flex flex-column overflow-hidden h-100" style="background: #ffffff; border: 1px solid var(--sidebar-border) !important;">
+                    
+                    <!-- Chat Header -->
+                    <div class="p-3 border-bottom d-flex justify-content-between align-items-center flex-shrink-0" style="border-bottom: 1px solid #f1f3f7 !important;">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="avatar-bubble bg-orange text-white">{{ active_item.sender_name|first|upper }}</div>
+                            <div>
+                                <h6 class="mb-0 fw-bold text-dark">{{ active_item.sender_name }}</h6>
+                                <small class="text-muted" style="font-size: 11.5px;">
+                                    Via <i class="fa-brands fa-{{ active_item.social_account.platform }} me-1"></i>{{ active_item.social_account.account_name }}
+                                </small>
+                            </div>
+                        </div>
+                        <span class="badge rounded-pill px-3 py-1.5 {% if active_item.type == 'comment' %}bg-info text-dark{% else %}bg-primary{% endif %}" style="font-size: 11px;">
+                            {{ active_item.get_type_display }}
+                        </span>
+                    </div>
+
+                    <!-- Chat Bubbles Thread Area -->
+                    <div class="p-4 flex-grow-1 overflow-y-auto d-flex flex-column gap-3" style="background: #fafbfe; max-height: 380px;">
+                        
+                        <!-- Client Original Comment/Message Bubble -->
+                        <div class="chat-bubble-container d-flex align-items-start gap-2 max-w-75">
+                            <div class="avatar-bubble-sm">{{ active_item.sender_name|first|upper }}</div>
+                            <div class="bg-white p-3 rounded-4 shadow-sm border border-light">
+                                <p class="mb-0 text-dark" style="font-size: 13.5px; line-height: 1.5;">{{ active_item.content }}</p>
+                                <span class="text-muted d-block text-end mt-1" style="font-size: 10px;">{{ active_item.received_at|date:"M d, h:i A" }}</span>
+                            </div>
+                        </div>
+
+                        <!-- Local Replies Loop from our DB -->
+                        {% for reply in active_item.replies.all %}
+                            <div class="chat-bubble-container d-flex align-items-start gap-2 align-self-end max-w-75 flex-row-reverse">
+                                <div class="avatar-bubble-sm bg-orange text-white">{{ reply.sent_by.username|first|upper }}</div>
+                                <div class="p-3 rounded-4 text-white shadow-sm" style="background: var(--accent);">
+                                    <p class="mb-0" style="font-size: 13.5px; line-height: 1.5;">{{ reply.content }}</p>
+                                    <span class="text-white-50 d-block text-end mt-1" style="font-size: 10px;">{{ reply.sent_at|date:"M d, h:i A" }}</span>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+
+                    <!-- Reply Input Form Box -->
+                    <div class="p-3 border-top bg-white flex-shrink-0" style="border-top: 1px solid #f1f3f7 !important;">
+                        <form method="post" action="{% url 'send_inbox_reply' active_item.id %}" class="d-flex gap-2">
+                            {% csrf_token %}
+                            <input type="text" name="message" placeholder="Type a reply to {{ active_item.sender_name }}..." class="form-control px-3" style="border-radius: 20px; font-size: 13.5px;" required>
+                            <button type="submit" class="btn btn-primary d-flex align-items-center justify-content-center" style="width: 42px; height: 42px; border-radius: 50%; background: var(--accent); border: none;">
+                                <i class="fa-solid fa-paper-plane text-white"></i>
+                            </button>
+                        </form>
+                    </div>
+
+                </div>
+            {% else %}
+                <!-- Empty State Thread -->
+                <div class="card border-0 shadow-sm rounded-4 flex-grow-1 d-flex align-items-center justify-content-center p-5 text-center h-100" style="background: #ffffff;">
+                    <div class="p-4" style="background: #f8fafc; border-radius: 50%; width: 72px; height: 72px; display: flex; align-items: center; justify-content: center; margin-bottom: 16px;">
+                        <i class="fa-solid fa-comments fs-2 text-muted"></i>
+                    </div>
+                    <h6 class="fw-bold text-dark">No Conversation Selected</h6>
+                    <p class="text-muted small mb-0">Select a message or comment from the left pane to view the thread and send replies.</p>
+                </div>
+            {% endif %}
+        </div>
+
+    </div>
 </div>
+
+<style>
+    /* Premium Chat Specific CSS Custom Tokens */
+    .bg-orange-light { background: rgba(242, 92, 56, 0.08); }
+    .text-orange { color: #f25c38 !important; }
+    .conversation-item:hover { background-color: #f8fafc; }
+    .conversation-item.active-chat {
+        background-color: rgba(242, 92, 56, 0.05) !important;
+        border-left: 3px solid var(--accent) !important;
+    }
+    .avatar-bubble {
+        width: 38px; height: 38px;
+        border-radius: 50%;
+        background: #e2e8f0;
+        color: #475569;
+        display: flex; align-items: center; justify-content: center;
+        font-weight: 700; font-size: 14px; flex-shrink: 0;
+    }
+    .avatar-bubble-sm {
+        width: 30px; height: 30px;
+        border-radius: 50%;
+        background: #e2e8f0;
+        color: #475569;
+        display: flex; align-items: center; justify-content: center;
+        font-weight: 700; font-size: 12px; flex-shrink: 0;
+    }
+    .bg-orange { background: var(--accent) !important; }
+    .unread-dot {
+        width: 7.5px; height: 7.5px;
+        border-radius: 50%;
+        background: var(--accent);
+        display: inline-block;
+    }
+</style>
 {% endblock %}

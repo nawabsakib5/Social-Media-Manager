@@ -48,7 +48,8 @@ class FacebookAdapter(BaseSocialAdapter):
         if media_file:
             media_id = self.upload_media(post, page_token)
             if media_id:
-                data['attached_media'] = f'{{"media_fbid":"{media_id}"}}'
+                # মেটা গ্রাফ এপিআই-এর নিয়ম অনুযায়ী attached_media-তে অ্যারে ব্র্যাকেট [] যুক্ত করা হয়েছে
+                data['attached_media'] = f'[{{"media_fbid":"{media_id}"}}]'
         
         try:
             response = requests.post(url, data=data, timeout=30)
