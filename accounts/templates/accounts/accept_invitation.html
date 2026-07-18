@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Complete Your Account Setup - SocialManager</title>
+    
+    <!-- Fonts & Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+    
+    <style>
+        :root {
+            --accent: #f25c38;
+            --accent-glow: rgba(242, 92, 56, 0.15);
+            --body-bg: #f8fafc;
+            --text-dark: #1e293b;
+        }
+
+        body {
+            background-color: var(--body-bg);
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            color: var(--text-dark);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .setup-card {
+            background: #ffffff;
+            border: 1px solid #f1f3f7;
+            border-radius: 24px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.02);
+            width: 100%;
+            max-width: 500px;
+            overflow: hidden;
+        }
+
+        .brand-logo-area {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .brand-icon {
+            width: 42px; height: 42px;
+            background: linear-gradient(135deg, var(--accent), #ff7a59);
+            border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 18px;
+            box-shadow: 0 4px 12px var(--accent-glow);
+            color: #fff;
+        }
+
+        .brand-name {
+            font-size: 20px;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            color: var(--text-dark);
+        }
+
+        .form-control:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 0.25rem var(--accent-glow);
+        }
+
+        .btn-setup {
+            background: var(--accent);
+            border: none;
+            font-weight: 700;
+            padding: 11px;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px var(--accent-glow);
+            transition: all 0.2s ease;
+        }
+        .btn-setup:hover {
+            background: #e04b27;
+            transform: translateY(-1px);
+        }
+
+        /* Dismissible alerts styling */
+        .alert {
+            border-radius: 12px;
+            font-size: 13.5px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="setup-card p-4 p-md-5">
+    
+    <!-- Brand Logo -->
+    <div class="brand-logo-area">
+        <div class="brand-icon"><i class="fa-solid fa-share-nodes"></i></div>
+        <span class="brand-name">SocialManager</span>
+    </div>
+
+    <div class="text-center mb-4">
+        <h4 class="fw-bold">Complete Your Account</h4>
+        <p class="text-muted small">Set up your profile and password to activate your SaaS workspace.</p>
+    </div>
+
+    <!-- Django Error Messages -->
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %} alert-dismissible fade show shadow-sm mb-4" role="alert">
+                <i class="fa-solid {% if message.tags == 'error' %}fa-circle-xmark{% else %}fa-circle-info{% endif %} me-2"></i>
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <!-- Setup Form -->
+    <form method="POST" class="needs-validation" novalidate>
+        {% csrf_token %}
+        
+        <div class="row g-3">
+            <!-- Email (Disabled - already locked to invitation) -->
+            <div class="col-12">
+                <label class="form-label fw-semibold text-muted" style="font-size: 13px;">Email Address (Invited Email)</label>
+                <input type="email" class="form-control bg-light text-muted" value="{{ email }}" disabled style="font-size: 13.5px; padding: 10px; border-radius: 8px;">
+            </div>
+
+            <!-- Full Name -->
+            <div class="col-12">
+                <label class="form-label fw-semibold text-dark" style="font-size: 13px;">Your Full Name</label>
+                <input type="text" name="full_name" class="form-control" placeholder="Enter your full name" required style="font-size: 13.5px; padding: 10px; border-radius: 8px;">
+            </div>
+
+            <!-- Username -->
+            <div class="col-12">
+                <label class="form-label fw-semibold text-dark" style="font-size: 13px;">Choose Username</label>
+                <div class="input-group">
+                    <span class="input-group-text bg-light text-muted" style="font-size: 13.5px; border-radius: 8px 0 0 8px;">@</span>
+                    <input type="text" name="username" class="form-control" placeholder="username" required style="font-size: 13.5px; padding: 10px; border-radius: 0 8px 8px 0;">
+                </div>
+            </div>
+
+            <!-- Password -->
+            <div class="col-12">
+                <label class="form-label fw-semibold text-dark" style="font-size: 13px;">Create Password</label>
+                <input type="password" name="password" class="form-control" placeholder="Minimum 8 characters" required style="font-size: 13.5px; padding: 10px; border-radius: 8px;">
+            </div>
+
+            <!-- Phone (Optional) -->
+            <div class="col-12">
+                <label class="form-label fw-semibold text-dark" style="font-size: 13px;">Phone Number (Optional)</label>
+                <input type="text" name="phone" class="form-control" placeholder="+8801XXXXXXXXX" style="font-size: 13.5px; padding: 10px; border-radius: 8px;">
+            </div>
+
+            <!-- Submit Button -->
+            <div class="col-12 mt-4">
+                <button type="submit" class="btn btn-primary btn-setup w-100 text-white">
+                    <i class="fa-solid fa-circle-check me-2"></i>Complete Setup & Log In
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- Bootstrap JS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

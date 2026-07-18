@@ -9,7 +9,7 @@ import requests
 
 
 def _delete_from_platform(platform_status):
-    """Delete a post from its social media platform."""
+    """Delete a post from its social media platform using API v22.0."""
     platform = platform_status.social_account.platform
     post_id = platform_status.platform_post_id
     token = platform_status.social_account.access_token
@@ -19,18 +19,19 @@ def _delete_from_platform(platform_status):
 
     try:
         if platform == 'facebook':
+            
             res = requests.delete(
-                f"https://graph.facebook.com/v21.0/{post_id}",
+                f"https://graph.facebook.com/v22.0/{post_id}",
                 params={'access_token': token},
                 timeout=15
             ).json()
-            if res.get('success'):
+            if res.get('success') or res.get('id'):
                 return True, "Deleted from Facebook ✓"
             error = res.get('error', {}).get('message', 'Unknown error')
             return False, f"Facebook delete failed: {error}"
 
         elif platform == 'instagram':
-            # Instagram API does not support post deletion
+            
             return True, "Instagram: please delete manually from the app"
 
         return True, f"{platform}: deletion not supported"
@@ -40,7 +41,7 @@ def _delete_from_platform(platform_status):
 
 
 def _update_on_platform(platform_status, new_content):
-    """Update post caption on its social media platform."""
+    
     platform = platform_status.social_account.platform
     post_id = platform_status.platform_post_id
     token = platform_status.social_account.access_token
@@ -50,18 +51,19 @@ def _update_on_platform(platform_status, new_content):
 
     try:
         if platform == 'facebook':
+            
             res = requests.post(
-                f"https://graph.facebook.com/v21.0/{post_id}",
+                f"https://graph.facebook.com/v22.0/{post_id}",
                 data={'message': new_content, 'access_token': token},
                 timeout=15
             ).json()
-            if res.get('success'):
+            if res.get('success') or res.get('id'):
                 return True, "Updated on Facebook ✓"
             error = res.get('error', {}).get('message', 'Unknown error')
             return False, f"Facebook update failed: {error}"
 
         elif platform == 'instagram':
-            # Instagram API does not support caption editing
+            
             return False, "Instagram caption edit requires manual update — open Instagram app"
 
         return True, f"{platform}: editing not supported"
@@ -82,8 +84,10 @@ def post_list(request):
 
 @login_required
 def post_create(request):
+    """Create a new post with member-level channel permission filtering."""
     if request.method == 'POST':
-        form = PostForm(request.POST, request.FILES)
+        
+        form = PostForm(request.POST, request.FILES, user=request.user)
         if form.is_valid():
             post = form.save(commit=False)
             post.created_by = request.user
@@ -116,7 +120,8 @@ def post_create(request):
 
             return redirect('post_list')
     else:
-        form = PostForm()
+        
+        form = PostForm(user=request.user)
     return render(request, 'posts/post_form.html', {'form': form})
 
 
@@ -131,14 +136,16 @@ def post_detail(request, post_id):
 
 @login_required
 def post_edit(request, post_id):
+    
     post = get_object_or_404(Post, id=post_id)
 
     if request.method == 'POST':
-        form = PostForm(request.POST, request.FILES, instance=post)
+        
+        form = PostForm(request.POST, request.FILES, instance=post, user=request.user)
         if form.is_valid():
             new_content = form.cleaned_data.get('content', '')
 
-            # Update on platforms if already published
+            
             platform_results = []
             for ps in post.platform_statuses.filter(status='published'):
                 success, msg = _update_on_platform(ps, new_content)
@@ -148,7 +155,7 @@ def post_edit(request, post_id):
             post.save()
             form.save_m2m()
 
-            # Rebuild platform statuses
+            
             post.platform_statuses.all().delete()
             for account in form.cleaned_data['social_accounts']:
                 PostPlatformStatus.objects.create(
@@ -162,7 +169,8 @@ def post_edit(request, post_id):
             messages.success(request, "Post updated successfully.")
             return redirect('post_detail', post_id=post.id)
     else:
-        form = PostForm(instance=post)
+        
+        form = PostForm(instance=post, user=request.user)
 
     return render(request, 'posts/post_form.html', {
         'form': form,

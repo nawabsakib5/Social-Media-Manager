@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+{% block title %}Team Members{% endblock %}
+{% block page_title %}Team Members{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-0" style="margin-top: -15px;">
+    
+    <!-- Top Action Bar -->
+    <div class="d-flex justify-content-between align-items-center mb-4 bg-white p-3 rounded-4 border border-1 border-light shadow-sm">
+        <div>
+            <h5 class="mb-0 fw-bold text-dark"><i class="fa-solid fa-users text-orange me-2" style="color: var(--accent);"></i>Team Members</h5>
+            <small class="text-muted" style="font-size: 12px;">Manage your SaaS team members and system permissions</small>
+        </div>
+        <a href="{% url 'accounts:invite_member' %}" class="btn btn-primary btn-sm px-4 d-flex align-items-center gap-2" style="border-radius: 9px; font-weight: 600; background: var(--accent); border: none;">
+            <i class="fa-solid fa-user-plus"></i>Invite Member
+        </a>
+    </div>
+
+    <!-- Users Table Card -->
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden" style="background: #ffffff; border: 1px solid var(--sidebar-border) !important;">
+        <div class="table-responsive">
+            <table class="table align-middle mb-0" style="min-width: 800px;">
+                <thead class="bg-light" style="background-color: #f8fafc !important;">
+                    <tr>
+                        <th class="px-4 py-3 text-muted fw-semibold" style="font-size: 13px;">Full Name</th>
+                        <th class="px-4 py-3 text-muted fw-semibold" style="font-size: 13px;">Username</th>
+                        <th class="px-4 py-3 text-muted fw-semibold" style="font-size: 13px;">Email Address</th>
+                        <th class="px-4 py-3 text-muted fw-semibold" style="font-size: 13px;">Phone</th>
+                        <th class="px-4 py-3 text-muted fw-semibold" style="font-size: 13px;">Role</th>
+                        <th class="px-4 py-3 text-muted fw-semibold text-end" style="font-size: 13px;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y">
+                    {% for u in users %}
+                        <tr class="table-row" style="border-bottom: 1px solid #f1f3f7 !important; transition: background 0.2s;">
+                            <!-- Full Name (সংশোধিত অংশ: নামের ওপর মেম্বার ডিটেইলস ও লাইভ পারমিশন লিক যুক্ত করা হয়েছে) -->
+                            <td class="px-4 py-3.5">
+                                <div class="d-flex align-items-center gap-3">
+                                    <div class="user-avatar-bubble">
+                                        {% if u.full_name %}{{ u.full_name|first|upper }}{% else %}{{ u.username|first|upper }}{% endif %}
+                                    </div>
+                                    <div>
+                                        <div class="fw-bold text-dark" style="font-size: 14px;">
+                                            <a href="{% url 'accounts:user_detail' u.id %}" class="text-dark text-decoration-none hover-orange-text">
+                                                {% if u.full_name %}{{ u.full_name }}{% else %}{{ u.username }}{% endif %}
+                                            </a>
+                                        </div>
+                                        {% if u == request.user %}
+                                            <span class="badge bg-success-light text-success rounded-pill" style="font-size: 10px;">You</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </td>
+                            
+                            <!-- Username -->
+                            <td class="px-4 py-3.5 text-muted" style="font-size: 13.5px;">@{{ u.username }}</td>
+                            
+                            <!-- Email -->
+                            <td class="px-4 py-3.5 text-dark" style="font-size: 13.5px;">{{ u.email }}</td>
+                            
+                            <!-- Phone -->
+                            <td class="px-4 py-3.5 text-muted" style="font-size: 13.5px;">
+                                {% if u.phone %}{{ u.phone }}{% else %}<span class="text-light-gray">-</span>{% endif %}
+                            </td>
+                            
+                            <!-- User Type Role -->
+                            <td class="px-4 py-3.5">
+                                {% if u.user_type == 'admin' or u.is_superuser %}
+                                    <span class="badge bg-danger-light text-danger rounded-pill px-3 py-1.5" style="font-size: 11px; font-weight: 600;">Admin</span>
+                                {% else %}
+                                    <span class="badge bg-primary-light text-primary rounded-pill px-3 py-1.5" style="font-size: 11px; font-weight: 600;">User</span>
+                                {% endif %}
+                            </td>
+                            
+                            <!-- Actions -->
+                            <td class="px-4 py-3.5 text-end">
+                                {% if u != request.user %}
+                                    <a href="{% url 'accounts:remove_user' u.id %}" 
+                                       onclick="return confirm('Are you sure you want to remove {% if u.full_name %}{{ u.full_name }}{% else %}{{ u.username }}{% endif %} from the team? This action cannot be undone.');"
+                                       class="btn btn-outline-danger btn-sm border-0 px-3 py-1.5 rounded-3 fw-semibold"
+                                       style="font-size: 12.5px;">
+                                        <i class="fa-solid fa-trash-can me-1"></i>Remove
+                                    </a>
+                                {% else %}
+                                    <span class="text-muted small px-3" style="font-size: 12px; font-style: italic;">Current Session</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="6" class="p-5 text-center text-muted">
+                                <i class="fa-solid fa-users-slash fs-2 mb-2 text-muted"></i>
+                                <p class="mb-0 small">No team members found.</p>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<style>
+    .bg-success-light { background: rgba(34, 197, 94, 0.08); }
+    .bg-danger-light { background: rgba(239, 68, 68, 0.08); }
+    .bg-primary-light { background: rgba(59, 130, 246, 0.08); }
+    .text-success { color: #22c55e !important; }
+    .text-danger { color: #ef4444 !important; }
+    .text-primary { color: #3b82f6 !important; }
+    .table-row:hover { background-color: #fafbfe; }
+    .user-avatar-bubble {
+        width: 36px; height: 36px;
+        border-radius: 50%;
+        background: #e2e8f0;
+        color: #475569;
+        display: flex; align-items: center; justify-content: center;
+        font-weight: 700; font-size: 13.5px; flex-shrink: 0;
+    }
+    .text-light-gray { color: #cbd5e1; }
+    /* কাস্টম অরেঞ্জ কালার হোভার ইফেক্ট */
+    .hover-orange-text:hover { color: var(--accent) !important; font-weight: 700; }
+</style>
+{% endblock %}

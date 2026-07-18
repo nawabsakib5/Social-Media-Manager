@@ -8,7 +8,7 @@ from django.contrib import messages
 from .models import SocialAccount
 from integrations.facebook_adapter import FacebookAdapter
 
-# settings.py থেকে ক্রেডেনশিয়াল লোড করা হচ্ছে (ফেইল-সেফ ব্যাকআপসহ)
+
 FB_APP_ID       = getattr(settings, 'FACEBOOK_APP_ID', '')
 FB_APP_SECRET   = getattr(settings, 'FACEBOOK_APP_SECRET', '')
 FB_REDIRECT_URI = getattr(settings, 'FACEBOOK_REDIRECT_URI', 'http://localhost:8000/posts/accounts/callback/')
@@ -16,14 +16,18 @@ FB_REDIRECT_URI = getattr(settings, 'FACEBOOK_REDIRECT_URI', 'http://localhost:8
 
 @login_required
 def account_list(request):
-    """List all connected accounts for the user"""
+    """List all connected accounts for the user (supporting team permissions)"""
     PLATFORMS = [
         'facebook', 'instagram', 'twitter', 'threads',
         'youtube', 'tiktok', 'whatsapp', 'linkedin', 'gmail',
     ]
     
-    # Get user's connected accounts
-    user_accounts = SocialAccount.objects.filter(connected_by=request.user)
+    # অ্যাডমিন হলে সব অ্যাকাউন্ট দেখাবে, মেম্বার হলে শুধুমাত্র তার পারমিশন দেওয়া অ্যাকাউন্ট দেখাবে
+    if request.user.is_superuser or getattr(request.user, 'user_type', None) == 'admin':
+        user_accounts = SocialAccount.objects.all()
+    else:
+        user_accounts = SocialAccount.objects.filter(permitted_users=request.user)
+        
     connected = {acc.platform: acc for acc in user_accounts}
     platform_data = [{'name': p, 'account': connected.get(p)} for p in PLATFORMS]
     

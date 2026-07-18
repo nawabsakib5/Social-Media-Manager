@@ -19,6 +19,20 @@ class PostForm(forms.ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
+        
+        user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
-        self.fields['content'].required = False  # optional করা হলো
+        self.fields['content'].required = False 
         self.fields['content'].label = 'Content'
+        
+        
+        if user:
+            if user.is_superuser or getattr(user, 'user_type', None) == 'admin':
+                
+                self.fields['social_accounts'].queryset = SocialAccount.objects.filter(status='connected')
+            else:
+                
+                self.fields['social_accounts'].queryset = SocialAccount.objects.filter(
+                    status='connected',
+                    permitted_users=user
+                )

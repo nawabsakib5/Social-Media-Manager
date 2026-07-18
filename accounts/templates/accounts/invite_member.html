@@ -1,47 +1,98 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Invite Team Member - {{ active_team.name }}</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-</head>
-<body class="bg-light py-5">
-    <div class="container" style="max-width: 600px;">
-        <div class="card shadow-sm p-4">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center mb-4">
-                    <h1 class="h3 text-primary mb-0">Invite Team Member</h1>
-                    <span class="badge bg-secondary">{{ active_team.name }}</span>
-                </div>
-                
-                <p class="text-muted mb-4">
-                    Enter the Gmail address of the person you want to invite. 
-                    The system will automatically generate a secure password and email them their login credentials.
-                </p>
+{% extends "base.html" %}
+{% block title %}Invite Member{% endblock %}
+{% block page_title %}Invite Member{% endblock %}
 
-                <form method="POST">
-                    {% csrf_token %}
-                    
-                    <div class="mb-3">
-                        <label class="form-label font-weight-bold">{{ form.email.label }}</label>
-                        {{ form.email }}
-                    </div>
-
-                    <div class="mb-4">
-                        <label class="form-label font-weight-bold">{{ form.role.label }}</label>
-                        {{ form.role }}
-                    </div>
-
-                    <div class="d-grid gap-2">
-                        <button type="submit" class="btn btn-success py-2 font-weight-bold">
-                            Send Invitation & Create Account
-                        </button>
-                        <a href="{% url 'post_list' %}" class="btn btn-outline-secondary">Back to Dashboard</a>
-                    </div>
-                </form>
-            </div>
+{% block content %}
+<div class="container-fluid px-0" style="margin-top: -15px;">
+    
+    <!-- Top Action Bar -->
+    <div class="d-flex justify-content-between align-items-center mb-4 bg-white p-3 rounded-4 border border-1 border-light shadow-sm">
+        <div>
+            <h5 class="mb-0 fw-bold text-dark"><i class="fa-solid fa-user-plus text-orange me-2" style="color: var(--accent);"></i>Invite Member</h5>
+            <small class="text-muted" style="font-size: 12px;">Add a new member to your team workspace</small>
         </div>
+        <a href="{% url 'accounts:user_list' %}" class="btn btn-outline-primary btn-sm px-4 d-flex align-items-center gap-2" style="border-radius: 9px; font-weight: 600;">
+            <i class="fa-solid fa-arrow-left"></i>Back to List
+        </a>
     </div>
-</body>
-</html>
+
+    <!-- Invite Form Card -->
+    <div class="card border-0 shadow-sm rounded-4 p-4 mx-auto" style="max-width: 600px; background: #ffffff; border: 1px solid var(--sidebar-border) !important;">
+        <p class="text-muted mb-4" style="font-size: 13.5px; line-height: 1.6;">
+            Enter the email and username of the person you want to invite. 
+            Select which connected social media channels this team member is allowed to manage.
+        </p>
+
+        <form method="POST" class="needs-validation" novalidate>
+            {% csrf_token %}
+            
+            <div class="row g-3">
+                
+                <!-- Email Address Field (Required) -->
+                <div class="col-12">
+                    <label class="form-label fw-semibold text-dark" style="font-size: 13.5px;">Email Address</label>
+                    <input type="email" name="email" class="form-control rounded-3" placeholder="email@example.com" required style="font-size: 13.5px; padding: 10px;">
+                </div>
+
+                <!-- Username Field (Optional - falls back to email if blank in backend) -->
+                <div class="col-12">
+                    <label class="form-label fw-semibold text-dark" style="font-size: 13.5px;">Username (Optional)</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-light text-muted" style="font-size: 13.5px; border-radius: 8px 0 0 8px;">@</span>
+                        <input type="text" name="username" class="form-control" placeholder="username" style="font-size: 13.5px; padding: 10px; border-radius: 0 8px 8px 0;">
+                    </div>
+                </div>
+
+                <!-- Select Permitted Social Accounts (Dynamic Checkboxes - নতুন যুক্ত করা হয়েছে) -->
+                <div class="col-12 mt-3">
+                    <label class="form-label fw-semibold text-dark" style="font-size: 13px;">Assign Social Channels</label>
+                    <p class="text-muted small mb-2" style="font-size: 11.5px;">Specify which social accounts this team member can access and manage.</p>
+                    
+                    <div class="row g-2 bg-light p-3 rounded-3 border border-light" style="background-color: #fafbfe !important;">
+                        {% for sa in connected_accounts %}
+                        <div class="col-sm-6">
+                            <div class="form-check d-flex align-items-center gap-2">
+                                <input class="form-check-input flex-shrink-0" type="checkbox" name="permitted_accounts" value="{{ sa.id }}" id="sa-{{ sa.id }}" checked style="width: 16px; height: 16px; border-radius: 4px; cursor: pointer; accent-color: var(--accent);">
+                                <label class="form-check-label d-flex align-items-center gap-2 text-dark small" for="sa-{{ sa.id }}" style="cursor: pointer; font-weight: 600; font-size: 13px;">
+                                    <i class="fa-brands fa-{{ sa.platform }} fs-6" 
+                                       style="color: {% if sa.platform == 'facebook' %}#1877f2
+                                                     {% elif sa.platform == 'instagram' %}#e1306c
+                                                     {% elif sa.platform == 'twitter' %}#1da1f2
+                                                     {% elif sa.platform == 'youtube' %}#ff0000
+                                                     {% elif sa.platform == 'whatsapp' %}#25d366
+                                                     {% elif sa.platform == 'linkedin' %}#0077b5
+                                                     {% else %}#64748b{% endif %};">
+                                    </i>
+                                    {{ sa.account_name|truncatechars:20 }}
+                                </label>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div class="col-12 text-center text-muted py-2 small">
+                            <i class="fa-solid fa-triangle-exclamation me-1 text-warning"></i>No connected accounts found. Please connect accounts first.
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Notice -->
+                <div class="col-12 mt-3">
+                    <div class="p-3 rounded-3" style="background-color: #fafbfe; border: 1px solid #f1f5f9;">
+                        <small class="text-muted d-block" style="font-size: 12px; line-height: 1.5;">
+                            <i class="fa-solid fa-circle-info text-primary me-1"></i>
+                            <strong>SaaS Workspace Notice:</strong> Invited team members can only see the social channels assigned to them in their sidebar, posts, and inbox views. They cannot view unassigned channels.
+                        </small>
+                    </div>
+                </div>
+
+                <!-- Submit Button -->
+                <div class="col-12 mt-4 text-end">
+                    <button type="submit" class="btn btn-primary px-5 py-2.5 fw-bold" style="border-radius: 9px; background: var(--accent); border: none; font-size: 14px; width: 100%;">
+                        <i class="fa-solid fa-paper-plane me-1"></i>Send Invitation & Create Account
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

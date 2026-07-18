@@ -49,3 +49,20 @@ class UserProfile(models.Model):
     @property
     def is_admin(self):
         return self.user.is_superuser or self.user.is_staff
+
+
+
+
+
+class Invitation(models.Model):
+    email = models.EmailField(unique=True)
+    token = models.CharField(max_length=64, unique=True)
+    user_type = models.CharField(max_length=10, choices=[('admin', 'Admin'), ('user', 'User')], default='user')
+    
+    permitted_accounts = models.JSONField(default=list, blank=True)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    is_accepted = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"Invitation to {self.email} ({self.user_type})"

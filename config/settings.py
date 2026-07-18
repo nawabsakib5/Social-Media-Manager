@@ -10,6 +10,7 @@ DEBUG = config('DEBUG', cast=bool)
 ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'dev-rolls-contrast-jamie.trycloudflare.com']
 
 INSTALLED_APPS = [
+    'django_admin_collapse_apps',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
