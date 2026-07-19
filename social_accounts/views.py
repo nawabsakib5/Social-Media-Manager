@@ -1,4 +1,5 @@
 import requests
+import base64
 import urllib.parse
 from urllib.parse import urlencode
 from django.conf import settings
@@ -6,12 +7,18 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from .models import SocialAccount
+from .utils import generate_pkce_pair
 from integrations.facebook_adapter import FacebookAdapter
 
 
 FB_APP_ID       = getattr(settings, 'FACEBOOK_APP_ID', '')
 FB_APP_SECRET   = getattr(settings, 'FACEBOOK_APP_SECRET', '')
 FB_REDIRECT_URI = getattr(settings, 'FACEBOOK_REDIRECT_URI', 'http://localhost:8000/posts/accounts/callback/')
+
+
+TWITTER_CLIENT_ID = getattr(settings, 'TWITTER_CLIENT_ID', '')
+TWITTER_CLIENT_SECRET = getattr(settings, 'TWITTER_CLIENT_SECRET', '')
+TWITTER_REDIRECT_URI = f"{settings.SITE_URL}/posts/accounts/twitter/callback/"
 
 
 @login_required
@@ -22,7 +29,7 @@ def account_list(request):
         'youtube', 'tiktok', 'whatsapp', 'linkedin', 'gmail',
     ]
     
-    # অ্যাডমিন হলে সব অ্যাকাউন্ট দেখাবে, মেম্বার হলে শুধুমাত্র তার পারমিশন দেওয়া অ্যাকাউন্ট দেখাবে
+    
     if request.user.is_superuser or getattr(request.user, 'user_type', None) == 'admin':
         user_accounts = SocialAccount.objects.all()
     else:
@@ -41,14 +48,14 @@ def account_list(request):
 @login_required
 def workspace(request, account_id=None):
     """Workspace view for specific social account"""
-    # Get all connected accounts for the user
+    
     accounts = SocialAccount.objects.filter(connected_by=request.user, status='connected')
     
     if not accounts.exists():
         messages.warning(request, "Please connect a social media account first.")
         return redirect('social_accounts:account_list')
     
-    # If account_id provided, use that account
+    
     if account_id:
         try:
             current_account = accounts.get(id=account_id)
@@ -56,10 +63,10 @@ def workspace(request, account_id=None):
             messages.error(request, "Account not found.")
             return redirect('social_accounts:workspace')
     else:
-        # Use first account as default
+        
         current_account = accounts.first()
     
-    # Get data based on platform
+    
     context = {
         'connected_accounts': accounts,
         'current_account': current_account,
@@ -67,7 +74,7 @@ def workspace(request, account_id=None):
         'all_platform_accounts': accounts.filter(platform=current_account.platform),
     }
     
-    # Fetch platform-specific data
+    
     if current_account.platform == 'facebook':
         context.update(get_facebook_workspace_data(current_account))
         template = 'social_accounts/workspace_facebook.html'
@@ -86,7 +93,7 @@ def get_facebook_workspace_data(account):
     data = {'posts': [], 'conversations': [], 'error': None}
     
     try:
-        # Get page token using adapter
+        
         adapter = FacebookAdapter()
         page_token, error = adapter.get_page_token(account)
         
@@ -94,7 +101,7 @@ def get_facebook_workspace_data(account):
             data['error'] = error
             return data
         
-        # Fetch posts with comments
+        
         page_id = account.platform_account_id
         url = f"https://graph.facebook.com/v22.0/{page_id}/feed"
         params = {
@@ -113,7 +120,7 @@ def get_facebook_workspace_data(account):
             data['error'] = f"Failed to fetch posts: {response.text}"
             return data
         
-        # Fetch conversations (Messenger)
+        
         conv_url = f"https://graph.facebook.com/v22.0/{page_id}/conversations"
         conv_params = {
             'access_token': page_token,
@@ -144,7 +151,7 @@ def get_instagram_workspace_data(account):
     data = {'posts': [], 'error': None, 'page_info': {}}
     
     try:
-        # Get page token first (Instagram is managed through Facebook pages)
+        
         adapter = FacebookAdapter()
         page_token, error = adapter.get_page_token(account)
         
@@ -152,7 +159,7 @@ def get_instagram_workspace_data(account):
             data['error'] = error
             return data
         
-        # Get Instagram Business Account ID
+        
         page_id = account.platform_account_id
         url = f"https://graph.facebook.com/v22.0/{page_id}"
         params = {
@@ -172,7 +179,7 @@ def get_instagram_workspace_data(account):
             data['error'] = 'No Instagram Business Account connected to this page'
             return data
         
-        # Fetch Instagram media
+        
         media_url = f"https://graph.facebook.com/v22.0/{ig_id}/media"
         media_params = {
             'access_token': page_token,
@@ -189,7 +196,7 @@ def get_instagram_workspace_data(account):
             data['error'] = f"Failed to fetch Instagram posts: {media_response.text}"
             return data
         
-        # Add page info
+        
         data['page_info'] = {
             'name': account.account_name,
             'id': page_id,
@@ -206,7 +213,7 @@ def get_instagram_workspace_data(account):
 
 @login_required
 def post_comment_reply(request, platform, comment_id):
-    """Reply to a comment on Facebook or Instagram."""
+    
     if request.method != 'POST':
         return redirect('social_accounts:account_list')
     
@@ -225,7 +232,7 @@ def post_comment_reply(request, platform, comment_id):
         messages.error(request, f"{platform.capitalize()} account not connected.")
         return redirect('social_accounts:account_list')
     
-    # Get page token for API calls
+    
     adapter = FacebookAdapter()
     page_token, error = adapter.get_page_token(account)
     
@@ -286,7 +293,7 @@ def send_messenger_reply(request):
         messages.error(request, "Facebook account not connected.")
         return redirect('social_accounts:account_list')
     
-    # Get page token
+    
     adapter = FacebookAdapter()
     page_token, error = adapter.get_page_token(account)
     
@@ -327,7 +334,7 @@ def facebook_login(request):
         'business_management',
         'instagram_basic', 
         'instagram_content_publish',
-        'instagram_manage_comments', # শুধুমাত্র কোর কমেন্ট এবং পেজ এডিটিং স্কোপগুলো রাখা হয়েছে
+        'instagram_manage_comments', 
     ]
     
     params = {
@@ -356,13 +363,12 @@ def facebook_callback(request):
         messages.error(request, f"Facebook login failed: {error_msg}")
         return redirect('social_accounts:account_list')
     
-    # Security: Verify state matches logged in user id
     if state != str(request.user.id):
         messages.error(request, "Security check failed. Please try again.")
         return redirect('social_accounts:account_list')
     
     try:
-        # ১. ওয়ান-টাইম কোড এক্সচেঞ্জ করে শর্ট-লাইভড ইউজার টোকেন সংগ্রহ
+        
         token_res = requests.get(
             "https://graph.facebook.com/v22.0/oauth/access_token",
             params={
@@ -381,7 +387,7 @@ def facebook_callback(request):
         
         short_token = token_res['access_token']
         
-        # ২. শর্ট-লাইভড ইউজার টোকেন এক্সচেঞ্জ করে ৬০ দিনের দীর্ঘমেয়াদী লং-লাইভড টোকেন সংগ্রহ
+        
         long_res = requests.get(
             "https://graph.facebook.com/v22.0/oauth/access_token",
             params={
@@ -395,7 +401,7 @@ def facebook_callback(request):
         
         long_token = long_res.get('access_token', short_token)
         
-        # ৩. ৬০ দিনের লং-লাইভড টোকেন ব্যবহার করে মেটা থেকে আজীবন সচল (Never Expiring) পেজ টোকেন সংগ্রহ
+        
         pages_data = requests.get(
             "https://graph.facebook.com/v22.0/me/accounts",
             params={
@@ -423,7 +429,7 @@ def facebook_callback(request):
             if not page_token:
                 page_token = long_token 
 
-            # ফেসবুক পেজটি সোশ্যাল অ্যাকাউন্ট হিসেবে সেভ বা আপডেট করা হচ্ছে
+            
             account, created = SocialAccount.objects.update_or_create(
                 platform='facebook',
                 platform_account_id=page_id,
@@ -439,7 +445,7 @@ def facebook_callback(request):
             
             connected_pages.append(page_name)
             
-            # ৪. পেজের সাথে কোনো Instagram Business Account কানেক্টেড আছে কি না তা চেক করা
+            
             instagram_check = requests.get(
                 f"https://graph.facebook.com/v22.0/{page_id}",
                 params={
@@ -455,7 +461,7 @@ def facebook_callback(request):
                 ig_username = ig_data.get('username', page_name)
                 ig_name = ig_data.get('name', f"{page_name} (Instagram)")
                 
-                # ইনস্টাগ্রাম অ্যাকাউন্টটি সোশ্যাল অ্যাকাউন্ট হিসেবে সেভ বা আপডেট করা হচ্ছে
+                
                 ig_account, _ = SocialAccount.objects.update_or_create(
                     platform='instagram',
                     platform_account_id=ig_id,
@@ -497,4 +503,124 @@ def disconnect_account(request, account_id):
     except SocialAccount.DoesNotExist:
         messages.error(request, "Account not found.")
     
+    return redirect('social_accounts:account_list')
+
+
+
+
+@login_required
+def twitter_login(request):
+    """Initiate Twitter OAuth 2.0 flow with PKCE secure handshake"""
+    
+    verifier, challenge = generate_pkce_pair()
+    
+    
+    request.session['twitter_code_verifier'] = verifier
+    
+    params = {
+        'response_type': 'code',
+        'client_id': TWITTER_CLIENT_ID,
+        'redirect_uri': TWITTER_REDIRECT_URI,
+        'scope': 'tweet.read tweet.write users.read offline.access', 
+        'state': str(request.user.id),
+        'code_challenge': challenge,
+        'code_challenge_method': 'S256',
+    }
+    
+    auth_url = "https://twitter.com/i/oauth2/authorize?" + urllib.parse.urlencode(params)
+    return redirect(auth_url)
+
+
+@login_required
+def twitter_callback(request):
+    """Handle Twitter OAuth 2.0 PKCE callback and register the Twitter Handle"""
+    code = request.GET.get('code')
+    state = request.GET.get('state')
+    error = request.GET.get('error')
+    
+    if error or not code:
+        messages.error(request, f"Twitter connection failed: {error or 'No code received.'}")
+        return redirect('social_accounts:account_list')
+        
+    if state != str(request.user.id):
+        messages.error(request, "Security check failed. Please try again.")
+        return redirect('social_accounts:account_list')
+        
+    verifier = request.session.get('twitter_code_verifier')
+    if not verifier:
+        messages.error(request, "Session expired. Please try connecting again.")
+        return redirect('social_accounts:account_list')
+        
+    token_url = "https://api.twitter.com/2/oauth2/token"
+    
+    
+    auth_str = f"{TWITTER_CLIENT_ID}:{TWITTER_CLIENT_SECRET}"
+    b64_auth = base64.b64encode(auth_str.encode('utf-8')).decode('utf-8')
+    
+    headers = {
+        'Authorization': f'Basic {b64_auth}',
+        'Content-Type': 'application/x-www-form-urlencoded',
+    }
+    
+    payload = {
+        'code': code,
+        'grant_type': 'authorization_code',
+        'redirect_uri': TWITTER_REDIRECT_URI,
+        'code_verifier': verifier,
+    }
+    
+    try:
+        
+        res = requests.post(token_url, headers=headers, data=payload, timeout=15)
+        token_data = res.json()
+        
+        if 'access_token' not in token_data:
+            error_desc = token_data.get('error_description', 'Token exchange failed.')
+            messages.error(request, f"Twitter token error: {error_desc}")
+            return redirect('social_accounts:account_list')
+            
+        access_token = token_data['access_token']
+        refresh_token = token_data.get('refresh_token', '') 
+        
+        
+        user_info_url = "https://api.twitter.com/2/users/me?user.fields=profile_image_url"
+        user_headers = {'Authorization': f"Bearer {access_token}"}
+        user_res = requests.get(user_info_url, headers=user_headers, timeout=10).json()
+        user_data = user_res.get('data', {})
+        
+        if not user_data:
+            messages.error(request, "Could not retrieve Twitter profile info.")
+            return redirect('social_accounts:account_list')
+            
+        twitter_id = user_data.get('id')
+        twitter_name = user_data.get('name', 'Twitter Account')
+        twitter_username = user_data.get('username', '')
+        profile_img = user_data.get('profile_image_url', '')
+        
+        
+        sa, created = SocialAccount.objects.update_or_create(
+            platform='twitter',
+            platform_account_id=twitter_id,
+            defaults={
+                'account_name': twitter_name,
+                'account_username': twitter_username,
+                'profile_picture_url': profile_img,
+                'status': 'connected',
+                'connected_by': request.user,
+            }
+        )
+        
+        sa.access_token = access_token
+        if refresh_token:
+            sa.refresh_token = refresh_token
+        sa.save()
+        
+        if not (request.user.is_superuser or getattr(request.user, 'user_type', None) == 'admin'):
+            sa.permitted_users.add(request.user)
+            
+        messages.success(request, f"Successfully connected Twitter Account: @{twitter_username}")
+        
+    except requests.RequestException as e:
+        messages.error(request, f"Network error during Twitter connection: {str(e)}")
+        
     return redirect('social_accounts:account_list')
