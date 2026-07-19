@@ -1,5 +1,4 @@
 
-
 from django.urls import path
 from . import views
 
@@ -14,4 +13,6 @@ urlpatterns = [
     path('reply/<str:platform>/<str:comment_id>/', views.post_comment_reply, name='post_comment_reply'),
     path('messenger/reply/', views.send_messenger_reply, name='send_messenger_reply'),
     path('disconnect/<int:account_id>/', views.disconnect_account, name='disconnect_account'),
+    path('twitter/login/', views.twitter_login, name='twitter_login'),
+    path('twitter/callback/', views.twitter_callback, name='twitter_callback'),
 ]

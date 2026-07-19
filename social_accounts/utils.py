@@ -1,19 +1,20 @@
 # social_accounts/utils.py
-
+import os
+import base64
+import hashlib
 from cryptography.fernet import Fernet
 from django.conf import settings
-import base64
-import os
+
+
 
 def get_encryption_key():
-    """Encryption key পাওয়া"""
+    
     key = settings.FIELD_ENCRYPTION_KEY
     
-    # যদি key স্ট্রিং হয়, এনকোড করুন
     if isinstance(key, str):
         key = key.encode()
     
-    # যদি key না থাকে, নতুন generate করুন
+    
     if not key:
         key = Fernet.generate_key()
         print(f"⚠️ No encryption key found. Generated new key: {key.decode()}")
@@ -21,8 +22,9 @@ def get_encryption_key():
     
     return key
 
+
 def encrypt_token(token):
-    """Token এনক্রিপ্ট করা"""
+    
     if not token:
         return None
     
@@ -33,10 +35,11 @@ def encrypt_token(token):
         return encrypted.decode()
     except Exception as e:
         print(f"❌ Encryption error: {e}")
-        return token  # যদি এনক্রিপ্ট না হয়, প্লেইন টেক্সট রিটার্ন করুন
+        return token
+
 
 def decrypt_token(encrypted_token):
-    """Token ডিক্রিপ্ট করা"""
+    
     if not encrypted_token:
         return None
     
@@ -47,5 +50,18 @@ def decrypt_token(encrypted_token):
         return decrypted.decode()
     except Exception as e:
         print(f"❌ Decryption error: {e}")
-        # যদি ডিক্রিপ্ট না হয়, ধরে নিই প্লেইন টেক্সট
         return encrypted_token
+
+
+# ── ২. নতুন যুক্ত হওয়া টুইটার OAuth 2.0 PKCE মেথড (টুইটার সংযোগের জন্য) ──
+
+def generate_pkce_pair():
+    
+    
+    verifier = base64.urlsafe_b64encode(os.urandom(32)).decode('utf-8').replace('=', '')
+    
+    
+    sha256_hash = hashlib.sha256(verifier.encode('utf-8')).digest()
+    challenge = base64.urlsafe_b64encode(sha256_hash).decode('utf-8').replace('=', '')
+    
+    return verifier, challenge
