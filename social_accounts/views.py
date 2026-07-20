@@ -10,25 +10,27 @@ from .models import SocialAccount
 from .utils import generate_pkce_pair
 from integrations.facebook_adapter import FacebookAdapter
 
-
+# settings.py থেকে ফেসবুক, টুইটার এবং লিঙ্কডইন ক্রেডেনশিয়াল লোড
 FB_APP_ID       = getattr(settings, 'FACEBOOK_APP_ID', '')
 FB_APP_SECRET   = getattr(settings, 'FACEBOOK_APP_SECRET', '')
 FB_REDIRECT_URI = getattr(settings, 'FACEBOOK_REDIRECT_URI', 'http://localhost:8000/posts/accounts/callback/')
-
 
 TWITTER_CLIENT_ID = getattr(settings, 'TWITTER_CLIENT_ID', '')
 TWITTER_CLIENT_SECRET = getattr(settings, 'TWITTER_CLIENT_SECRET', '')
 TWITTER_REDIRECT_URI = f"{settings.SITE_URL}/posts/accounts/twitter/callback/"
 
+LINKEDIN_CLIENT_ID = getattr(settings, 'LINKEDIN_CLIENT_ID', '')
+LINKEDIN_CLIENT_SECRET = getattr(settings, 'LINKEDIN_CLIENT_SECRET', '')
+LINKEDIN_REDIRECT_URI = getattr(settings, 'LINKEDIN_REDIRECT_URI', 'http://localhost:8000/posts/accounts/linkedin/callback/')
+
 
 @login_required
 def account_list(request):
-    
+    """List all connected accounts for the user (supporting team permissions)"""
     PLATFORMS = [
         'facebook', 'instagram', 'twitter', 'threads',
         'youtube', 'tiktok', 'whatsapp', 'linkedin', 'gmail',
     ]
-    
     
     if request.user.is_superuser or getattr(request.user, 'user_type', None) == 'admin':
         user_accounts = SocialAccount.objects.all()
@@ -47,14 +49,12 @@ def account_list(request):
 
 @login_required
 def workspace(request, account_id=None):
-    
-    
+    """Workspace view for specific social account"""
     accounts = SocialAccount.objects.filter(connected_by=request.user, status='connected')
     
     if not accounts.exists():
         messages.warning(request, "Please connect a social media account first.")
         return redirect('social_accounts:account_list')
-    
     
     if account_id:
         try:
@@ -63,9 +63,7 @@ def workspace(request, account_id=None):
             messages.error(request, "Account not found.")
             return redirect('social_accounts:workspace')
     else:
-        
         current_account = accounts.first()
-    
     
     context = {
         'connected_accounts': accounts,
@@ -73,7 +71,6 @@ def workspace(request, account_id=None):
         'platform': current_account.platform,
         'all_platform_accounts': accounts.filter(platform=current_account.platform),
     }
-    
     
     if current_account.platform == 'facebook':
         context.update(get_facebook_workspace_data(current_account))
@@ -89,18 +86,16 @@ def workspace(request, account_id=None):
 
 
 def get_facebook_workspace_data(account):
-    
+    """Fetch Facebook page data with proper page token"""
     data = {'posts': [], 'conversations': [], 'error': None}
     
     try:
-        
         adapter = FacebookAdapter()
         page_token, error = adapter.get_page_token(account)
         
         if error:
             data['error'] = error
             return data
-        
         
         page_id = account.platform_account_id
         url = f"https://graph.facebook.com/v22.0/{page_id}/feed"
@@ -120,7 +115,6 @@ def get_facebook_workspace_data(account):
             data['error'] = f"Failed to fetch posts: {response.text}"
             return data
         
-        
         conv_url = f"https://graph.facebook.com/v22.0/{page_id}/conversations"
         conv_params = {
             'access_token': page_token,
@@ -132,12 +126,11 @@ def get_facebook_workspace_data(account):
         if conv_response.status_code == 200:
             data['conversations'] = conv_response.json().get('data', [])
         
-        
         data['page_info'] = {
             'name': account.account_name,
             'id': page_id,
             'platform': 'facebook',
-            'page_token': page_token[:20] + '...'  # Mask for display
+            'page_token': page_token[:20] + '...'  
         }
         
     except requests.RequestException as e:
@@ -147,18 +140,16 @@ def get_facebook_workspace_data(account):
 
 
 def get_instagram_workspace_data(account):
-    
+    """Fetch Instagram posts and comments"""
     data = {'posts': [], 'error': None, 'page_info': {}}
     
     try:
-        
         adapter = FacebookAdapter()
         page_token, error = adapter.get_page_token(account)
         
         if error:
             data['error'] = error
             return data
-        
         
         page_id = account.platform_account_id
         url = f"https://graph.facebook.com/v22.0/{page_id}"
@@ -179,7 +170,7 @@ def get_instagram_workspace_data(account):
             data['error'] = 'No Instagram Business Account connected to this page'
             return data
         
-        
+        # Fetch Instagram media
         media_url = f"https://graph.facebook.com/v22.0/{ig_id}/media"
         media_params = {
             'access_token': page_token,
@@ -195,7 +186,6 @@ def get_instagram_workspace_data(account):
         else:
             data['error'] = f"Failed to fetch Instagram posts: {media_response.text}"
             return data
-        
         
         data['page_info'] = {
             'name': account.account_name,
@@ -213,7 +203,7 @@ def get_instagram_workspace_data(account):
 
 @login_required
 def post_comment_reply(request, platform, comment_id):
-    
+    """Reply to a comment on Facebook or Instagram."""
     if request.method != 'POST':
         return redirect('social_accounts:account_list')
     
@@ -231,7 +221,6 @@ def post_comment_reply(request, platform, comment_id):
     except SocialAccount.DoesNotExist:
         messages.error(request, f"{platform.capitalize()} account not connected.")
         return redirect('social_accounts:account_list')
-    
     
     adapter = FacebookAdapter()
     page_token, error = adapter.get_page_token(account)
@@ -272,7 +261,7 @@ def post_comment_reply(request, platform, comment_id):
 
 @login_required
 def send_messenger_reply(request):
-    
+    """Reply to a Facebook Messenger conversation."""
     if request.method != 'POST':
         return redirect('social_accounts:account_list')
     
@@ -292,7 +281,6 @@ def send_messenger_reply(request):
     except SocialAccount.DoesNotExist:
         messages.error(request, "Facebook account not connected.")
         return redirect('social_accounts:account_list')
-    
     
     adapter = FacebookAdapter()
     page_token, error = adapter.get_page_token(account)
@@ -326,7 +314,7 @@ def send_messenger_reply(request):
 
 @login_required
 def facebook_login(request):
-    
+    """Initiate Facebook OAuth flow with clean and modern scopes"""
     scopes = [
         'pages_show_list', 
         'pages_read_engagement',
@@ -351,7 +339,7 @@ def facebook_login(request):
 
 @login_required
 def facebook_callback(request):
-    
+    """Handle Facebook OAuth callback and generate Never-Expiring Page & Instagram tokens"""
     code = request.GET.get('code')
     state = request.GET.get('state')
     error = request.GET.get('error')
@@ -368,7 +356,6 @@ def facebook_callback(request):
         return redirect('social_accounts:account_list')
     
     try:
-        
         token_res = requests.get(
             "https://graph.facebook.com/v22.0/oauth/access_token",
             params={
@@ -387,7 +374,6 @@ def facebook_callback(request):
         
         short_token = token_res['access_token']
         
-        
         long_res = requests.get(
             "https://graph.facebook.com/v22.0/oauth/access_token",
             params={
@@ -400,7 +386,6 @@ def facebook_callback(request):
         ).json()
         
         long_token = long_res.get('access_token', short_token)
-        
         
         pages_data = requests.get(
             "https://graph.facebook.com/v22.0/me/accounts",
@@ -429,7 +414,6 @@ def facebook_callback(request):
             if not page_token:
                 page_token = long_token 
 
-            
             account, created = SocialAccount.objects.update_or_create(
                 platform='facebook',
                 platform_account_id=page_id,
@@ -445,7 +429,6 @@ def facebook_callback(request):
             
             connected_pages.append(page_name)
             
-            
             instagram_check = requests.get(
                 f"https://graph.facebook.com/v22.0/{page_id}",
                 params={
@@ -460,7 +443,6 @@ def facebook_callback(request):
                 ig_id = ig_data['id']
                 ig_username = ig_data.get('username', page_name)
                 ig_name = ig_data.get('name', f"{page_name} (Instagram)")
-                
                 
                 ig_account, _ = SocialAccount.objects.update_or_create(
                     platform='instagram',
@@ -491,7 +473,7 @@ def facebook_callback(request):
 
 @login_required
 def disconnect_account(request, account_id):
-    
+    """Disconnect a social account"""
     if request.method != 'POST':
         return redirect('social_accounts:account_list')
     
@@ -506,15 +488,10 @@ def disconnect_account(request, account_id):
     return redirect('social_accounts:account_list')
 
 
-
-
 @login_required
 def twitter_login(request):
-    
-    
+    """Initiate Twitter OAuth 2.0 flow with PKCE secure handshake"""
     verifier, challenge = generate_pkce_pair()
-    
-    
     request.session['twitter_code_verifier'] = verifier
     
     params = {
@@ -533,7 +510,7 @@ def twitter_login(request):
 
 @login_required
 def twitter_callback(request):
-    
+    """Handle Twitter OAuth 2.0 PKCE callback and register the Twitter Handle"""
     code = request.GET.get('code')
     state = request.GET.get('state')
     error = request.GET.get('error')
@@ -553,7 +530,6 @@ def twitter_callback(request):
         
     token_url = "https://api.twitter.com/2/oauth2/token"
     
-    
     auth_str = f"{TWITTER_CLIENT_ID}:{TWITTER_CLIENT_SECRET}"
     b64_auth = base64.b64encode(auth_str.encode('utf-8')).decode('utf-8')
     
@@ -570,7 +546,6 @@ def twitter_callback(request):
     }
     
     try:
-        
         res = requests.post(token_url, headers=headers, data=payload, timeout=15)
         token_data = res.json()
         
@@ -581,7 +556,6 @@ def twitter_callback(request):
             
         access_token = token_data['access_token']
         refresh_token = token_data.get('refresh_token', '') 
-        
         
         user_info_url = "https://api.twitter.com/2/users/me?user.fields=profile_image_url"
         user_headers = {'Authorization': f"Bearer {access_token}"}
@@ -596,7 +570,6 @@ def twitter_callback(request):
         twitter_name = user_data.get('name', 'Twitter Account')
         twitter_username = user_data.get('username', '')
         profile_img = user_data.get('profile_image_url', '')
-        
         
         sa, created = SocialAccount.objects.update_or_create(
             platform='twitter',
@@ -622,5 +595,104 @@ def twitter_callback(request):
         
     except requests.RequestException as e:
         messages.error(request, f"Network error during Twitter connection: {str(e)}")
+        
+    return redirect('social_accounts:account_list')
+
+
+# ── নতুন কাস্টম ভিউ: লিঙ্কডইন / X OAuth 2.0 লগইন এবং কলব্যাক (নতুন যুক্ত করা হয়েছে) ──
+
+@login_required
+def linkedin_login(request):
+    """Initiate LinkedIn OAuth 2.0 flow using OpenID Connect scopes"""
+    params = {
+        'response_type': 'code',
+        'client_id': LINKEDIN_CLIENT_ID,
+        'redirect_uri': LINKEDIN_REDIRECT_URI,
+        'state': str(request.user.id),
+        'scope': 'openid profile email w_member_social', # লিঙ্কডইনের আধুনিক এবং অফিশিয়াল ওআউথ স্কোপস
+    }
+    auth_url = "https://www.linkedin.com/oauth/v2/authorization?" + urllib.parse.urlencode(params)
+    return redirect(auth_url)
+
+
+@login_required
+def linkedin_callback(request):
+    """Handle LinkedIn OAuth 2.0 callback, retrieve profile info and save connection"""
+    code = request.GET.get('code')
+    state = request.GET.get('state')
+    error = request.GET.get('error')
+    error_desc = request.GET.get('error_description', '')
+    
+    if error or not code:
+        messages.error(request, f"LinkedIn connection failed: {error_desc or error or 'No code received.'}")
+        return redirect('social_accounts:account_list')
+        
+    if state != str(request.user.id):
+        messages.error(request, "Security check failed. Please try again.")
+        return redirect('social_accounts:account_list')
+        
+    token_url = "https://www.linkedin.com/oauth/v2/accessToken"
+    payload = {
+        'grant_type': 'authorization_code',
+        'code': code,
+        'redirect_uri': LINKEDIN_REDIRECT_URI,
+        'client_id': LINKEDIN_CLIENT_ID,
+        'client_secret': LINKEDIN_CLIENT_SECRET,
+    }
+    
+    headers = {'Content-Type': 'application/x-www-form-urlencoded'}
+    
+    try:
+        # ওয়ান-টাইম অথরাইজেশন কোড এক্সচেঞ্জ করে লিঙ্কডইন টোকেন সংগ্রহ করা
+        res = requests.post(token_url, headers=headers, data=payload, timeout=15)
+        token_data = res.json()
+        
+        if 'access_token' not in token_data:
+            err_msg = token_data.get('error_description', 'Token exchange failed.')
+            messages.error(request, f"LinkedIn token error: {err_msg}")
+            return redirect('social_accounts:account_list')
+            
+        access_token = token_data['access_token']
+        
+        
+        user_info_url = "https://api.linkedin.com/v2/userinfo"
+        user_headers = {'Authorization': f'Bearer {access_token}'}
+        user_res = requests.get(user_info_url, headers=user_headers, timeout=10).json()
+        
+        
+        linkedin_id = user_res.get('sub') 
+        first_name = user_res.get('given_name', '')
+        last_name = user_res.get('family_name', '')
+        full_name = user_res.get('name', f"{first_name} {last_name}".strip() or 'LinkedIn User')
+        profile_img = user_res.get('picture', '') 
+        
+        if not linkedin_id:
+            messages.error(request, "Could not retrieve LinkedIn profile details.")
+            return redirect('social_accounts:account_list')
+            
+        
+        sa, created = SocialAccount.objects.update_or_create(
+            platform='linkedin',
+            platform_account_id=linkedin_id,
+            defaults={
+                'account_name': full_name,
+                'profile_picture_url': profile_img,
+                'status': 'connected',
+                'connected_by': request.user,
+            }
+        )
+        
+        
+        sa.access_token = access_token
+        sa.save()
+        
+        
+        if not (request.user.is_superuser or getattr(request.user, 'user_type', None) == 'admin'):
+            sa.permitted_users.add(request.user)
+            
+        messages.success(request, f"Successfully connected LinkedIn Profile: {full_name}")
+        
+    except requests.RequestException as e:
+        messages.error(request, f"Network error during LinkedIn connection: {str(e)}")
         
     return redirect('social_accounts:account_list')

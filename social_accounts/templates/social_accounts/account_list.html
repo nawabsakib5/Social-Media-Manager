@@ -23,7 +23,7 @@
     <div class="col-6 col-sm-4 col-md-3 col-xl-2 platform-card-col"
          style="opacity:0; transform:translateY(20px);">
 
-        <!-- সংশোধিত সঠিক ডাইনামিক রাউট ব্লক (টুইটার, ফেসবুক এবং অন্যান্য প্ল্যাটফর্ম আলাদাভাবে হ্যান্ডেল করা হয়েছে) -->
+        <!-- ডাইনামিক রাউট ব্লক (টুইটার, ফেসবুক এবং অন্যান্য প্ল্যাটফর্ম আলাদাভাবে হ্যান্ডেল করা হয়েছে) -->
         {% if item.account and item.account.status == 'connected' %}
             <a href="{% url 'social_accounts:workspace' item.account.id %}" style="text-decoration:none; color:inherit;">
         {% else %}
@@ -147,10 +147,20 @@
             </div>
 
             <div class="d-flex align-items-center gap-3">
+                <!-- ওপেন বাটন -->
                 <a href="{% url 'social_accounts:workspace' acc.id %}"
                    class="btn btn-sm btn-outline-primary" style="font-size:12px; border-radius:8px;">
                     <i class="fa-solid fa-arrow-right me-1"></i>Open
                 </a>
+                
+                <!-- নতুন যুক্ত করা সুরক্ষিত ডিসকানেক্ট বাটন -->
+                <form method="POST" action="{% url 'social_accounts:disconnect_account' acc.id %}" onsubmit="return confirm('Are you sure you want to disconnect {{ acc.account_name }}?');" class="d-inline mb-0">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm btn-outline-danger" style="font-size:12px; border-radius:8px;">
+                        <i class="fa-solid fa-link-slash me-1"></i>Disconnect
+                    </button>
+                </form>
+
                 <span class="badge rounded-pill px-3 py-2
                     {% if acc.status == 'connected' %}bg-success
                     {% elif acc.status == 'expired' %}bg-warning text-dark
