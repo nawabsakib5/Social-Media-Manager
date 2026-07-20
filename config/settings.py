@@ -143,6 +143,12 @@ FACEBOOK_APP_ID = config('FACEBOOK_APP_ID', default='')
 FACEBOOK_APP_SECRET = config('FACEBOOK_APP_SECRET', default='')
 FACEBOOK_REDIRECT_URI = config('FACEBOOK_REDIRECT_URI', default='http://localhost:8000/posts/accounts/callback/')
 
+
+
+TWITTER_CLIENT_ID = config('TWITTER_CLIENT_ID', default='')
+TWITTER_CLIENT_SECRET = config('TWITTER_CLIENT_SECRET', default='')
+
+
 # ── Email ──
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = config('EMAIL_HOST', default='smtp.gmail.com')

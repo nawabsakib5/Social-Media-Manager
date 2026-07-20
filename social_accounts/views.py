@@ -23,7 +23,7 @@ TWITTER_REDIRECT_URI = f"{settings.SITE_URL}/posts/accounts/twitter/callback/"
 
 @login_required
 def account_list(request):
-    """List all connected accounts for the user (supporting team permissions)"""
+    
     PLATFORMS = [
         'facebook', 'instagram', 'twitter', 'threads',
         'youtube', 'tiktok', 'whatsapp', 'linkedin', 'gmail',
@@ -47,7 +47,7 @@ def account_list(request):
 
 @login_required
 def workspace(request, account_id=None):
-    """Workspace view for specific social account"""
+    
     
     accounts = SocialAccount.objects.filter(connected_by=request.user, status='connected')
     
@@ -89,7 +89,7 @@ def workspace(request, account_id=None):
 
 
 def get_facebook_workspace_data(account):
-    """Fetch Facebook page data with proper page token"""
+    
     data = {'posts': [], 'conversations': [], 'error': None}
     
     try:
@@ -132,7 +132,7 @@ def get_facebook_workspace_data(account):
         if conv_response.status_code == 200:
             data['conversations'] = conv_response.json().get('data', [])
         
-        # Add page info
+        
         data['page_info'] = {
             'name': account.account_name,
             'id': page_id,
@@ -147,7 +147,7 @@ def get_facebook_workspace_data(account):
 
 
 def get_instagram_workspace_data(account):
-    """Fetch Instagram posts and comments"""
+    
     data = {'posts': [], 'error': None, 'page_info': {}}
     
     try:
@@ -272,7 +272,7 @@ def post_comment_reply(request, platform, comment_id):
 
 @login_required
 def send_messenger_reply(request):
-    """Reply to a Facebook Messenger conversation."""
+    
     if request.method != 'POST':
         return redirect('social_accounts:account_list')
     
@@ -326,7 +326,7 @@ def send_messenger_reply(request):
 
 @login_required
 def facebook_login(request):
-    """Initiate Facebook OAuth flow with clean and modern scopes"""
+    
     scopes = [
         'pages_show_list', 
         'pages_read_engagement',
@@ -351,7 +351,7 @@ def facebook_login(request):
 
 @login_required
 def facebook_callback(request):
-    """Handle Facebook OAuth callback and generate Never-Expiring Page & Instagram tokens"""
+    
     code = request.GET.get('code')
     state = request.GET.get('state')
     error = request.GET.get('error')
@@ -491,7 +491,7 @@ def facebook_callback(request):
 
 @login_required
 def disconnect_account(request, account_id):
-    """Disconnect a social account"""
+    
     if request.method != 'POST':
         return redirect('social_accounts:account_list')
     
@@ -510,7 +510,7 @@ def disconnect_account(request, account_id):
 
 @login_required
 def twitter_login(request):
-    """Initiate Twitter OAuth 2.0 flow with PKCE secure handshake"""
+    
     
     verifier, challenge = generate_pkce_pair()
     
@@ -533,7 +533,7 @@ def twitter_login(request):
 
 @login_required
 def twitter_callback(request):
-    """Handle Twitter OAuth 2.0 PKCE callback and register the Twitter Handle"""
+    
     code = request.GET.get('code')
     state = request.GET.get('state')
     error = request.GET.get('error')
