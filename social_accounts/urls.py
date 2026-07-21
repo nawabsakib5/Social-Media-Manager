@@ -15,4 +15,6 @@ urlpatterns = [
     path('disconnect/<int:account_id>/', views.disconnect_account, name='disconnect_account'),
     path('twitter/login/', views.twitter_login, name='twitter_login'),
     path('twitter/callback/', views.twitter_callback, name='twitter_callback'),
+    path('linkedin/login/', views.linkedin_login, name='linkedin_login'),
+    path('linkedin/callback/', views.linkedin_callback, name='linkedin_callback'),
 ]

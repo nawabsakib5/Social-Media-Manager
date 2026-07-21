@@ -10,7 +10,7 @@ from .models import SocialAccount
 from .utils import generate_pkce_pair
 from integrations.facebook_adapter import FacebookAdapter
 
-# settings.py থেকে ফেসবুক, টুইটার এবং লিঙ্কডইন ক্রেডেনশিয়াল লোড
+
 FB_APP_ID       = getattr(settings, 'FACEBOOK_APP_ID', '')
 FB_APP_SECRET   = getattr(settings, 'FACEBOOK_APP_SECRET', '')
 FB_REDIRECT_URI = getattr(settings, 'FACEBOOK_REDIRECT_URI', 'http://localhost:8000/posts/accounts/callback/')
@@ -26,7 +26,7 @@ LINKEDIN_REDIRECT_URI = getattr(settings, 'LINKEDIN_REDIRECT_URI', 'http://local
 
 @login_required
 def account_list(request):
-    """List all connected accounts for the user (supporting team permissions)"""
+    
     PLATFORMS = [
         'facebook', 'instagram', 'twitter', 'threads',
         'youtube', 'tiktok', 'whatsapp', 'linkedin', 'gmail',
@@ -49,7 +49,7 @@ def account_list(request):
 
 @login_required
 def workspace(request, account_id=None):
-    """Workspace view for specific social account"""
+    
     accounts = SocialAccount.objects.filter(connected_by=request.user, status='connected')
     
     if not accounts.exists():
@@ -140,7 +140,7 @@ def get_facebook_workspace_data(account):
 
 
 def get_instagram_workspace_data(account):
-    """Fetch Instagram posts and comments"""
+    
     data = {'posts': [], 'error': None, 'page_info': {}}
     
     try:
@@ -170,7 +170,7 @@ def get_instagram_workspace_data(account):
             data['error'] = 'No Instagram Business Account connected to this page'
             return data
         
-        # Fetch Instagram media
+        
         media_url = f"https://graph.facebook.com/v22.0/{ig_id}/media"
         media_params = {
             'access_token': page_token,
@@ -314,7 +314,7 @@ def send_messenger_reply(request):
 
 @login_required
 def facebook_login(request):
-    """Initiate Facebook OAuth flow with clean and modern scopes"""
+    
     scopes = [
         'pages_show_list', 
         'pages_read_engagement',
@@ -339,7 +339,7 @@ def facebook_login(request):
 
 @login_required
 def facebook_callback(request):
-    """Handle Facebook OAuth callback and generate Never-Expiring Page & Instagram tokens"""
+    
     code = request.GET.get('code')
     state = request.GET.get('state')
     error = request.GET.get('error')
@@ -599,7 +599,7 @@ def twitter_callback(request):
     return redirect('social_accounts:account_list')
 
 
-# ── নতুন কাস্টম ভিউ: লিঙ্কডইন / X OAuth 2.0 লগইন এবং কলব্যাক (নতুন যুক্ত করা হয়েছে) ──
+
 
 @login_required
 def linkedin_login(request):
@@ -609,7 +609,7 @@ def linkedin_login(request):
         'client_id': LINKEDIN_CLIENT_ID,
         'redirect_uri': LINKEDIN_REDIRECT_URI,
         'state': str(request.user.id),
-        'scope': 'openid profile email w_member_social', # লিঙ্কডইনের আধুনিক এবং অফিশিয়াল ওআউথ স্কোপস
+        'scope': 'openid profile email w_member_social', 
     }
     auth_url = "https://www.linkedin.com/oauth/v2/authorization?" + urllib.parse.urlencode(params)
     return redirect(auth_url)
@@ -643,7 +643,7 @@ def linkedin_callback(request):
     headers = {'Content-Type': 'application/x-www-form-urlencoded'}
     
     try:
-        # ওয়ান-টাইম অথরাইজেশন কোড এক্সচেঞ্জ করে লিঙ্কডইন টোকেন সংগ্রহ করা
+        
         res = requests.post(token_url, headers=headers, data=payload, timeout=15)
         token_data = res.json()
         

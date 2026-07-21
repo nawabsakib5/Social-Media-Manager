@@ -145,6 +145,12 @@ FACEBOOK_REDIRECT_URI = config('FACEBOOK_REDIRECT_URI', default='http://localhos
 
 
 
+LINKEDIN_CLIENT_ID = config('LINKEDIN_CLIENT_ID', default='')
+LINKEDIN_CLIENT_SECRET = config('LINKEDIN_CLIENT_SECRET', default='')
+LINKEDIN_REDIRECT_URI = config('LINKEDIN_REDIRECT_URI', default='http://localhost:8000/posts/accounts/linkedin/callback/')
+
+
+
 TWITTER_CLIENT_ID = config('TWITTER_CLIENT_ID', default='')
 TWITTER_CLIENT_SECRET = config('TWITTER_CLIENT_SECRET', default='')
 
