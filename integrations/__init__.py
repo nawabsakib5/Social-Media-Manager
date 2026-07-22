@@ -2,12 +2,14 @@ from .facebook_adapter import FacebookAdapter
 from .instagram_adapter import InstagramAdapter
 from .twitter_adapter import TwitterAdapter
 from .whatsapp_adapter import WhatsAppAdapter
+from .linkedin_adapter import LinkedinAdapter
 
 ADAPTER_REGISTRY = {
     'facebook': FacebookAdapter,
     'instagram': InstagramAdapter,
     'twitter': TwitterAdapter,
     'whatsapp': WhatsAppAdapter,
+    'linkedin': LinkedinAdapter,
 }
 
 def get_social_adapter(social_account):

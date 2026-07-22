@@ -10,7 +10,7 @@ from .models import SocialAccount
 from .utils import generate_pkce_pair
 from integrations.facebook_adapter import FacebookAdapter
 
-
+# settings.py থেকে ফেসবুক, টুইটার এবং লিঙ্কডইন ক্রেডেনশিয়াল লোড
 FB_APP_ID       = getattr(settings, 'FACEBOOK_APP_ID', '')
 FB_APP_SECRET   = getattr(settings, 'FACEBOOK_APP_SECRET', '')
 FB_REDIRECT_URI = getattr(settings, 'FACEBOOK_REDIRECT_URI', 'http://localhost:8000/posts/accounts/callback/')
@@ -26,12 +26,13 @@ LINKEDIN_REDIRECT_URI = getattr(settings, 'LINKEDIN_REDIRECT_URI', 'http://local
 
 @login_required
 def account_list(request):
-    
+    """List all connected accounts for the user (supporting team permissions)"""
     PLATFORMS = [
         'facebook', 'instagram', 'twitter', 'threads',
         'youtube', 'tiktok', 'whatsapp', 'linkedin', 'gmail',
     ]
     
+    # অ্যাডমিন হলে সব অ্যাকাউন্ট দেখাবে, মেম্বার হলে শুধুমাত্র তার পারমিশন দেওয়া অ্যাকাউন্ট দেখাবে
     if request.user.is_superuser or getattr(request.user, 'user_type', None) == 'admin':
         user_accounts = SocialAccount.objects.all()
     else:
@@ -49,8 +50,12 @@ def account_list(request):
 
 @login_required
 def workspace(request, account_id=None):
-    
-    accounts = SocialAccount.objects.filter(connected_by=request.user, status='connected')
+    """Workspace view for specific social account (with failsafe redirects)"""
+    # মেম্বারদের সাইডবার পারমিশন ম্যাচ করে অ্যাক্টিভ অ্যাকাউন্টস রিড করা
+    if request.user.is_superuser or getattr(request.user, 'user_type', None) == 'admin':
+        accounts = SocialAccount.objects.filter(status='connected')
+    else:
+        accounts = SocialAccount.objects.filter(permitted_users=request.user, status='connected')
     
     if not accounts.exists():
         messages.warning(request, "Please connect a social media account first.")
@@ -61,7 +66,7 @@ def workspace(request, account_id=None):
             current_account = accounts.get(id=account_id)
         except SocialAccount.DoesNotExist:
             messages.error(request, "Account not found.")
-            return redirect('social_accounts:workspace')
+            return redirect('social_accounts:account_list')
     else:
         current_account = accounts.first()
     
@@ -72,6 +77,7 @@ def workspace(request, account_id=None):
         'all_platform_accounts': accounts.filter(platform=current_account.platform),
     }
     
+    # প্ল্যাটফর্ম অনুযায়ী ডায়নামিক ওয়ার্কস্পেস লোডিং
     if current_account.platform == 'facebook':
         context.update(get_facebook_workspace_data(current_account))
         template = 'social_accounts/workspace_facebook.html'
@@ -79,8 +85,9 @@ def workspace(request, account_id=None):
         context.update(get_instagram_workspace_data(current_account))
         template = 'social_accounts/workspace_instagram.html'
     else:
-        context['error'] = f"{current_account.platform.capitalize()} workspace not implemented yet."
-        template = 'social_accounts/workspace_base.html'
+        # ক্র্যাশ না ঘটিয়ে সুন্দর প্রফেশনাল ইউজার মেসেজ দিয়ে মূল পেজে রিডিরেক্ট করা হচ্ছে
+        messages.info(request, f"{current_account.get_platform_display_name()} workspace will be available in the upcoming version!")
+        return redirect('social_accounts:account_list')
     
     return render(request, template, context)
 
@@ -115,6 +122,7 @@ def get_facebook_workspace_data(account):
             data['error'] = f"Failed to fetch posts: {response.text}"
             return data
         
+        # Fetch conversations (Messenger)
         conv_url = f"https://graph.facebook.com/v22.0/{page_id}/conversations"
         conv_params = {
             'access_token': page_token,
@@ -140,7 +148,7 @@ def get_facebook_workspace_data(account):
 
 
 def get_instagram_workspace_data(account):
-    
+    """Fetch Instagram posts and comments"""
     data = {'posts': [], 'error': None, 'page_info': {}}
     
     try:
@@ -170,7 +178,7 @@ def get_instagram_workspace_data(account):
             data['error'] = 'No Instagram Business Account connected to this page'
             return data
         
-        
+        # Fetch Instagram media
         media_url = f"https://graph.facebook.com/v22.0/{ig_id}/media"
         media_params = {
             'access_token': page_token,
@@ -222,6 +230,7 @@ def post_comment_reply(request, platform, comment_id):
         messages.error(request, f"{platform.capitalize()} account not connected.")
         return redirect('social_accounts:account_list')
     
+    # Get page token for API calls
     adapter = FacebookAdapter()
     page_token, error = adapter.get_page_token(account)
     
@@ -282,6 +291,7 @@ def send_messenger_reply(request):
         messages.error(request, "Facebook account not connected.")
         return redirect('social_accounts:account_list')
     
+    # Get page token
     adapter = FacebookAdapter()
     page_token, error = adapter.get_page_token(account)
     
@@ -314,7 +324,7 @@ def send_messenger_reply(request):
 
 @login_required
 def facebook_login(request):
-    
+    """Initiate Facebook OAuth flow with clean and modern scopes"""
     scopes = [
         'pages_show_list', 
         'pages_read_engagement',
@@ -339,7 +349,7 @@ def facebook_login(request):
 
 @login_required
 def facebook_callback(request):
-    
+    """Handle Facebook OAuth callback and generate Never-Expiring Page & Instagram tokens"""
     code = request.GET.get('code')
     state = request.GET.get('state')
     error = request.GET.get('error')
@@ -351,11 +361,13 @@ def facebook_callback(request):
         messages.error(request, f"Facebook login failed: {error_msg}")
         return redirect('social_accounts:account_list')
     
+    # Security: Verify state matches logged in user id
     if state != str(request.user.id):
         messages.error(request, "Security check failed. Please try again.")
         return redirect('social_accounts:account_list')
     
     try:
+        # ১. ওয়ান-টাইম কোড এক্সচেঞ্জ করে শর্ট-লাইভড ইউজার টোকেন সংগ্রহ
         token_res = requests.get(
             "https://graph.facebook.com/v22.0/oauth/access_token",
             params={
@@ -414,6 +426,7 @@ def facebook_callback(request):
             if not page_token:
                 page_token = long_token 
 
+            # ফেসবুক পেজটি সোশ্যাল অ্যাকাউন্ট হিসেবে সেভ বা আপডেট করা হচ্ছে
             account, created = SocialAccount.objects.update_or_create(
                 platform='facebook',
                 platform_account_id=page_id,
@@ -429,6 +442,7 @@ def facebook_callback(request):
             
             connected_pages.append(page_name)
             
+            # ৪. পেজের সাথে কোনো Instagram Business Account কানেক্টেড আছে কি না তা চেক করা
             instagram_check = requests.get(
                 f"https://graph.facebook.com/v22.0/{page_id}",
                 params={
@@ -444,6 +458,7 @@ def facebook_callback(request):
                 ig_username = ig_data.get('username', page_name)
                 ig_name = ig_data.get('name', f"{page_name} (Instagram)")
                 
+                # ইনস্টাগ্রাম অ্যাকাউন্টটি সোশ্যাল অ্যাকাউন্ট হিসেবে সেভ বা আপডেট করা হচ্ছে
                 ig_account, _ = SocialAccount.objects.update_or_create(
                     platform='instagram',
                     platform_account_id=ig_id,
@@ -488,17 +503,22 @@ def disconnect_account(request, account_id):
     return redirect('social_accounts:account_list')
 
 
+# ── নতুন কাস্টম ভিউ: টুইটার / X OAuth 2.0 PKCE লগইন এবং কলব্যাক ──
+
 @login_required
 def twitter_login(request):
     """Initiate Twitter OAuth 2.0 flow with PKCE secure handshake"""
+    # ওয়ান-টাইম সিকিউর কোড ভেরিফায়ার এবং চ্যালেঞ্জ জেনারেট করা
     verifier, challenge = generate_pkce_pair()
+    
+    # ব্যাকএন্ড কলব্যাকে মেলানোর জন্য ভেরিফায়ারটি ব্রাউজার সেশনে সাময়িকভাবে জমা রাখা হচ্ছে
     request.session['twitter_code_verifier'] = verifier
     
     params = {
         'response_type': 'code',
         'client_id': TWITTER_CLIENT_ID,
         'redirect_uri': TWITTER_REDIRECT_URI,
-        'scope': 'tweet.read tweet.write users.read offline.access', 
+        'scope': 'tweet.read tweet.write users.read offline.access', # offline.access আমাদের আজীবন সচল রিফ্রেশ টোকেন দেবে
         'state': str(request.user.id),
         'code_challenge': challenge,
         'code_challenge_method': 'S256',
@@ -530,6 +550,7 @@ def twitter_callback(request):
         
     token_url = "https://api.twitter.com/2/oauth2/token"
     
+    # Client ID এবং Client Secret কে বেসিক অথেন্টিকেশন হেডারে রূপান্তর করা
     auth_str = f"{TWITTER_CLIENT_ID}:{TWITTER_CLIENT_SECRET}"
     b64_auth = base64.b64encode(auth_str.encode('utf-8')).decode('utf-8')
     
@@ -546,6 +567,7 @@ def twitter_callback(request):
     }
     
     try:
+        # ওয়ান-টাইম কোড এবং ভেরিফায়ার এক্সচেঞ্জ করে স্থায়ী টোকেনসমূহ সংগ্রহ
         res = requests.post(token_url, headers=headers, data=payload, timeout=15)
         token_data = res.json()
         
@@ -555,8 +577,9 @@ def twitter_callback(request):
             return redirect('social_accounts:account_list')
             
         access_token = token_data['access_token']
-        refresh_token = token_data.get('refresh_token', '') 
+        refresh_token = token_data.get('refresh_token', '') # টুইটারের অফলাইন রিফ্রেশ টোকেন
         
+        # ইউজার প্রোফাইল ডেটা এপিআই (টুইটার v2 ইউজার অবজেক্ট)
         user_info_url = "https://api.twitter.com/2/users/me?user.fields=profile_image_url"
         user_headers = {'Authorization': f"Bearer {access_token}"}
         user_res = requests.get(user_info_url, headers=user_headers, timeout=10).json()
@@ -571,6 +594,7 @@ def twitter_callback(request):
         twitter_username = user_data.get('username', '')
         profile_img = user_data.get('profile_image_url', '')
         
+        # ডাটাবেজে টুইটার অ্যাকাউন্টটি ক্রিয়েট বা কানেক্টেড করা হচ্ছে
         sa, created = SocialAccount.objects.update_or_create(
             platform='twitter',
             platform_account_id=twitter_id,
@@ -583,11 +607,13 @@ def twitter_callback(request):
             }
         )
         
+        # আমাদের জ্যাঙ্গো মডেলে Fernet এনক্রিপশন প্রোপার্টির মাধ্যমে অ্যাক্সেস ও রিফ্রেশ টোকেন সেভ করা হচ্ছে
         sa.access_token = access_token
         if refresh_token:
             sa.refresh_token = refresh_token
         sa.save()
         
+        # টিম মেম্বারের জন্য সরাসরি অ্যাকাউন্টটি পারমিশন তালিকায় অ্যাসাইন করে দেওয়া
         if not (request.user.is_superuser or getattr(request.user, 'user_type', None) == 'admin'):
             sa.permitted_users.add(request.user)
             
@@ -599,7 +625,7 @@ def twitter_callback(request):
     return redirect('social_accounts:account_list')
 
 
-
+# ── নতুন কাস্টম ভিউ: লিঙ্কডইন / X OAuth 2.0 লগইন এবং কলব্যাক ──
 
 @login_required
 def linkedin_login(request):
@@ -609,7 +635,7 @@ def linkedin_login(request):
         'client_id': LINKEDIN_CLIENT_ID,
         'redirect_uri': LINKEDIN_REDIRECT_URI,
         'state': str(request.user.id),
-        'scope': 'openid profile email w_member_social', 
+        'scope': 'openid profile email w_member_social', # লিঙ্কডইনের আধুনিক এবং অফিশিয়াল ওআউথ স্কোপস
     }
     auth_url = "https://www.linkedin.com/oauth/v2/authorization?" + urllib.parse.urlencode(params)
     return redirect(auth_url)
@@ -643,7 +669,7 @@ def linkedin_callback(request):
     headers = {'Content-Type': 'application/x-www-form-urlencoded'}
     
     try:
-        
+        # ওয়ান-টাইম অথরাইজেশন কোড এক্সচেঞ্জ করে লিঙ্কডইন টোকেন সংগ্রহ করা
         res = requests.post(token_url, headers=headers, data=payload, timeout=15)
         token_data = res.json()
         
@@ -654,23 +680,23 @@ def linkedin_callback(request):
             
         access_token = token_data['access_token']
         
-        
+        # লিঙ্কডইনের অফিশিয়াল OpenID Connect ইউজার ইনফো এপিআই
         user_info_url = "https://api.linkedin.com/v2/userinfo"
         user_headers = {'Authorization': f'Bearer {access_token}'}
         user_res = requests.get(user_info_url, headers=user_headers, timeout=10).json()
         
-        
-        linkedin_id = user_res.get('sub') 
+        # লিঙ্কডইন ওপেনআইডি অবজেক্ট থেকে ইউনিক আইডি, নাম ও ছবি নেওয়া হচ্ছে
+        linkedin_id = user_res.get('sub') # sub হলো লিঙ্কডইনের ইউনিক মেম্বার ইউআরএন আইডি
         first_name = user_res.get('given_name', '')
         last_name = user_res.get('family_name', '')
         full_name = user_res.get('name', f"{first_name} {last_name}".strip() or 'LinkedIn User')
-        profile_img = user_res.get('picture', '') 
+        profile_img = user_res.get('picture', '') # ইউজারের লিঙ্কডইন অবতার ইমেজ ইউআরএল
         
         if not linkedin_id:
             messages.error(request, "Could not retrieve LinkedIn profile details.")
             return redirect('social_accounts:account_list')
             
-        
+        # ডাটাবেজে লিঙ্কডইন অ্যাকাউন্টটি ক্রিয়েট বা কানেক্টেড করা হচ্ছে
         sa, created = SocialAccount.objects.update_or_create(
             platform='linkedin',
             platform_account_id=linkedin_id,
@@ -682,11 +708,11 @@ def linkedin_callback(request):
             }
         )
         
-        
+        # টোকেনটি আমাদের প্রজেক্টের Fernet কি দিয়ে এনক্রিপ্ট করে সেভ করা হলো
         sa.access_token = access_token
         sa.save()
         
-        
+        # টিম মেম্বারদের জন্য সরাসরি অ্যাকাউন্টটি পারমিশন তালিকায় অ্যাসাইন করে দেওয়া
         if not (request.user.is_superuser or getattr(request.user, 'user_type', None) == 'admin'):
             sa.permitted_users.add(request.user)
             
