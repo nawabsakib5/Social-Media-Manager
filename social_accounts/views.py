@@ -92,11 +92,13 @@ def workspace(request, account_id=None):
     return render(request, template, context)
 
 
+# social_accounts/views.py (এই সংশোধিত গেট_ফেসবুক_ওয়ার্কস্পেস_ডেটা মেথডটি বসান)
 def get_facebook_workspace_data(account):
-    """Fetch Facebook page data with proper page token"""
+    """Fetch Facebook page data with proper page token (workaround for API v22.0)"""
     data = {'posts': [], 'conversations': [], 'error': None}
     
     try:
+        # Get page token using adapter
         adapter = FacebookAdapter()
         page_token, error = adapter.get_page_token(account)
         
@@ -105,7 +107,10 @@ def get_facebook_workspace_data(account):
             return data
         
         page_id = account.platform_account_id
-        url = f"https://graph.facebook.com/v22.0/{page_id}/feed"
+        
+        # মেটা গ্রাফ এপিআই রেস্ট্রিকশন এড়াতে /feed এর বদলে /published_posts ব্যবহার করা হয়েছে
+        url = f"https://graph.facebook.com/v22.0/{page_id}/published_posts"
+        
         params = {
             'access_token': page_token,
             'fields': 'id,message,created_time,full_picture,'
