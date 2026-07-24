@@ -14,7 +14,7 @@
         /* ── Minimalist Light SaaS Color Tokens ── */
         :root {
             --sidebar-width: 240px; 
-            --sidebar-bg: #ffffff; /* হোয়াইট সাইডবার */
+            --sidebar-bg: #ffffff; 
             --sidebar-border: #f1f3f7;
             --sidebar-hover: #f8fafc;
             
@@ -25,7 +25,7 @@
             --accent: #f25c38;
             --accent-glow: rgba(242, 92, 56, 0.15);
             --topbar-bg: rgba(255, 255, 255, 0.95);
-            --body-bg: #f8fafc; /* সফট আল্ট্রা-লাইট গ্রে ব্যাকগ্রাউন্ড */
+            --body-bg: #f8fafc; 
             --card-bg: #ffffff;
             --text-dark: #1e293b;
             --text-muted-custom: #64748b;
@@ -42,6 +42,7 @@
             overflow-x: hidden;
             color: var(--text-dark);
             -webkit-font-smoothing: antialiased;
+            perspective: 1200px; /* ৩ডি রিভীলের জন্য পার্সপেক্টিভ থ্রেশহোল্ড */
         }
 
         /* ── Modern Scrollbar ── */
@@ -132,7 +133,7 @@
             text-decoration: none;
             font-size: 14.5px;
             font-weight: 500;
-            transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
+            transition: all 0.25s cubic-bezier(0.25, 0.8, 0.25, 1);
             position: relative;
         }
 
@@ -140,25 +141,29 @@
             width: 20px;
             text-align: center;
             font-size: 16px;
-            transition: transform 0.2s ease;
+            transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
 
-        /* মাউস হোভার ইফেক্টস */
+        /* মাউস হোভার ইফেক্টস (SaaS Glassmorphic Feel) */
         .sidebar-link:hover {
             background-color: var(--sidebar-hover);
             color: var(--sidebar-active-color) !important;
-            transform: translateX(4px);
+            transform: translateX(6px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.015);
         }
 
         .sidebar-link:hover i {
-            transform: scale(1.15);
+            transform: scale(1.2) rotate(8deg);
         }
 
-        /* একটিভ স্টেট ডিজাইন */
+        /* একটিভ স্টেট ডিজাইন (Glowing Border Left Indicator) */
         .sidebar-link.active {
             background-color: var(--sidebar-active-bg) !important;
             color: var(--sidebar-active-color) !important;
             font-weight: 600;
+            border-left: 3px solid var(--accent);
+            border-radius: 0 10px 10px 0;
+            box-shadow: -4px 0 12px rgba(242, 92, 56, 0.1);
         }
 
         .sidebar-link.active i {
@@ -184,6 +189,7 @@
             flex-direction: column;
             transition: margin-left 0.3s ease;
             width: calc(100% - var(--sidebar-width));
+            transform-style: preserve-3d;
         }
 
         /* ── Modern Blurred Topbar ── */
@@ -226,6 +232,12 @@
             font-weight: 600;
             color: #334155;
             border: 1px solid var(--sidebar-border);
+            transition: all 0.2s ease;
+        }
+        .user-pill:hover {
+            background: #ffffff;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+            border-color: #cbd5e1;
         }
 
         .user-avatar {
@@ -263,7 +275,7 @@
             flex: 1;
             display: flex;
             flex-direction: column;
-            align-items: center; /* কন্টেন্ট ডানে বামে সমান মার্জিন রেখে সেন্টারে রাখার জন্য */
+            align-items: center; 
         }
 
         /* ── Modern Dismissible Alerts ── */
@@ -331,7 +343,7 @@
     <div class="loader-bar"><div class="loader-bar-fill" id="loader-fill"></div></div>
 </div>
 
-<div id="app-shell" style="opacity:0; transform: scale(0.985);">
+<div id="app-shell" style="opacity:0; transform: scale(0.97);">
     <div class="d-flex">
 
         <!-- ── Navigation Sidebar ── -->
@@ -351,9 +363,17 @@
                     <i class="fa-solid fa-pen-to-square"></i> Posts
                 </a>
 
+                <!-- ইনবক্স লিংক: গ্লোবাল আনরেড মেসেজ নোটিফিকেশন ব্যাজ সাপোর্টসহ -->
                 <a href="{% url 'inbox_list' %}"
-                   class="sidebar-link {% if request.resolver_match.url_name == 'inbox_list' %}active{% endif %}">
-                    <i class="fa-solid fa-inbox"></i> Inbox
+                   class="sidebar-link {% if request.resolver_match.url_name == 'inbox_list' %}active{% endif %} d-flex align-items-center justify-content-between">
+                    <div>
+                        <i class="fa-solid fa-inbox"></i> Inbox
+                    </div>
+                    {% if unread_inbox_count > 0 %}
+                        <span class="badge bg-danger rounded-pill flex-shrink-0" style="font-size: 10px; padding: 4px 8px; margin-left: 10px;">
+                            {{ unread_inbox_count }}
+                        </span>
+                    {% endif %}
                 </a>
 
                 <a href="{% url 'social_accounts:account_list' %}"
@@ -373,9 +393,18 @@
                            {% if acc.platform == 'facebook' %}#1877f2
                            {% elif acc.platform == 'instagram' %}#e1306c
                            {% elif acc.platform == 'twitter' %}#1da1f2
+                           {% elif acc.platform == 'linkedin' %}#0077b5
+                           
+                           /* নতুন কাঙ্ক্ষিত সোশ্যাল প্ল্যাটফর্মসমূহের অফিশিয়াল ব্র্যান্ড লোগো কালারস */
+                           {% elif acc.platform == 'telegram' %}#0088cc
+                           {% elif acc.platform == 'pinterest' %}#bd081c
+                           {% elif acc.platform == 'reddit' %}#ff4500
+                           {% elif acc.platform == 'snapchat' %}#fffc00
+                           {% elif acc.platform == 'discord' %}#5865f2
+                           {% elif acc.platform == 'twitch' %}#9146ff
+                           
                            {% elif acc.platform == 'youtube' %}#ff0000
                            {% elif acc.platform == 'whatsapp' %}#25d366
-                           {% elif acc.platform == 'linkedin' %}#0077b5
                            {% elif acc.platform == 'tiktok' %}#000000
                            {% elif acc.platform == 'threads' %}#000000
                            {% elif acc.platform == 'gmail' %}#ea4335
@@ -475,95 +504,124 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const masterTimeline = gsap.timeline({ defaults: { ease: 'power4.out' } });
 
-    // Step 1: Smooth loadbar completion
-    masterTimeline.to('#loader-fill', {
-        width: '100%',
-        duration: 0.5,
-        ease: 'power3.inOut'
-    })
-
-    // Step 2: Dynamic zoom & scale on loader icon before exit
-    .to('#loader-icon', {
-        scale: 0.8,
-        rotate: -15,
-        opacity: 0,
-        duration: 0.3,
-        ease: 'power2.in'
-    }, '-=0.1')
-
-    // Step 3: Sleek Slide-up slide wipe overlay animation
-    .to('#page-loader', {
-        yPercent: -100,
-        duration: 0.65,
-        ease: 'power4.inOut',
-        onComplete: () => {
-            const loader = document.getElementById('page-loader');
-            if (loader) loader.style.display = 'none';
+    // ── ১. ভ্যানিলা ফলব্যাক (Fail-Safe Fallback) ──
+    setTimeout(() => {
+        const loader = document.getElementById('page-loader');
+        const shell = document.getElementById('app-shell');
+        if (loader && loader.style.display !== 'none') {
+            console.warn("[Loader Fallback] GSAP animation stuck. Force hiding loader.");
+            loader.style.display = 'none';
+            if (shell) {
+                shell.style.opacity = '1';
+                shell.style.transform = 'scale(1)';
+            }
         }
-    }, '-=0.15')
+    }, 1500);
 
-    // Step 4: Scale and fade in the complete dashboard container
-    .to('#app-shell', { 
-        opacity: 1, 
-        scale: 1,
-        duration: 0.75,
-        ease: 'power4.out'
-    }, '-=0.4');
+    // ── ২. মূল আল্ট্রা-প্রিমিয়াম ৩ডি রিভীল জ্যাঙ্গো অ্যানিমেশন ফ্লো ──
+    try {
+        if (typeof gsap !== 'undefined') {
+            
+            // Step 1: Smooth loadbar completion
+            masterTimeline.to('#loader-fill', {
+                width: '100%',
+                duration: 0.5,
+                ease: 'power3.inOut'
+            })
 
-    // Safe Animation Blocks (Failsafe checks for Login Page)
-    if (document.getElementById('sidebar')) {
-        masterTimeline.from('#sidebar', {
-            x: -40,
-            duration: 0.6,
-            ease: 'power3.out'
-        }, '-=0.6');
+            // Step 2: Dynamic zoom & scale on loader icon before exit
+            .to('#loader-icon', {
+                scale: 0.8,
+                rotate: -15,
+                opacity: 0,
+                duration: 0.3,
+                ease: 'power2.in'
+            }, '-=0.1')
+
+            // Step 3: Sleek Curtain rising animation
+            .to('#page-loader', {
+                yPercent: -100,
+                duration: 0.7,
+                ease: 'power4.inOut',
+                onComplete: () => {
+                    const loader = document.getElementById('page-loader');
+                    if (loader) loader.style.display = 'none';
+                }
+            }, '-=0.15')
+
+            // Step 4: ৩ডি পার্সপেক্টিভ এবং টিল্ট স্লাইড নিয়ে ড্যাশবোর্ড ওপেন হওয়া (Ultra-Premium Reveal)
+            .to('#app-shell', { 
+                opacity: 1, 
+                scale: 1,
+                rotationX: 0,
+                duration: 0.9,
+                ease: 'power3.out'
+            }, '-=0.45');
+
+            // Safe Animation Blocks (Failsafe checks for Login/Register Pages)
+            if (document.getElementById('sidebar')) {
+                masterTimeline.from('#sidebar', {
+                    x: -45,
+                    duration: 0.7,
+                    ease: 'power3.out'
+                }, '-=0.7');
+            }
+
+            if (document.getElementById('topbar')) {
+                masterTimeline.from('#topbar', {
+                    y: -18,
+                    opacity: 0,
+                    duration: 0.5,
+                    ease: 'power2.out'
+                }, '-=0.5');
+            }
+
+            // সাইডবার লিংকগুলোর জন্য প্রফেশনাল স্কিউ স্লাইড অ্যানিমেশন (Skew & Slide Stagger)
+            if (document.querySelectorAll('.sidebar-link').length > 0) {
+                masterTimeline.from('.sidebar-link', {
+                    x: -25,
+                    skewX: -8,
+                    opacity: 0,
+                    duration: 0.5,
+                    stagger: 0.05,
+                    ease: 'power2.out'
+                }, '-=0.5');
+            }
+
+            if (document.querySelector('.alert')) {
+                masterTimeline.to('.alert', {
+                    opacity: 1,
+                    y: 0,
+                    duration: 0.45,
+                    stagger: 0.06,
+                    ease: 'back.out(1.4)'
+                }, '-=0.2');
+            }
+        }
+    } catch (e) {
+        console.error("GSAP execution error:", e);
     }
 
-    if (document.getElementById('topbar')) {
-        masterTimeline.from('#topbar', {
-            y: -15,
-            opacity: 0,
-            duration: 0.45,
-            ease: 'power2.out'
-        }, '-=0.45');
-    }
-
-    if (document.querySelectorAll('.sidebar-link').length > 0) {
-        masterTimeline.from('.sidebar-link', {
-            x: -20,
-            opacity: 0,
-            duration: 0.4,
-            stagger: 0.04,
-            ease: 'power2.out'
-        }, '-=0.4');
-    }
-
-    if (document.querySelector('.alert')) {
-        masterTimeline.to('.alert', {
-            opacity: 1,
-            y: 0,
-            duration: 0.45,
-            stagger: 0.06,
-            ease: 'back.out(1.4)'
-        }, '-=0.2');
-    }
-
-    // Brand Logo soft rotation interaction
+    // Brand Logo soft rotation interaction (ডাইনামিক বাউন্স রোটেশন)
     const brand = document.querySelector('.sidebar-brand');
     if (brand && document.getElementById('brand-logo')) {
         brand.addEventListener('mouseenter', () => {
-            gsap.to('#brand-logo', {
-                rotate: 45,
-                duration: 0.4,
-                ease: 'back.out(1.8)'
-            });
+            if (typeof gsap !== 'undefined') {
+                gsap.to('#brand-logo', {
+                    rotate: 45,
+                    duration: 0.45,
+                    ease: 'back.out(2.2)'
+                });
+            }
         });
         brand.addEventListener('mouseleave', () => {
-            gsap.to('#brand-logo', {
-                rotate: 0,
-                duration: 0.3,
-                ease: 'power2.out'
-            });
+            if (typeof gsap !== 'undefined') {
+                gsap.to('#brand-logo', {
+                    rotate: 0,
+                    duration: 0.35,
+                    ease: 'power3.out'
+                });
+            }
         });
     }
 });
