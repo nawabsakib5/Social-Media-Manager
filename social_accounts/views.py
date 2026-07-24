@@ -327,9 +327,10 @@ def send_messenger_reply(request):
     return redirect('social_accounts:workspace')
 
 
+
 @login_required
 def facebook_login(request):
-    """Initiate Facebook OAuth flow with clean and modern scopes"""
+    """Initiate Facebook OAuth flow with clean and modern scopes (including live Comments & Messenger)"""
     scopes = [
         'pages_show_list', 
         'pages_read_engagement',
@@ -338,6 +339,7 @@ def facebook_login(request):
         'instagram_basic', 
         'instagram_content_publish',
         'instagram_manage_comments', 
+        'pages_read_user_content',  
     ]
     
     params = {
@@ -350,6 +352,7 @@ def facebook_login(request):
     }
     
     return redirect(f"https://www.facebook.com/v22.0/dialog/oauth?{urlencode(params)}")
+
 
 
 @login_required
@@ -366,13 +369,13 @@ def facebook_callback(request):
         messages.error(request, f"Facebook login failed: {error_msg}")
         return redirect('social_accounts:account_list')
     
-    # Security: Verify state matches logged in user id
+    
     if state != str(request.user.id):
         messages.error(request, "Security check failed. Please try again.")
         return redirect('social_accounts:account_list')
     
     try:
-        # ১. ওয়ান-টাইম কোড এক্সচেঞ্জ করে শর্ট-লাইভড ইউজার টোকেন সংগ্রহ
+        
         token_res = requests.get(
             "https://graph.facebook.com/v22.0/oauth/access_token",
             params={
@@ -391,6 +394,7 @@ def facebook_callback(request):
         
         short_token = token_res['access_token']
         
+        
         long_res = requests.get(
             "https://graph.facebook.com/v22.0/oauth/access_token",
             params={
@@ -403,6 +407,7 @@ def facebook_callback(request):
         ).json()
         
         long_token = long_res.get('access_token', short_token)
+        
         
         pages_data = requests.get(
             "https://graph.facebook.com/v22.0/me/accounts",
@@ -431,7 +436,7 @@ def facebook_callback(request):
             if not page_token:
                 page_token = long_token 
 
-            # ফেসবুক পেজটি সোশ্যাল অ্যাকাউন্ট হিসেবে সেভ বা আপডেট করা হচ্ছে
+            
             account, created = SocialAccount.objects.update_or_create(
                 platform='facebook',
                 platform_account_id=page_id,
@@ -445,9 +450,13 @@ def facebook_callback(request):
             account.access_token = page_token
             account.save()
             
+            
+            if not (request.user.is_superuser or getattr(request.user, 'user_type', None) == 'admin'):
+                account.permitted_users.add(request.user)
+            
             connected_pages.append(page_name)
             
-            # ৪. পেজের সাথে কোনো Instagram Business Account কানেক্টেড আছে কি না তা চেক করা
+            
             instagram_check = requests.get(
                 f"https://graph.facebook.com/v22.0/{page_id}",
                 params={
@@ -463,7 +472,7 @@ def facebook_callback(request):
                 ig_username = ig_data.get('username', page_name)
                 ig_name = ig_data.get('name', f"{page_name} (Instagram)")
                 
-                # ইনস্টাগ্রাম অ্যাকাউন্টটি সোশ্যাল অ্যাকাউন্ট হিসেবে সেভ বা আপডেট করা হচ্ছে
+                
                 ig_account, _ = SocialAccount.objects.update_or_create(
                     platform='instagram',
                     platform_account_id=ig_id,
@@ -477,6 +486,10 @@ def facebook_callback(request):
                 
                 ig_account.access_token = page_token
                 ig_account.save()
+                
+                
+                if not (request.user.is_superuser or getattr(request.user, 'user_type', None) == 'admin'):
+                    ig_account.permitted_users.add(request.user)
                 
                 connected_pages.append(f"📸 {ig_username} (Instagram)")
         
