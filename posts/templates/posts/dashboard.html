@@ -5,7 +5,7 @@
 {% block content %}
 <div class="container-fluid px-0" style="margin-top: -15px;">
 
-    <!-- ── ১. ৫-কলামের আল্ট্রা-প্রিমিয়াম গ্লোয়িং স্ট্যাটাস কার্ডস গ্রিড (SaaS 5-Column Stats Grid) ── -->
+    <!-- ── ১. ৫-কলামের আল্ট্রা-প্রিমিয়াম গ্লোয়িং স্ট্যাটাস কার্ডস গ্রিড (SaaS 5-Column Stats Grid) ── -->
     <div class="row g-3 mb-4" id="stats-grid">
         
         <!-- Total Posts Card -->
@@ -60,7 +60,7 @@
             </div>
         </div>
 
-        <!-- নতুন যুক্ত করা হয়েছে: Total Users / Team Members Card (গ্লোয়িং সায়ান কালার থিম) -->
+        <!-- Total Users / Team Members Card -->
         <div class="col-6 col-md-4 col-lg stat-card-col" style="opacity:0; transform:scale(0.95);">
             <div class="card stat-card border-0 p-4 h-100 position-relative overflow-hidden" 
                  style="background: #ffffff; border-radius: 20px; transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02); border: 1px solid #f1f3f7 !important;">
@@ -78,7 +78,7 @@
     <!-- ── ২. TWO-COLUMN SPLIT ANALYTICS GRID ── -->
     <div class="row g-4">
         
-        <!-- Left Column: Channel Progress list (লেজিবল ব্রাইট টেক্সট থিম সহ) -->
+        <!-- Left Column: Channel Progress list -->
         <div class="col-md-7 d-flex flex-column h-100" id="left-pane" style="opacity:0; transform:translateY(20px);">
             <div class="card border-0 p-4 rounded-4 shadow-sm" style="background: #ffffff; border: 1px solid var(--sidebar-border) !important; border-radius: 20px !important;">
                 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -115,7 +115,7 @@
                                     </div>
                                     <div>
                                         <div class="fw-bold text-dark" style="font-size: 13.5px;">{{ item.account.account_name }}</div>
-                                        <small class="text-secondary fw-semibold" style="font-size: 11px; text-transform: capitalize;">{{ item.account.platform }}</small> <!-- লেজিবিলিটি ফিক্স করা হয়েছে -->
+                                        <small class="text-secondary fw-semibold" style="font-size: 11px; text-transform: capitalize;">{{ item.account.platform }}</small>
                                     </div>
                                 </div>
                                 <span class="badge rounded-pill bg-light text-secondary px-2.5 py-1.5" style="font-size: 11px; font-weight: 600;">{{ item.post_count }} Posts</span>
@@ -221,7 +221,7 @@ document.addEventListener('DOMContentLoaded', () => {
         stagger: 0.12
     }, '-=0.25')
 
-    // ৩. ডাইনামিক প্রোগ্রেস বার এনিমেশন: এটি ০% থেকে তার প্রকৃত পার্সেন্টেজে এনিমেটেড হয়ে বাড়বে
+    // ৩. ডাইনামিক প্রোগ্রেস বার এনিমেশন: এটি ০% থেকে তার প্রকৃত পার্সেন্টেজে এনিমেটেড হয়ে বাড়বে
     .to('.progress-bar-fill', {
         width: function(index, target) {
             return target.getAttribute('data-percent') + '%';
@@ -247,12 +247,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // সবকটি কাউন্টারকে ০ থেকে রিয়েল-টাইমে গণনা করে বৃদ্ধি করা হচ্ছে
+    // সবকটি কাউন্টারকে ০ থেকে রিয়েল-টাইমে গণনা করে বৃদ্ধি করা হচ্ছে
     animateCounter('total-count', parseInt("{{ total_posts }}") || 0);
     animateCounter('published-count', parseInt("{{ published_posts }}") || 0);
     animateCounter('scheduled-count', parseInt("{{ scheduled_posts }}") || 0);
     animateCounter('failed-count', parseInt("{{ failed_posts }}") || 0);
-    animateCounter('users-count', parseInt("{{ total_users }}") || 0); # নতুন ইউজার কাউন্ট এনিমেশন
+    animateCounter('users-count', parseInt("{{ total_users }}") || 0);
 });
 </script>
 
