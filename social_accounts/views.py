@@ -24,15 +24,18 @@ LINKEDIN_CLIENT_SECRET = getattr(settings, 'LINKEDIN_CLIENT_SECRET', '')
 LINKEDIN_REDIRECT_URI = getattr(settings, 'LINKEDIN_REDIRECT_URI', 'http://localhost:8000/posts/accounts/linkedin/callback/')
 
 
+
 @login_required
 def account_list(request):
-    """List all connected accounts for the user (supporting team permissions)"""
+    """List all connected accounts for the user (supporting 15 future-proof platforms)"""
     PLATFORMS = [
-        'facebook', 'instagram', 'twitter', 'threads',
-        'youtube', 'tiktok', 'whatsapp', 'linkedin', 'gmail',
+        'facebook', 'instagram', 'twitter', 'linkedin', 
+        'telegram', 'pinterest', 'reddit', 'snapchat', 
+        'discord', 'threads', 'youtube', 
+        'tiktok', 'whatsapp', 'gmail',
     ]
     
-    # অ্যাডমিন হলে সব অ্যাকাউন্ট দেখাবে, মেম্বার হলে শুধুমাত্র তার পারমিশন দেওয়া অ্যাকাউন্ট দেখাবে
+    
     if request.user.is_superuser or getattr(request.user, 'user_type', None) == 'admin':
         user_accounts = SocialAccount.objects.all()
     else:

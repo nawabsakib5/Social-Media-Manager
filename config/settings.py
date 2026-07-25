@@ -110,10 +110,10 @@ SITE_URL = config('SITE_URL', default='http://localhost:8000')
 # ── Auth ──
 AUTH_USER_MODEL = 'accounts.CustomUserModel'
 LOGIN_URL = 'login'
-LOGIN_REDIRECT_URL = 'post_list'
+LOGIN_REDIRECT_URL = 'dashboard'
 LOGOUT_REDIRECT_URL = 'login'
 
-# ডট-এনভ (.env) থেকে সফলভাবে প্রজেক্টের সঠিক এবং একমাত্র এনক্রিপশন কি লোড করা হচ্ছে
+
 FIELD_ENCRYPTION_KEY = config('FIELD_ENCRYPTION_KEY')
 
 # ── Celery ──

@@ -14,7 +14,7 @@
         /* ── Minimalist Light SaaS Color Tokens ── */
         :root {
             --sidebar-width: 240px; 
-            --sidebar-bg: #ffffff; 
+            --sidebar-bg: #ffffff; /* হোয়াইট সাইডবার */
             --sidebar-border: #f1f3f7;
             --sidebar-hover: #f8fafc;
             
@@ -25,7 +25,7 @@
             --accent: #f25c38;
             --accent-glow: rgba(242, 92, 56, 0.15);
             --topbar-bg: rgba(255, 255, 255, 0.95);
-            --body-bg: #f8fafc; 
+            --body-bg: #f8fafc; /* সফট আল্ট্রা-লাইট গ্রে ব্যাকগ্রাউন্ড */
             --card-bg: #ffffff;
             --text-dark: #1e293b;
             --text-muted-custom: #64748b;
@@ -61,7 +61,7 @@
             background: #94a3b8;
         }
 
-        /* ── Sidebar Style (InApp White Layout) ── */
+        /* ── Sidebar Style (InApp White Layout with soft Shadow) ── */
         .sidebar {
             position: fixed;
             top: 0; left: 0;
@@ -73,6 +73,7 @@
             z-index: 1000;
             padding: 0;
             border-right: 1px solid var(--sidebar-border);
+            box-shadow: 4px 0 24px rgba(15, 23, 42, 0.015); /* সফট সাইডবার শ্যাডো */
             overflow: hidden;
         }
 
@@ -127,14 +128,15 @@
             align-items: center;
             gap: 14px;
             padding: 11px 20px;
-            margin: 3px 14px;
-            border-radius: 10px;
+            margin: 4px 14px;
+            border-radius: 12px;
             color: #475569;
             text-decoration: none;
             font-size: 14.5px;
             font-weight: 500;
             transition: all 0.25s cubic-bezier(0.25, 0.8, 0.25, 1);
             position: relative;
+            border: 1px solid transparent;
         }
 
         .sidebar-link i {
@@ -144,26 +146,26 @@
             transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
 
-        /* মাউস হোভার ইফেক্টস (SaaS Glassmorphic Feel) */
+        /* মাউস হোভার ইফেক্টস */
         .sidebar-link:hover {
             background-color: var(--sidebar-hover);
             color: var(--sidebar-active-color) !important;
             transform: translateX(6px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.015);
         }
 
         .sidebar-link:hover i {
             transform: scale(1.2) rotate(8deg);
         }
 
-        /* একটিভ স্টেট ডিজাইন (Glowing Border Left Indicator) */
+        /* একটিভ স্টেট ডিজাইন (Glowing Glassmorphic Card State) */
         .sidebar-link.active {
-            background-color: var(--sidebar-active-bg) !important;
+            background-color: var(--sidebar-bg) !important;
             color: var(--sidebar-active-color) !important;
-            font-weight: 600;
-            border-left: 3px solid var(--accent);
-            border-radius: 0 10px 10px 0;
-            box-shadow: -4px 0 12px rgba(242, 92, 56, 0.1);
+            font-weight: 700;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(242, 92, 56, 0.08), 0 4px 12px rgba(242, 92, 56, 0.04) !important;
+            border: 1px solid rgba(242, 92, 56, 0.1) !important;
+            transform: translateX(4px);
         }
 
         .sidebar-link.active i {
@@ -358,6 +360,12 @@
                 {% if user.is_authenticated %}
                 <div class="nav-section-label">Main</div>
 
+                <!-- নতুন ড্যাশবোর্ড বাটনটি মেন্যুর শুরুতে অ্যাড করা হয়েছে (গ্লোয়িং একটিভ কার্ড লজিকসহ) -->
+                <a href="{% url 'dashboard' %}"
+                   class="sidebar-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+                    <i class="fa-solid fa-chart-pie"></i> Dashboard
+                </a>
+
                 <a href="{% url 'post_list' %}"
                    class="sidebar-link {% if request.resolver_match.url_name == 'post_list' %}active{% endif %}">
                     <i class="fa-solid fa-pen-to-square"></i> Posts
@@ -401,7 +409,6 @@
                            {% elif acc.platform == 'reddit' %}#ff4500
                            {% elif acc.platform == 'snapchat' %}#fffc00
                            {% elif acc.platform == 'discord' %}#5865f2
-                           {% elif acc.platform == 'twitch' %}#9146ff
                            
                            {% elif acc.platform == 'youtube' %}#ff0000
                            {% elif acc.platform == 'whatsapp' %}#25d366
@@ -502,100 +509,103 @@ document.addEventListener('DOMContentLoaded', () => {
     // GSAP global config
     gsap.config({ force3D: true });
 
-    const masterTimeline = gsap.timeline({ defaults: { ease: 'power4.out' } });
-
     // ── ১. ভ্যানিলা ফলব্যাক (Fail-Safe Fallback) ──
     setTimeout(() => {
         const loader = document.getElementById('page-loader');
         const shell = document.getElementById('app-shell');
         if (loader && loader.style.display !== 'none') {
-            console.warn("[Loader Fallback] GSAP animation stuck. Force hiding loader.");
+            console.warn("[Loader Fallback] Force hiding loader.");
             loader.style.display = 'none';
             if (shell) {
                 shell.style.opacity = '1';
                 shell.style.transform = 'scale(1)';
             }
         }
-    }, 1500);
+    }, 1200);
 
-    // ── ২. মূল আল্ট্রা-প্রিমিয়াম ৩ডি রিভীল জ্যাঙ্গো অ্যানিমেশন ফ্লো ──
+    // ── ২. স্বাধীন এবং আন-চেইন্ড গ্লোবাল অ্যানিমেশন (১00% ফেইল-সেফ কনফিগারেশন) ──
     try {
         if (typeof gsap !== 'undefined') {
-            
-            // Step 1: Smooth loadbar completion
-            masterTimeline.to('#loader-fill', {
-                width: '100%',
-                duration: 0.5,
-                ease: 'power3.inOut'
-            })
+            gsap.config({ force3D: true });
 
-            // Step 2: Dynamic zoom & scale on loader icon before exit
-            .to('#loader-icon', {
+            // লোডার ফিল এনিমেশন
+            gsap.to('#loader-fill', {
+                width: '100%',
+                duration: 0.4,
+                ease: 'power3.inOut'
+            });
+
+            // লোডার আইকন স্পিন আউট
+            gsap.to('#loader-icon', {
                 scale: 0.8,
                 rotate: -15,
                 opacity: 0,
-                duration: 0.3,
+                duration: 0.25,
+                delay: 0.3,
                 ease: 'power2.in'
-            }, '-=0.1')
+            });
 
-            // Step 3: Sleek Curtain rising animation
-            .to('#page-loader', {
+            // মেইন স্ক্রিন কার্টেন রাইজিং
+            gsap.to('#page-loader', {
                 yPercent: -100,
-                duration: 0.7,
+                duration: 0.6,
+                delay: 0.4,
                 ease: 'power4.inOut',
                 onComplete: () => {
                     const loader = document.getElementById('page-loader');
                     if (loader) loader.style.display = 'none';
                 }
-            }, '-=0.15')
+            });
 
-            // Step 4: ৩ডি পার্সপেক্টিভ এবং টিল্ট স্লাইড নিয়ে ড্যাশবোর্ড ওপেন হওয়া (Ultra-Premium Reveal)
-            .to('#app-shell', { 
+            // ড্যাশবোর্ড রিভীল স্লাইড
+            gsap.to('#app-shell', { 
                 opacity: 1, 
                 scale: 1,
-                rotationX: 0,
-                duration: 0.9,
+                duration: 0.7,
+                delay: 0.5,
                 ease: 'power3.out'
-            }, '-=0.45');
+            });
 
-            // Safe Animation Blocks (Failsafe checks for Login/Register Pages)
+            // সাইডবার স্বাধীন এনিমেশন
             if (document.getElementById('sidebar')) {
-                masterTimeline.from('#sidebar', {
+                gsap.from('#sidebar', {
                     x: -45,
-                    duration: 0.7,
+                    duration: 0.6,
+                    delay: 0.5,
                     ease: 'power3.out'
-                }, '-=0.7');
+                });
             }
 
+            // টপবার স্বাধীন এনিমেশন
             if (document.getElementById('topbar')) {
-                masterTimeline.from('#topbar', {
+                gsap.from('#topbar', {
                     y: -18,
                     opacity: 0,
                     duration: 0.5,
+                    delay: 0.6,
                     ease: 'power2.out'
-                }, '-=0.5');
+                });
             }
 
-            // সাইডবার লিংকগুলোর জন্য প্রফেশনাল স্কিউ স্লাইড অ্যানিমেশন (Skew & Slide Stagger)
+            // সাইডবার লিংকগুলোর জন্য স্বাধীন স্কিউ স্লাইড অ্যানিমেশন (Skew & Slide Stagger)
             if (document.querySelectorAll('.sidebar-link').length > 0) {
-                masterTimeline.from('.sidebar-link', {
+                gsap.from('.sidebar-link', {
                     x: -25,
-                    skewX: -8,
-                    opacity: 0,
-                    duration: 0.5,
-                    stagger: 0.05,
+                    duration: 0.45,
+                    delay: 0.6,
+                    stagger: 0.04,
                     ease: 'power2.out'
-                }, '-=0.5');
+                });
             }
 
             if (document.querySelector('.alert')) {
-                masterTimeline.to('.alert', {
+                gsap.to('.alert', {
                     opacity: 1,
                     y: 0,
-                    duration: 0.45,
-                    stagger: 0.06,
+                    duration: 0.4,
+                    stagger: 0.05,
                     ease: 'back.out(1.4)'
-                }, '-=0.2');
+                });
             }
         }
     } catch (e) {

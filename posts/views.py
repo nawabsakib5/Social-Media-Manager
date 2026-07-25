@@ -1,11 +1,72 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, user_passes_test
+from django.contrib.auth import get_user_model 
 from django.contrib import messages
 from django.utils import timezone
 from .models import Post, PostPlatformStatus
 from .forms import PostForm
 from .tasks import publish_post_task
+from django.db.models import Count, Q
+from social_accounts.models import SocialAccount
+from inbox.models import InboxItem
 import requests
+
+User = get_user_model() 
+MAX_USERS = 50
+
+
+def is_admin(user):
+    return user.is_superuser or user.is_staff or getattr(user, 'user_type', None) == 'admin'
+
+
+@login_required
+def dashboard(request):
+    """SaaS Analytics Dashboard with real-time statistics and channel monitoring"""
+    
+    if request.user.is_superuser or getattr(request.user, 'user_type', None) == 'admin':
+        accounts = SocialAccount.objects.filter(status='connected')
+        posts_query = Post.objects.all()
+    else:
+        accounts = SocialAccount.objects.filter(permitted_users=request.user, status='connected')
+        posts_query = Post.objects.filter(created_by=request.user)
+
+    
+    total_posts = posts_query.count()
+    published_posts = posts_query.filter(status='published').count()
+    scheduled_posts = posts_query.filter(status='scheduled').count()
+    failed_posts = posts_query.filter(status='failed').count()
+    
+    
+    total_users_count = User.objects.count()
+
+    
+    channels_data = []
+    for acc in accounts:
+        post_count = PostPlatformStatus.objects.filter(social_account=acc, status='published').count()
+        channels_data.append({
+            'account': acc,
+            'post_count': post_count,
+            'percentage': min(int((post_count / 50) * 100), 100) if post_count > 0 else 0
+        })
+
+    
+    recent_posts = posts_query.order_by('-created_at')[:5]
+
+    
+    unread_inbox = InboxItem.objects.filter(social_account__in=accounts, is_read=False).count()
+
+    context = {
+        'total_posts': total_posts,
+        'published_posts': published_posts,
+        'scheduled_posts': scheduled_posts,
+        'failed_posts': failed_posts,
+        'total_users': total_users_count,
+        'channels_data': channels_data,
+        'recent_posts': recent_posts,
+        'unread_inbox': unread_inbox,
+        'connected_accounts': accounts,
+    }
+    return render(request, 'posts/dashboard.html', context)
 
 
 def _delete_from_platform(platform_status):
@@ -19,7 +80,6 @@ def _delete_from_platform(platform_status):
 
     try:
         if platform == 'facebook':
-            
             res = requests.delete(
                 f"https://graph.facebook.com/v22.0/{post_id}",
                 params={'access_token': token},
@@ -31,7 +91,6 @@ def _delete_from_platform(platform_status):
             return False, f"Facebook delete failed: {error}"
 
         elif platform == 'instagram':
-            
             return True, "Instagram: please delete manually from the app"
 
         return True, f"{platform}: deletion not supported"
@@ -41,7 +100,7 @@ def _delete_from_platform(platform_status):
 
 
 def _update_on_platform(platform_status, new_content):
-    
+    """Update post caption on its social media platform using API v22.0."""
     platform = platform_status.social_account.platform
     post_id = platform_status.platform_post_id
     token = platform_status.social_account.access_token
@@ -51,7 +110,6 @@ def _update_on_platform(platform_status, new_content):
 
     try:
         if platform == 'facebook':
-            
             res = requests.post(
                 f"https://graph.facebook.com/v22.0/{post_id}",
                 data={'message': new_content, 'access_token': token},
@@ -63,7 +121,6 @@ def _update_on_platform(platform_status, new_content):
             return False, f"Facebook update failed: {error}"
 
         elif platform == 'instagram':
-            
             return False, "Instagram caption edit requires manual update — open Instagram app"
 
         return True, f"{platform}: editing not supported"
@@ -86,7 +143,6 @@ def post_list(request):
 def post_create(request):
     """Create a new post with member-level channel permission filtering."""
     if request.method == 'POST':
-        
         form = PostForm(request.POST, request.FILES, user=request.user)
         if form.is_valid():
             post = form.save(commit=False)
@@ -120,7 +176,6 @@ def post_create(request):
 
             return redirect('post_list')
     else:
-        
         form = PostForm(user=request.user)
     return render(request, 'posts/post_form.html', {'form': form})
 
@@ -136,16 +191,14 @@ def post_detail(request, post_id):
 
 @login_required
 def post_edit(request, post_id):
-    
+    """Edit an existing post with member-level channel permission filtering."""
     post = get_object_or_404(Post, id=post_id)
 
     if request.method == 'POST':
-        
         form = PostForm(request.POST, request.FILES, instance=post, user=request.user)
         if form.is_valid():
             new_content = form.cleaned_data.get('content', '')
 
-            
             platform_results = []
             for ps in post.platform_statuses.filter(status='published'):
                 success, msg = _update_on_platform(ps, new_content)
@@ -155,7 +208,6 @@ def post_edit(request, post_id):
             post.save()
             form.save_m2m()
 
-            
             post.platform_statuses.all().delete()
             for account in form.cleaned_data['social_accounts']:
                 PostPlatformStatus.objects.create(
@@ -169,7 +221,6 @@ def post_edit(request, post_id):
             messages.success(request, "Post updated successfully.")
             return redirect('post_detail', post_id=post.id)
     else:
-        
         form = PostForm(instance=post, user=request.user)
 
     return render(request, 'posts/post_form.html', {

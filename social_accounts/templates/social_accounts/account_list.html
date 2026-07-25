@@ -58,6 +58,11 @@
                     {% elif item.name == 'tiktok' %}text-dark
                     {% elif item.name == 'threads' %}text-dark
                     {% elif item.name == 'gmail' %}text-danger
+                    {% elif item.name == 'telegram' %}text-info style="color: #0088cc !important;"
+                    {% elif item.name == 'pinterest' %}text-danger style="color: #bd081c !important;"
+                    {% elif item.name == 'reddit' %}text-orange style="color: #ff4500 !important;"
+                    {% elif item.name == 'snapchat' %}text-warning style="color: #fffc00 !important;"
+                    {% elif item.name == 'discord' %}text-primary style="color: #5865f2 !important;"
                     {% endif %}">
                 </i>
             </div>
@@ -68,6 +73,13 @@
                 {% elif item.name == 'tiktok' %}TikTok
                 {% elif item.name == 'linkedin' %}LinkedIn
                 {% elif item.name == 'gmail' %}Gmail
+                {% elif item.name == 'youtube' %}YouTube
+                {% elif item.name == 'whatsapp' %}WhatsApp
+                {% elif item.name == 'telegram' %}Telegram
+                {% elif item.name == 'pinterest' %}Pinterest
+                {% elif item.name == 'reddit' %}Reddit
+                {% elif item.name == 'snapchat' %}Snapchat
+                {% elif item.name == 'discord' %}Discord
                 {% else %}{{ item.name|capfirst }}{% endif %}
             </div>
 
@@ -131,6 +143,11 @@
                         {% elif acc.platform == 'youtube' %}text-danger
                         {% elif acc.platform == 'whatsapp' %}text-success
                         {% elif acc.platform == 'linkedin' %}text-primary
+                        {% elif acc.platform == 'telegram' %}text-info style="color: #0088cc !important;"
+                        {% elif acc.platform == 'pinterest' %}text-danger style="color: #bd081c !important;"
+                        {% elif acc.platform == 'reddit' %}text-orange style="color: #ff4500 !important;"
+                        {% elif acc.platform == 'snapchat' %}text-warning style="color: #fffc00 !important;"
+                        {% elif acc.platform == 'discord' %}text-primary style="color: #5865f2 !important;"
                         {% elif acc.platform == 'tiktok' %}text-dark
                         {% elif acc.platform == 'threads' %}text-dark
                         {% elif acc.platform == 'gmail' %}text-danger
