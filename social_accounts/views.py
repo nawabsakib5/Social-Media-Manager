@@ -339,8 +339,10 @@ def facebook_login(request):
         'pages_read_engagement',
         'pages_manage_posts', 
         'business_management',
+        'pages_messaging',             # <-- এটি যোগ করা হলো (মেসেঞ্জার মেসেজের জন্য)
         'instagram_basic', 
         'instagram_content_publish',
+        'instagram_manage_messages',    # <-- এটি যোগ করা হলো (ইনস্টাগ্রাম DMs এর জন্য)
         'instagram_manage_comments', 
         'pages_read_user_content',  
     ]

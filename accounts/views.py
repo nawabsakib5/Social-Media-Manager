@@ -132,6 +132,11 @@ def invite_member(request):
     })
 
 
+
+
+
+
+
 def accept_invitation(request, token):
     invitation = get_object_or_404(Invitation, token=token, is_accepted=False)
     
