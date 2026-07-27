@@ -141,14 +141,41 @@ def post_list(request):
 
 @login_required
 def post_create(request):
-    """Create a new post with member-level channel permission filtering."""
+    """Create a new post with Publish Now or Schedule option."""
     if request.method == 'POST':
         form = PostForm(request.POST, request.FILES, user=request.user)
         if form.is_valid():
             post = form.save(commit=False)
             post.created_by = request.user
+
+            # ── Media file handle ──
+            uploaded_file = request.FILES.get('media_file') or request.FILES.get('image')
+            if uploaded_file and uploaded_file.size > 0:
+                post.media_file = uploaded_file
+
+                # media_type auto-detect
+                filename = uploaded_file.name.lower()
+                video_extensions = ['.mp4', '.mov', '.avi', '.mkv', '.webm', '.flv']
+                if any(filename.endswith(ext) for ext in video_extensions):
+                    post.media_type = 'video'
+                else:
+                    post.media_type = 'image'
+            else:
+                post.media_file = None
+                post.media_type = None
+
+            # ── Post type handle ──
+            post_type = form.cleaned_data.get('post_type', 'instant')
+
+            if post_type == 'instant':
+                post.scheduled_time = timezone.now()
+                post.status = 'scheduled'
+            else:
+                post.status = 'scheduled'
+
             post.save()
 
+            # ── Platform status create ──
             selected_accounts = form.cleaned_data['social_accounts']
             if not selected_accounts:
                 messages.warning(request, "No platform selected.")
@@ -161,22 +188,24 @@ def post_create(request):
                     defaults={'status': 'scheduled'}
                 )
 
-            post_type = request.POST.get('post_type', 'scheduled')
+            # ── Instant হলে সাথে সাথে publish task fire ──
             if post_type == 'instant':
-                post.scheduled_time = timezone.now()
-                post.status = 'scheduled'
-                post.save(update_fields=['scheduled_time', 'status'])
                 for account in selected_accounts:
                     publish_post_task.delay(post.id, account.id)
-                messages.success(request, f"Publishing to {len(selected_accounts)} platform(s).")
+                messages.success(
+                    request,
+                    f"Publishing now to {len(selected_accounts)} platform(s)."
+                )
             else:
-                post.status = 'scheduled'
-                post.save(update_fields=['status'])
-                messages.success(request, f"Scheduled for {post.scheduled_time}.")
+                messages.success(
+                    request,
+                    f"Post scheduled for {post.scheduled_time}."
+                )
 
             return redirect('post_list')
     else:
         form = PostForm(user=request.user)
+
     return render(request, 'posts/post_form.html', {'form': form})
 
 

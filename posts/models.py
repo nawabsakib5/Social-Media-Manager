@@ -2,10 +2,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from social_accounts.models import SocialAccount
 from django.conf import settings
-from cloudinary_storage.storage import MediaCloudinaryStorage
-
-
-from cloudinary_storage.storage import MediaCloudinaryStorage
+from .storage import AutoMediaCloudinaryStorage
 
 
 class Post(models.Model):
@@ -26,7 +23,13 @@ class Post(models.Model):
         upload_to='post_media/',
         null=True,
         blank=True,
-        storage=MediaCloudinaryStorage()
+        storage=AutoMediaCloudinaryStorage()
+    )
+    media_type     = models.CharField(
+        max_length=10,
+        choices=[('image', 'Image'), ('video', 'Video')],
+        null=True,
+        blank=True
     )
     scheduled_time = models.DateTimeField(null=True, blank=True)
     status         = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft')
