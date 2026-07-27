@@ -4,55 +4,134 @@
 {% block content %}
 <div class="container py-4" style="max-width: 800px;">
     <div class="card border-0 shadow-sm rounded-4 p-4 bg-white">
-        <h5 class="fw-bold text-dark mb-4"><i class="fa-solid fa-pen-to-square text-primary me-2"></i>Create New Social Post</h5>
+        <h5 class="fw-bold text-dark mb-4">
+            <i class="fa-solid fa-pen-to-square text-primary me-2"></i>Create New Social Post
+        </h5>
 
-        <!-- ⚠️ enctype="multipart/form-data" অবশ্যই থাকতে হবে -->
         <form method="POST" enctype="multipart/form-data">
             {% csrf_token %}
 
-            <!-- Post Content / Caption Field (এখন সম্পূর্ণ Optional) -->
+            <!-- Post Caption -->
             <div class="mb-4">
-                <label class="form-label fw-bold text-secondary">Post Caption / Message <span class="text-muted fw-normal">(Optional)</span></label>
-                <textarea name="content" class="form-control rounded-3 p-3" rows="4" placeholder="Write your post caption here... (optional — you can post media only)"></textarea>
+                <label class="form-label fw-bold text-secondary">
+                    Post Caption / Message <span class="text-muted fw-normal">(Optional)</span>
+                </label>
+                <textarea name="content" class="form-control rounded-3 p-3" rows="4"
+                    placeholder="Write your post caption here..."></textarea>
             </div>
 
-            <!-- Image/Video Upload Field with Instant Preview -->
+            <!-- Media Upload -->
             <div class="mb-4">
-                <label class="form-label fw-bold text-secondary"><i class="fa-solid fa-image text-primary me-1.5"></i>Upload Attachment (Image or Video)</label>
-                
-                <!-- ⬇️ image + video উভয়ই accept করা হচ্ছে -->
-                <input type="file" name="media_file" id="imageInput" class="form-control rounded-3" accept="image/*,video/*" onchange="previewImage(event)">
-                
-                <!-- Instant Image Preview Box -->
+                <label class="form-label fw-bold text-secondary">
+                    <i class="fa-solid fa-image text-primary me-1"></i> Upload Attachment (Image or Video)
+                </label>
+                <input type="file" name="media_file" id="mediaInput" class="form-control rounded-3"
+                    accept="image/*,video/*" onchange="previewMedia(event)">
+
                 <div class="mt-3 text-center d-none" id="previewContainer">
                     <p class="small text-muted mb-1">Selected File Preview:</p>
-                    <img id="imagePreview" src="#" alt="Preview" class="img-fluid rounded-3 shadow-sm border d-none" style="max-height: 250px; object-fit: cover;">
-                    <video id="videoPreview" controls class="img-fluid rounded-3 shadow-sm border d-none" style="max-height: 250px;"></video>
+                    <img id="imagePreview" src="#" alt="Preview"
+                        class="img-fluid rounded-3 shadow-sm border d-none"
+                        style="max-height: 250px; object-fit: cover;">
+                    <video id="videoPreview" controls
+                        class="img-fluid rounded-3 shadow-sm border d-none"
+                        style="max-height: 250px;"></video>
                 </div>
             </div>
 
-            <!-- Select Platforms/Channels Field -->
+            <!-- Select Platforms -->
             <div class="mb-4">
                 <label class="form-label fw-bold text-secondary">Select Social Platforms</label>
                 <div class="d-flex flex-wrap gap-3">
                     {{ form.social_accounts }}
                 </div>
+                {% if form.social_accounts.errors %}
+                    <div class="text-danger small mt-1">{{ form.social_accounts.errors }}</div>
+                {% endif %}
             </div>
 
-            <!-- Publish / Schedule Action Buttons -->
+            <!-- Post Type Selection -->
+            <div class="mb-4">
+                <label class="form-label fw-bold text-secondary">Post Type</label>
+                <div class="d-flex gap-4">
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="post_type"
+                            id="type_instant" value="instant" checked
+                            onchange="toggleSchedule()">
+                        <label class="form-check-label fw-semibold" for="type_instant">
+                            <i class="fa-solid fa-paper-plane text-primary me-1"></i>Publish Now
+                        </label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="post_type"
+                            id="type_scheduled" value="scheduled"
+                            onchange="toggleSchedule()">
+                        <label class="form-check-label fw-semibold" for="type_scheduled">
+                            <i class="fa-solid fa-clock text-warning me-1"></i>Schedule for Later
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Schedule DateTime (শুধু Schedule select করলে দেখাবে) -->
+            <div class="mb-4 d-none" id="scheduleBox">
+                <label class="form-label fw-bold text-secondary">
+                    <i class="fa-solid fa-calendar-days text-warning me-1"></i>Schedule Date & Time
+                </label>
+                <input type="datetime-local" name="scheduled_time" id="scheduledTime"
+                    class="form-control rounded-3">
+                {% if form.scheduled_time.errors %}
+                    <div class="text-danger small mt-1">{{ form.scheduled_time.errors }}</div>
+                {% endif %}
+            </div>
+
+            <!-- Form Errors -->
+            {% if form.errors %}
+                <div class="alert alert-danger rounded-3 small">
+                    {% for field, errors in form.errors.items %}
+                        {% if field != 'social_accounts' and field != 'scheduled_time' %}
+                            {% for error in errors %}
+                                <div>{{ error }}</div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <!-- Action Buttons -->
             <div class="d-flex justify-content-end gap-2 pt-3 border-top">
                 <a href="{% url 'post_list' %}" class="btn btn-light px-4 fw-bold">Cancel</a>
-                <button type="submit" name="post_type" value="instant" class="btn btn-primary px-4 fw-bold shadow-sm">
-                    <i class="fa-solid fa-paper-plane me-1.5"></i>Publish Now
+                <button type="submit" class="btn btn-primary px-4 fw-bold shadow-sm" id="submitBtn">
+                    <i class="fa-solid fa-paper-plane me-1"></i>Publish Now
                 </button>
             </div>
         </form>
     </div>
 </div>
 
-<!-- Image/Video Instant Preview JavaScript -->
 <script>
-function previewImage(event) {
+// Schedule box toggle
+function toggleSchedule() {
+    const isScheduled = document.getElementById('type_scheduled').checked;
+    const scheduleBox = document.getElementById('scheduleBox');
+    const submitBtn = document.getElementById('submitBtn');
+    const scheduledTime = document.getElementById('scheduledTime');
+
+    if (isScheduled) {
+        scheduleBox.classList.remove('d-none');
+        scheduledTime.required = true;
+        submitBtn.innerHTML = '<i class="fa-solid fa-clock me-1"></i>Schedule Post';
+        submitBtn.classList.replace('btn-primary', 'btn-warning');
+    } else {
+        scheduleBox.classList.add('d-none');
+        scheduledTime.required = false;
+        submitBtn.innerHTML = '<i class="fa-solid fa-paper-plane me-1"></i>Publish Now';
+        submitBtn.classList.replace('btn-warning', 'btn-primary');
+    }
+}
+
+// Media preview
+function previewMedia(event) {
     const input = event.target;
     if (input.files && input.files[0]) {
         const file = input.files[0];
