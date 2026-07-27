@@ -165,7 +165,7 @@ def post_create(request):
                 post.media_type = None
 
             # ── Post type handle ──
-            post_type = form.cleaned_data.get('post_type', 'instant')
+            post_type = request.POST.get('post_type', 'instant')
 
             if post_type == 'instant':
                 post.scheduled_time = timezone.now()
