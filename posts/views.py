@@ -1,15 +1,18 @@
+import os
+import requests
+import cloudinary.uploader
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth import get_user_model 
 from django.contrib import messages
 from django.utils import timezone
+from django.db.models import Count, Q
+
 from .models import Post, PostPlatformStatus
 from .forms import PostForm
 from .tasks import publish_post_task
-from django.db.models import Count, Q
 from social_accounts.models import SocialAccount
 from inbox.models import InboxItem
-import requests
 
 User = get_user_model() 
 MAX_USERS = 50
@@ -30,16 +33,13 @@ def dashboard(request):
         accounts = SocialAccount.objects.filter(permitted_users=request.user, status='connected')
         posts_query = Post.objects.filter(created_by=request.user)
 
-    
     total_posts = posts_query.count()
     published_posts = posts_query.filter(status='published').count()
     scheduled_posts = posts_query.filter(status='scheduled').count()
     failed_posts = posts_query.filter(status='failed').count()
     
-    
     total_users_count = User.objects.count()
 
-    
     channels_data = []
     for acc in accounts:
         post_count = PostPlatformStatus.objects.filter(social_account=acc, status='published').count()
@@ -49,11 +49,14 @@ def dashboard(request):
             'percentage': min(int((post_count / 50) * 100), 100) if post_count > 0 else 0
         })
 
-    
     recent_posts = posts_query.order_by('-created_at')[:5]
 
-    
-    unread_inbox = InboxItem.objects.filter(social_account__in=accounts, is_read=False).count()
+    # unread inbox counting
+    unread_inbox = 0
+    try:
+        unread_inbox = InboxItem.objects.filter(social_account__in=accounts, is_read=False).count()
+    except Exception:
+        pass
 
     context = {
         'total_posts': total_posts,
@@ -141,66 +144,67 @@ def post_list(request):
 
 @login_required
 def post_create(request):
-    """Create a new post with Publish Now or Schedule option."""
+    """Create a new post with proper Cloudinary Video/Image Resource Type Detection"""
     if request.method == 'POST':
         form = PostForm(request.POST, request.FILES, user=request.user)
         if form.is_valid():
             post = form.save(commit=False)
             post.created_by = request.user
 
-            # ── Media file handle ──
+            # ── 🎥/📸 1. Dynamic Video vs Image Detection for Cloudinary ──
             uploaded_file = request.FILES.get('media_file') or request.FILES.get('image')
             if uploaded_file and uploaded_file.size > 0:
-                post.media_file = uploaded_file
-
-                # media_type auto-detect
                 filename = uploaded_file.name.lower()
-                video_extensions = ['.mp4', '.mov', '.avi', '.mkv', '.webm', '.flv']
-                if any(filename.endswith(ext) for ext in video_extensions):
-                    post.media_type = 'video'
-                else:
-                    post.media_type = 'image'
+                video_extensions = ['.mp4', '.mov', '.avi', '.mkv', '.webm', '.flv', '.3gp']
+                is_video = any(filename.endswith(ext) for ext in video_extensions)
+                
+                # ক্লাউডিনারি রিসোর্স টাইপ সেট করা
+                resource_type = "video" if is_video else "image"
+                post.media_type = resource_type
+
+                try:
+                    # 🚀 resource_type='video' বা 'image' এক্সপ্লিসিটলি পাস করা হচ্ছে
+                    upload_res = cloudinary.uploader.upload(
+                        uploaded_file, 
+                        folder="post_media/",
+                        resource_type=resource_type
+                    )
+                    post.media_file = upload_res.get('secure_url')
+                except Exception as e:
+                    print(f"[Cloudinary Direct Upload Error]: {e}")
             else:
                 post.media_file = None
                 post.media_type = None
 
-            # ── Post type handle ──
+            # ── 2. Post type handle ──
             post_type = request.POST.get('post_type', 'instant')
-
             if post_type == 'instant':
                 post.scheduled_time = timezone.now()
-                post.status = 'scheduled'
+                post.status = 'processing'
             else:
                 post.status = 'scheduled'
 
             post.save()
 
-            # ── Platform status create ──
             selected_accounts = form.cleaned_data['social_accounts']
             if not selected_accounts:
                 messages.warning(request, "No platform selected.")
                 return redirect('post_create')
 
+            initial_status = 'processing' if post_type == 'instant' else 'scheduled'
             for account in selected_accounts:
-                PostPlatformStatus.objects.get_or_create(
+                PostPlatformStatus.objects.create(
                     post=post,
                     social_account=account,
-                    defaults={'status': 'scheduled'}
+                    status=initial_status
                 )
 
-            # ── Instant হলে সাথে সাথে publish task fire ──
             if post_type == 'instant':
                 for account in selected_accounts:
                     publish_post_task.delay(post.id, account.id)
-                messages.success(
-                    request,
-                    f"Publishing now to {len(selected_accounts)} platform(s)."
-                )
+                messages.success(request, f"Processing post for {len(selected_accounts)} platform(s)...")
             else:
-                messages.success(
-                    request,
-                    f"Post scheduled for {post.scheduled_time}."
-                )
+                messages.success(request, f"Post scheduled for {post.scheduled_time}.")
 
             return redirect('post_list')
     else:
@@ -287,13 +291,13 @@ def post_publish_now(request, post_id):
             return redirect('post_detail', post_id=post_id)
 
         post.scheduled_time = timezone.now()
-        post.status = 'scheduled'
+        post.status = 'published'
         post.save(update_fields=['scheduled_time', 'status'])
 
         for account in accounts:
             PostPlatformStatus.objects.filter(
                 post=post, social_account=account
-            ).update(status='scheduled')
+            ).update(status='published')
             publish_post_task.delay(post.id, account.id)
 
         messages.success(request, f"Publishing to {accounts.count()} platform(s) now.")
