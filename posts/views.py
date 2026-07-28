@@ -144,26 +144,24 @@ def post_list(request):
 
 @login_required
 def post_create(request):
-    """Create a new post with proper Cloudinary Video/Image Resource Type Detection"""
+    """Create a new post with Fail-safe Media File Handling"""
     if request.method == 'POST':
         form = PostForm(request.POST, request.FILES, user=request.user)
         if form.is_valid():
             post = form.save(commit=False)
             post.created_by = request.user
 
-            # ── 🎥/📸 1. Dynamic Video vs Image Detection for Cloudinary ──
+            # 📸 / 🎥 ১. মিডিয়া ফাইল সেভ করা (কখনো ফাইল লস্ট হবে না)
             uploaded_file = request.FILES.get('media_file') or request.FILES.get('image')
             if uploaded_file and uploaded_file.size > 0:
                 filename = uploaded_file.name.lower()
-                video_extensions = ['.mp4', '.mov', '.avi', '.mkv', '.webm', '.flv', '.3gp']
+                video_extensions = ['.mp4', '.mov', '.avi', '.mkv', '.webm']
                 is_video = any(filename.endswith(ext) for ext in video_extensions)
-                
-                # ক্লাউডিনারি রিসোর্স টাইপ সেট করা
                 resource_type = "video" if is_video else "image"
                 post.media_type = resource_type
 
+                # ক্লাউডিনারিতে আপলোডের চেষ্টা
                 try:
-                    # 🚀 resource_type='video' বা 'image' এক্সপ্লিসিটলি পাস করা হচ্ছে
                     upload_res = cloudinary.uploader.upload(
                         uploaded_file, 
                         folder="post_media/",
@@ -171,12 +169,13 @@ def post_create(request):
                     )
                     post.media_file = upload_res.get('secure_url')
                 except Exception as e:
-                    print(f"[Cloudinary Direct Upload Error]: {e}")
+                    print(f"[Cloudinary Warning]: Falling back to standard upload - {e}")
+                    post.media_file = uploaded_file  # ব্যাকআপ হিসেবে জ্যাঙ্গো লোকাল সেভ
             else:
                 post.media_file = None
                 post.media_type = None
 
-            # ── 2. Post type handle ──
+            # ২. পোস্ট টাইপ
             post_type = request.POST.get('post_type', 'instant')
             if post_type == 'instant':
                 post.scheduled_time = timezone.now()
@@ -202,7 +201,7 @@ def post_create(request):
             if post_type == 'instant':
                 for account in selected_accounts:
                     publish_post_task.delay(post.id, account.id)
-                messages.success(request, f"Processing post for {len(selected_accounts)} platform(s)...")
+                messages.success(request, f"Publishing to {len(selected_accounts)} platform(s)...")
             else:
                 messages.success(request, f"Post scheduled for {post.scheduled_time}.")
 
