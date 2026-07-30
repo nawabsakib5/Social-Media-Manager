@@ -144,46 +144,51 @@ def post_list(request):
 
 @login_required
 def post_create(request):
-    """Create a new post with Fail-safe Media File Handling"""
+    """Create a new post — multi-media support with direct Cloudinary upload"""
     if request.method == 'POST':
         form = PostForm(request.POST, request.FILES, user=request.user)
         if form.is_valid():
             post = form.save(commit=False)
             post.created_by = request.user
 
-            # 📸 / 🎥 ১. মিডিয়া ফাইল সেভ করা (কখনো ফাইল লস্ট হবে না)
-            uploaded_file = request.FILES.get('media_file') or request.FILES.get('image')
-            if uploaded_file and uploaded_file.size > 0:
-                filename = uploaded_file.name.lower()
-                video_extensions = ['.mp4', '.mov', '.avi', '.mkv', '.webm']
-                is_video = any(filename.endswith(ext) for ext in video_extensions)
-                resource_type = "video" if is_video else "image"
-                post.media_type = resource_type
-
-                # ক্লাউডিনারিতে আপলোডের চেষ্টা
-                try:
-                    upload_res = cloudinary.uploader.upload(
-                        uploaded_file, 
-                        folder="post_media/",
-                        resource_type=resource_type
-                    )
-                    post.media_file = upload_res.get('secure_url')
-                except Exception as e:
-                    print(f"[Cloudinary Warning]: Falling back to standard upload - {e}")
-                    post.media_file = uploaded_file  # ব্যাকআপ হিসেবে জ্যাঙ্গো লোকাল সেভ
-            else:
-                post.media_file = None
-                post.media_type = None
-
-            # ২. পোস্ট টাইপ
             post_type = request.POST.get('post_type', 'instant')
-            if post_type == 'instant':
+            if post_type == 'scheduled':
+                post.status = 'scheduled'
+            else:
                 post.scheduled_time = timezone.now()
                 post.status = 'processing'
-            else:
-                post.status = 'scheduled'
 
             post.save()
+
+            # ── Multi-media upload ──
+            uploaded_files = request.FILES.getlist('media_files')
+            video_extensions = ['.mp4', '.mov', '.avi', '.mkv', '.webm']
+
+            for i, uploaded_file in enumerate(uploaded_files):
+                if uploaded_file.size == 0:
+                    continue
+                filename = uploaded_file.name.lower()
+                is_video = any(filename.endswith(ext) for ext in video_extensions)
+                resource_type = 'video' if is_video else 'image'
+
+                try:
+                    import cloudinary.uploader
+                    upload_res = cloudinary.uploader.upload(
+                        uploaded_file,
+                        folder='post_media/',
+                        resource_type=resource_type
+                    )
+                    secure_url = upload_res.get('secure_url')
+                    if secure_url:
+                        from .models import PostMedia
+                        PostMedia.objects.create(
+                            post=post,
+                            url=secure_url,
+                            media_type='video' if is_video else 'image',
+                            order=i
+                        )
+                except Exception as e:
+                    print(f"[Cloudinary Upload Error]: {e}")
 
             selected_accounts = form.cleaned_data['social_accounts']
             if not selected_accounts:

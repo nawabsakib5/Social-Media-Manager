@@ -20,23 +20,25 @@
                     placeholder="Write your post caption here..."></textarea>
             </div>
 
-            <!-- Media Upload -->
+            <!-- Multi Media Upload -->
             <div class="mb-4">
                 <label class="form-label fw-bold text-secondary">
-                    <i class="fa-solid fa-image text-primary me-1"></i> Upload Attachment (Image or Video)
+                    <i class="fa-solid fa-images text-primary me-1"></i>
+                    Upload Images / Videos
+                    <span class="text-muted fw-normal">(একাধিক file select করতে পারবে)</span>
                 </label>
-                <input type="file" name="media_file" id="mediaInput" class="form-control rounded-3"
-                    accept="image/*,video/*" onchange="previewMedia(event)">
+                <input type="file" name="media_files" id="mediaInput"
+                    class="form-control rounded-3"
+                    accept="image/*,video/*"
+                    multiple
+                    onchange="previewMediaFiles(event)">
+                <small class="text-muted mt-1 d-block">
+                    <i class="fa-solid fa-circle-info me-1"></i>
+                    Facebook-এ সর্বোচ্চ ১০টি image একটি post-এ দেওয়া যায়।
+                </small>
 
-                <div class="mt-3 text-center d-none" id="previewContainer">
-                    <p class="small text-muted mb-1">Selected File Preview:</p>
-                    <img id="imagePreview" src="#" alt="Preview"
-                        class="img-fluid rounded-3 shadow-sm border d-none"
-                        style="max-height: 250px; object-fit: cover;">
-                    <video id="videoPreview" controls
-                        class="img-fluid rounded-3 shadow-sm border d-none"
-                        style="max-height: 250px;"></video>
-                </div>
+                <!-- Preview Grid -->
+                <div id="previewGrid" class="row g-2 mt-2"></div>
             </div>
 
             <!-- Select Platforms -->
@@ -50,22 +52,20 @@
                 {% endif %}
             </div>
 
-            <!-- Post Type Selection -->
+            <!-- Post Type -->
             <div class="mb-4">
                 <label class="form-label fw-bold text-secondary">Post Type</label>
                 <div class="d-flex gap-4">
                     <div class="form-check">
                         <input class="form-check-input" type="radio" name="post_type"
-                            id="type_instant" value="instant" checked
-                            onchange="toggleSchedule()">
+                            id="type_instant" value="instant" checked onchange="toggleSchedule()">
                         <label class="form-check-label fw-semibold" for="type_instant">
                             <i class="fa-solid fa-paper-plane text-primary me-1"></i>Publish Now
                         </label>
                     </div>
                     <div class="form-check">
                         <input class="form-check-input" type="radio" name="post_type"
-                            id="type_scheduled" value="scheduled"
-                            onchange="toggleSchedule()">
+                            id="type_scheduled" value="scheduled" onchange="toggleSchedule()">
                         <label class="form-check-label fw-semibold" for="type_scheduled">
                             <i class="fa-solid fa-clock text-warning me-1"></i>Schedule for Later
                         </label>
@@ -73,30 +73,14 @@
                 </div>
             </div>
 
-            <!-- Schedule DateTime (শুধু Schedule select করলে দেখাবে) -->
+            <!-- Schedule DateTime -->
             <div class="mb-4 d-none" id="scheduleBox">
                 <label class="form-label fw-bold text-secondary">
                     <i class="fa-solid fa-calendar-days text-warning me-1"></i>Schedule Date & Time
                 </label>
                 <input type="datetime-local" name="scheduled_time" id="scheduledTime"
                     class="form-control rounded-3">
-                {% if form.scheduled_time.errors %}
-                    <div class="text-danger small mt-1">{{ form.scheduled_time.errors }}</div>
-                {% endif %}
             </div>
-
-            <!-- Form Errors -->
-            {% if form.errors %}
-                <div class="alert alert-danger rounded-3 small">
-                    {% for field, errors in form.errors.items %}
-                        {% if field != 'social_accounts' and field != 'scheduled_time' %}
-                            {% for error in errors %}
-                                <div>{{ error }}</div>
-                            {% endfor %}
-                        {% endif %}
-                    {% endfor %}
-                </div>
-            {% endif %}
 
             <!-- Action Buttons -->
             <div class="d-flex justify-content-end gap-2 pt-3 border-top">
@@ -110,7 +94,6 @@
 </div>
 
 <script>
-// Schedule box toggle
 function toggleSchedule() {
     const isScheduled = document.getElementById('type_scheduled').checked;
     const scheduleBox = document.getElementById('scheduleBox');
@@ -130,31 +113,35 @@ function toggleSchedule() {
     }
 }
 
-// Media preview
-function previewMedia(event) {
-    const input = event.target;
-    if (input.files && input.files[0]) {
-        const file = input.files[0];
+function previewMediaFiles(event) {
+    const files = Array.from(event.target.files);
+    const grid = document.getElementById('previewGrid');
+    grid.innerHTML = '';
+
+    files.forEach((file, index) => {
         const isVideo = file.type.startsWith('video/');
         const reader = new FileReader();
-
         reader.onload = function(e) {
-            document.getElementById('previewContainer').classList.remove('d-none');
-            const imgEl = document.getElementById('imagePreview');
-            const vidEl = document.getElementById('videoPreview');
+            const col = document.createElement('div');
+            col.className = 'col-6 col-md-4 position-relative';
+
+            const badge = `<span class="badge bg-${isVideo ? 'danger' : 'primary'} position-absolute top-0 start-0 m-1" style="font-size:10px;">${isVideo ? '🎥 Video' : '🖼️ Image'}</span>`;
 
             if (isVideo) {
-                vidEl.src = e.target.result;
-                vidEl.classList.remove('d-none');
-                imgEl.classList.add('d-none');
+                col.innerHTML = `
+                    ${badge}
+                    <video src="${e.target.result}" class="w-100 rounded-3 border" style="height:120px; object-fit:cover;" muted></video>
+                `;
             } else {
-                imgEl.src = e.target.result;
-                imgEl.classList.remove('d-none');
-                vidEl.classList.add('d-none');
+                col.innerHTML = `
+                    ${badge}
+                    <img src="${e.target.result}" class="w-100 rounded-3 border" style="height:120px; object-fit:cover;">
+                `;
             }
-        }
+            grid.appendChild(col);
+        };
         reader.readAsDataURL(file);
-    }
+    });
 }
 </script>
 {% endblock %}
