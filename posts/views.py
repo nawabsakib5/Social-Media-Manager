@@ -24,8 +24,6 @@ def is_admin(user):
 
 @login_required
 def dashboard(request):
-    """SaaS Analytics Dashboard with real-time statistics and channel monitoring"""
-    
     if request.user.is_superuser or getattr(request.user, 'user_type', None) == 'admin':
         accounts = SocialAccount.objects.filter(status='connected')
         posts_query = Post.objects.all()
@@ -37,7 +35,6 @@ def dashboard(request):
     published_posts = posts_query.filter(status='published').count()
     scheduled_posts = posts_query.filter(status='scheduled').count()
     failed_posts = posts_query.filter(status='failed').count()
-    
     total_users_count = User.objects.count()
 
     channels_data = []
@@ -51,7 +48,6 @@ def dashboard(request):
 
     recent_posts = posts_query.order_by('-created_at')[:5]
 
-    # unread inbox counting
     unread_inbox = 0
     try:
         unread_inbox = InboxItem.objects.filter(social_account__in=accounts, is_read=False).count()
@@ -73,7 +69,6 @@ def dashboard(request):
 
 
 def _delete_from_platform(platform_status):
-    """Delete a post from its social media platform using API v22.0."""
     platform = platform_status.social_account.platform
     post_id = platform_status.platform_post_id
     token = platform_status.social_account.access_token
@@ -92,18 +87,14 @@ def _delete_from_platform(platform_status):
                 return True, "Deleted from Facebook ✓"
             error = res.get('error', {}).get('message', 'Unknown error')
             return False, f"Facebook delete failed: {error}"
-
         elif platform == 'instagram':
             return True, "Instagram: please delete manually from the app"
-
         return True, f"{platform}: deletion not supported"
-
     except requests.RequestException as e:
         return False, f"Network error: {e}"
 
 
 def _update_on_platform(platform_status, new_content):
-    """Update post caption on its social media platform using API v22.0."""
     platform = platform_status.social_account.platform
     post_id = platform_status.platform_post_id
     token = platform_status.social_account.access_token
@@ -122,12 +113,9 @@ def _update_on_platform(platform_status, new_content):
                 return True, "Updated on Facebook ✓"
             error = res.get('error', {}).get('message', 'Unknown error')
             return False, f"Facebook update failed: {error}"
-
         elif platform == 'instagram':
-            return False, "Instagram caption edit requires manual update — open Instagram app"
-
+            return False, "Instagram caption edit requires manual update"
         return True, f"{platform}: editing not supported"
-
     except requests.RequestException as e:
         return False, f"Network error: {e}"
 
@@ -144,7 +132,6 @@ def post_list(request):
 
 @login_required
 def post_create(request):
-    """Create a new post — multi-media support with direct Cloudinary upload"""
     if request.method == 'POST':
         form = PostForm(request.POST, request.FILES, user=request.user)
         if form.is_valid():
@@ -160,7 +147,6 @@ def post_create(request):
 
             post.save()
 
-            # ── Multi-media upload ──
             uploaded_files = request.FILES.getlist('media_files')
             video_extensions = ['.mp4', '.mov', '.avi', '.mkv', '.webm']
 
@@ -172,7 +158,6 @@ def post_create(request):
                 resource_type = 'video' if is_video else 'image'
 
                 try:
-                    import cloudinary.uploader
                     upload_res = cloudinary.uploader.upload(
                         uploaded_file,
                         folder='post_media/',
@@ -228,7 +213,6 @@ def post_detail(request, post_id):
 
 @login_required
 def post_edit(request, post_id):
-    """Edit an existing post with member-level channel permission filtering."""
     post = get_object_or_404(Post, id=post_id)
 
     if request.method == 'POST':
@@ -305,4 +289,75 @@ def post_publish_now(request, post_id):
             publish_post_task.delay(post.id, account.id)
 
         messages.success(request, f"Publishing to {accounts.count()} platform(s) now.")
+    return redirect('post_detail', post_id=post_id)
+
+
+@login_required
+def platform_delete(request, post_id, ps_id):
+    """একটি নির্দিষ্ট platform থেকে post delete করা"""
+    if request.method != 'POST':
+        return redirect('post_detail', post_id=post_id)
+
+    post = get_object_or_404(Post, id=post_id)
+    ps = get_object_or_404(PostPlatformStatus, id=ps_id, post=post)
+    account_name = ps.social_account.account_name
+
+    if ps.status != 'published' or not ps.platform_post_id:
+        messages.warning(request, f"{account_name}: Not published, nothing to delete.")
+        return redirect('post_detail', post_id=post_id)
+
+    try:
+        from integrations import get_social_adapter
+        adapter = get_social_adapter(ps.social_account)
+        success, result = adapter.delete_post(post, ps)
+
+        if success:
+            ps.status = 'failed'
+            ps.error_message = 'Deleted from platform'
+            ps.platform_post_id = None
+            ps.save()
+            messages.success(request, f"✓ Deleted from {account_name}.")
+        else:
+            messages.error(request, f"Failed to delete from {account_name}: {result}")
+
+    except Exception as e:
+        messages.error(request, f"Error: {str(e)}")
+
+    return redirect('post_detail', post_id=post_id)
+
+
+@login_required
+def platform_edit(request, post_id, ps_id):
+    """একটি নির্দিষ্ট platform-এ post-এর caption edit করা"""
+    if request.method != 'POST':
+        return redirect('post_detail', post_id=post_id)
+
+    post = get_object_or_404(Post, id=post_id)
+    ps = get_object_or_404(PostPlatformStatus, id=ps_id, post=post)
+    new_content = request.POST.get('new_content', '').strip()
+    account_name = ps.social_account.account_name
+
+    if not new_content:
+        messages.error(request, "Caption cannot be empty.")
+        return redirect('post_detail', post_id=post_id)
+
+    if ps.status != 'published' or not ps.platform_post_id:
+        messages.warning(request, f"{account_name}: Post not published yet.")
+        return redirect('post_detail', post_id=post_id)
+
+    try:
+        from integrations import get_social_adapter
+        adapter = get_social_adapter(ps.social_account)
+        success, result = adapter.update_post(post, ps, new_content)
+
+        if success:
+            post.content = new_content
+            post.save(update_fields=['content'])
+            messages.success(request, f"✓ Caption updated on {account_name}.")
+        else:
+            messages.error(request, f"Failed to update {account_name}: {result}")
+
+    except Exception as e:
+        messages.error(request, f"Error: {str(e)}")
+
     return redirect('post_detail', post_id=post_id)

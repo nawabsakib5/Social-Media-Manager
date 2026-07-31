@@ -96,7 +96,7 @@
             <p class="text-muted fst-italic"><i class="fa-regular fa-file-lines me-1"></i>No caption</p>
             {% endif %}
 
-            <!-- Footer - Updated with published_at support -->
+            <!-- Footer -->
             <div class="d-flex justify-content-between align-items-center mt-3 pt-3"
                  style="border-top:1px solid #f1f5f9;">
                 <small class="text-muted">
@@ -157,40 +157,66 @@
                 <div class="d-flex align-items-center gap-2 flex-wrap justify-content-end">
 
                     {% if ps.status == 'published' %}
-                        <span class="badge bg-success rounded-pill">
+                        <span class="badge bg-success rounded-pill platform-status-badge">
                             <i class="fa-solid fa-circle-check me-1"></i>Published
                         </span>
                         {% if ps.published_at %}
                         <small class="text-muted ms-1">{{ ps.published_at|date:"M d, H:i" }}</small>
                         {% endif %}
 
-                        <!-- Platform-specific action buttons -->
-                        {% if ps.social_account.platform == 'facebook' and ps.platform_post_id %}
-                        <a href="https://www.facebook.com/{{ ps.platform_post_id }}"
-                           target="_blank"
-                           class="btn btn-sm btn-outline-primary"
-                           style="font-size:11px; border-radius:7px; padding:3px 10px;">
-                            <i class="fa-solid fa-arrow-up-right-from-square me-1"></i>Open
-                        </a>
-                        {% endif %}
+                        <!-- Action Buttons -->
+                        {% if ps.platform_post_id %}
+                            {% if ps.social_account.platform == 'facebook' %}
+                            <a href="https://www.facebook.com/{{ ps.platform_post_id }}"
+                               target="_blank" class="btn btn-sm btn-outline-primary"
+                               style="font-size:11px; border-radius:7px; padding:3px 10px;">
+                                <i class="fa-solid fa-arrow-up-right-from-square me-1"></i>Open
+                            </a>
+                            <!-- Edit (Facebook only) -->
+                            <button class="btn btn-sm btn-outline-warning"
+                                    style="font-size:11px; border-radius:7px; padding:3px 10px;"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#editModal{{ ps.id }}">
+                                <i class="fa-solid fa-pen me-1"></i>Edit
+                            </button>
+                            {% endif %}
 
-                        {% if ps.social_account.platform == 'instagram' and ps.platform_post_id %}
-                        <a href="https://www.instagram.com/p/{{ ps.platform_post_id }}/"
-                           target="_blank"
-                           class="btn btn-sm btn-outline-danger"
-                           style="font-size:11px; border-radius:7px; padding:3px 10px;"
-                           title="Instagram caption edit must be done manually">
-                            <i class="fa-solid fa-arrow-up-right-from-square me-1"></i>Open
-                        </a>
-                        {% endif %}
+                            {% if ps.social_account.platform == 'instagram' %}
+                            <a href="https://www.instagram.com/p/{{ ps.platform_post_id }}/"
+                               target="_blank" class="btn btn-sm btn-outline-danger"
+                               style="font-size:11px; border-radius:7px; padding:3px 10px;"
+                               title="Instagram caption edit must be done manually">
+                                <i class="fa-solid fa-arrow-up-right-from-square me-1"></i>Open
+                            </a>
+                            {% endif %}
 
-                        {% if ps.social_account.platform == 'twitter' and ps.platform_post_id %}
-                        <a href="https://twitter.com/i/web/status/{{ ps.platform_post_id }}"
-                           target="_blank"
-                           class="btn btn-sm btn-outline-info"
-                           style="font-size:11px; border-radius:7px; padding:3px 10px;">
-                            <i class="fa-solid fa-arrow-up-right-from-square me-1"></i>Open
-                        </a>
+                            {% if ps.social_account.platform == 'twitter' %}
+                            <a href="https://twitter.com/i/web/status/{{ ps.platform_post_id }}"
+                               target="_blank" class="btn btn-sm btn-outline-info"
+                               style="font-size:11px; border-radius:7px; padding:3px 10px;">
+                                <i class="fa-solid fa-arrow-up-right-from-square me-1"></i>Open
+                            </a>
+                            {% endif %}
+
+                            {% if ps.social_account.platform == 'linkedin' %}
+                            <a href="https://www.linkedin.com/feed/update/{{ ps.platform_post_id }}"
+                               target="_blank" class="btn btn-sm btn-outline-primary"
+                               style="font-size:11px; border-radius:7px; padding:3px 10px; border-color:#0a66c2; color:#0a66c2;">
+                                <i class="fa-solid fa-arrow-up-right-from-square me-1"></i>Open
+                            </a>
+                            {% endif %}
+
+                            <!-- Delete from platform -->
+                            <form method="POST"
+                                  action="{% url 'platform_delete' post.id ps.id %}"
+                                  onsubmit="return confirm('Delete from {{ ps.social_account.account_name }}?')"
+                                  class="d-inline">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm btn-outline-danger"
+                                        style="font-size:11px; border-radius:7px; padding:3px 10px;">
+                                    <i class="fa-solid fa-trash me-1"></i>Delete
+                                </button>
+                            </form>
                         {% endif %}
 
                     {% elif ps.status == 'processing' %}
@@ -335,7 +361,7 @@
                             <a href="https://www.linkedin.com/feed/update/{{ ps.platform_post_id }}/"
                                target="_blank"
                                class="btn btn-outline-primary w-100 mb-2"
-                               style="border-radius:9px; font-size:13px; text-align:left; background:#0a66c2; color:white;">
+                               style="border-radius:9px; font-size:13px; text-align:left; background:#0a66c2; color:white; border-color:#0a66c2;">
                                 <i class="fa-brands fa-linkedin me-2"></i>View on LinkedIn
                                 <i class="fa-solid fa-arrow-up-right-from-square float-end mt-1"></i>
                             </a>
@@ -359,22 +385,51 @@
                     <div style="font-size:11px; color:#94a3b8;">Platforms</div>
                 </div>
                 <div class="col-6">
-                    <div style="font-size:20px; font-weight:700; color:#22c55e;">
-                        {% with published_count=0 %}
-                            {% for ps in post.platform_statuses.all %}
-                                {% if ps.status == 'published' %}
-                                    {% with published_count=published_count|add:1 %}{% endwith %}
-                                {% endif %}
-                            {% endfor %}
-                            {{ published_count }}
-                        {% endwith %}
-                    </div>
+                    <!-- Target element populated via JavaScript counter below -->
+                    <div id="js-published-count" style="font-size:20px; font-weight:700; color:#22c55e;">0</div>
                     <div style="font-size:11px; color:#94a3b8;">Published</div>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+<!-- Modal Definitions -->
+{% for ps in post.platform_statuses.all %}
+{% if ps.social_account.platform == 'facebook' and ps.status == 'published' and ps.platform_post_id %}
+<div class="modal fade" id="editModal{{ ps.id }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <div class="modal-header border-0 pb-0">
+                <h6 class="modal-title fw-bold">
+                    <i class="fa-brands fa-facebook text-primary me-2"></i>
+                    Edit Caption — {{ ps.social_account.account_name }}
+                </h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" action="{% url 'platform_edit' post.id ps.id %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <label class="form-label fw-semibold text-secondary" style="font-size:13px;">New Caption</label>
+                    <textarea name="new_content" class="form-control rounded-3" rows="4"
+                              placeholder="Enter new caption..." required>{{ post.content }}</textarea>
+                    <small class="text-muted mt-1 d-block">
+                        <i class="fa-solid fa-circle-info me-1"></i>
+                        This will update the caption on Facebook only.
+                    </small>
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary btn-sm">
+                        <i class="fa-solid fa-check me-1"></i>Update Caption
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endfor %}
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
 <script>
@@ -384,6 +439,13 @@ document.addEventListener('DOMContentLoaded', () => {
     tl.from('#detail-header', { opacity: 0, y: -16, duration: 0.4 })
       .to('.card', { opacity: 1, duration: 0.35, stagger: 0.1 }, '-=0.2');
     
+    // Calculate and update the dynamic "Published" count
+    const publishedBadges = document.querySelectorAll('.platform-status-badge');
+    const publishedCountContainer = document.getElementById('js-published-count');
+    if (publishedCountContainer) {
+        publishedCountContainer.textContent = publishedBadges.length;
+    }
+
     // Initialize tooltips if Bootstrap is loaded
     if (typeof bootstrap !== 'undefined' && bootstrap.Tooltip) {
         var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
@@ -409,7 +471,7 @@ document.addEventListener('DOMContentLoaded', () => {
     .rounded-circle {
         border: 2px solid rgba(255,255,255,0.1);
     }
-    .btn-outline-primary:hover, .btn-outline-danger:hover, .btn-outline-info:hover {
+    .btn-outline-primary:hover, .btn-outline-danger:hover, .btn-outline-info:hover, .btn-outline-warning:hover {
         transform: translateY(-1px);
         box-shadow: 0 4px 8px rgba(0,0,0,0.1);
     }
