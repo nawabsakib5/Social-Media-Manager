@@ -328,7 +328,7 @@ def platform_delete(request, post_id, ps_id):
 
 @login_required
 def platform_edit(request, post_id, ps_id):
-    """একটি নির্দিষ্ট platform-এ post-এর caption edit করা"""
+    
     if request.method != 'POST':
         return redirect('post_detail', post_id=post_id)
 
@@ -336,10 +336,6 @@ def platform_edit(request, post_id, ps_id):
     ps = get_object_or_404(PostPlatformStatus, id=ps_id, post=post)
     new_content = request.POST.get('new_content', '').strip()
     account_name = ps.social_account.account_name
-
-    if not new_content:
-        messages.error(request, "Caption cannot be empty.")
-        return redirect('post_detail', post_id=post_id)
 
     if ps.status != 'published' or not ps.platform_post_id:
         messages.warning(request, f"{account_name}: Post not published yet.")

@@ -330,6 +330,36 @@
             background: linear-gradient(90deg, var(--accent), #ff7a59);
             border-radius: 10px;
         }
+
+        /* ── Fixed Stacking Context CSS for Modals ── */
+        .modal { 
+            z-index: 1055 !important;
+            /* ডিফল্ট ত্রুটিপূর্ণ বুটস্ট্র্যাপ ব্যাকড্রপের জায়গায় মোডালের নিজস্ব ব্লার ব্যাকগ্রাউন্ড */
+            background: rgba(15, 23, 42, 0.4) !important;
+            backdrop-filter: blur(4px) !important;
+            -webkit-backdrop-filter: blur(4px) !important;
+        }
+        
+        /* বডির সাথে যুক্ত ডিফল্ট ব্যাকড্রপ লেয়ারটি ব্লক করা হচ্ছে */
+        .modal-backdrop { 
+            display: none !important; 
+        }
+        
+        .modal-dialog { 
+            position: relative; 
+            z-index: 1056 !important; 
+        }
+        .modal-content { 
+            position: relative; 
+            z-index: 1057 !important; 
+        }
+        .modal-content textarea,
+        .modal-content input,
+        .modal-content button {
+            position: relative;
+            z-index: 1058 !important;
+            pointer-events: auto !important;
+        }
     </style>
 </head>
 <body>
@@ -634,6 +664,16 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
+});
+
+// Modal Fix: GSAP app-shell animation শেষ হওয়ার পর modal ঠিকমতো কাজ করার জন্য
+document.addEventListener('show.bs.modal', function(e) {
+    const appShell = document.getElementById('app-shell');
+    if (appShell) {
+        appShell.style.transform = 'none';
+        appShell.style.perspective = 'none';
+    }
+    document.body.style.perspective = 'none';
 });
 </script>
 </body>
