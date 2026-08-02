@@ -7,7 +7,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = config('SECRET_KEY')
 DEBUG = config('DEBUG', cast=bool)
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'dev-rolls-contrast-jamie.trycloudflare.com']
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', '.onrender.com', '*']
 
 INSTALLED_APPS = [
     'django_admin_collapse_apps',
