@@ -13,3 +13,4 @@ start "Celery Worker" cmd /k "cd /d C:\Users\nawab\Desktop\Social Media Manager 
 start "Celery Beat" cmd /k "cd /d C:\Users\nawab\Desktop\Social Media Manager && venv\Scripts\activate && celery -A config beat -l info"
 
 echo All services started!
+

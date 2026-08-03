@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: social-media-manager
+    env: python
+    buildCommand: "pip install -r requirements.txt && python manage.py collectstatic --noinput && python manage.py migrate"
+    startCommand: "gunicorn config.wsgi:application"
+    envVars:
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DEBUG
+        value: "False"
+      - key: PYTHON_VERSION
+        value: "3.11.0"
+      - key: SITE_URL
+        value: "https://social-media-manager.onrender.com"
+
+databases:
+  - name: social-media-db
+    plan: free
