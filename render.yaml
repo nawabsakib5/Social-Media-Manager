@@ -2,8 +2,8 @@ services:
   - type: web
     name: social-media-manager
     env: python
-    buildCommand: "pip install -r requirements.txt && python manage.py collectstatic --noinput && python manage.py migrate"
-    startCommand: "python manage.py shell -c \"from accounts.models import CustomUserModel; CustomUserModel.objects.filter(username='admin').exists() or CustomUserModel.objects.create_superuser('admin', 'admin@example.com', 'Admin@12345')\" && gunicorn config.wsgi:application"
+    buildCommand: "pip install -r requirements.txt && python manage.py collectstatic --noinput && python manage.py migrate && python create_superuser.py"
+    startCommand: "gunicorn config.wsgi:application"
     envVars:
       - key: SECRET_KEY
         generateValue: true
