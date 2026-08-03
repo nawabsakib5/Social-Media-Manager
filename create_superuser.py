@@ -10,7 +10,7 @@ if not CustomUserModel.objects.filter(username='admin').exists():
     CustomUserModel.objects.create_superuser(
         username='admin',
         email='',
-        password='Admin@123'
+        password='admin@123'
     )
     print('Superuser created successfully')
 else:
