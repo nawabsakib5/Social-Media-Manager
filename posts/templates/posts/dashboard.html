@@ -1,274 +1,124 @@
 {% extends "base.html" %}
-{% block title %}Dashboard Analytics{% endblock %}
-{% block page_title %}Analytics Dashboard{% endblock %}
-
+{% block title %}Analytics Dashboard{% endblock %}
 {% block content %}
-<div class="container-fluid px-0" style="margin-top: -15px;">
 
-    <!-- ── ১. ৫-কলামের আল্ট্রা-প্রিমিয়াম গ্লোয়িং স্ট্যাটাস কার্ডস গ্রিড (SaaS 5-Column Stats Grid) ── -->
-    <div class="row g-3 mb-4" id="stats-grid">
-        
-        <!-- Total Posts Card -->
-        <div class="col-6 col-md-4 col-lg stat-card-col" style="opacity:0; transform:scale(0.95);">
-            <div class="card stat-card border-0 p-4 h-100 position-relative overflow-hidden" 
-                 style="background: #ffffff; border-radius: 20px; transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02); border: 1px solid #f1f3f7 !important;">
-                <div class="stat-indicator" style="width: 4px; height: 35px; background: #6366f1; position: absolute; left: 0; top: 35px; border-radius: 0 4px 4px 0;"></div>
-                <div class="text-muted fw-bold text-uppercase" style="font-size:11px; letter-spacing: 1px; color: #94a3b8 !important;">Total Posts</div>
-                <h1 class="fw-bold mt-2 mb-0 text-dark" id="total-count" style="font-size: 34px; letter-spacing: -1px;">{{ total_posts }}</h1>
-                <div class="position-absolute" style="right: 24px; bottom: 20px; font-size: 28px; color: #6366f1; opacity: 0.12;">
-                    <i class="fa-solid fa-paper-plane"></i>
+<style>
+    /* Premium Design Tokens */
+    :root {
+        --glass: rgba(255, 255, 255, 0.7);
+        --primary-gradient: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+    }
+
+    .dashboard-container { animation: fadeIn 0.8s ease-out; }
+    
+    /* Modern Stats Card */
+    .stat-card {
+        background: var(--glass);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255,255,255,0.3);
+        border-radius: 24px;
+        padding: 24px;
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    .stat-card:hover { transform: translateY(-10px); box-shadow: 0 20px 40px rgba(0,0,0,0.08); }
+
+    /* Channel Bar Styling */
+    .progress-bar-glow {
+        box-shadow: 0 0 15px var(--primary-color);
+        transition: width 1.5s ease-in-out;
+    }
+
+    /* Timeline Styling */
+    .timeline-item::before {
+        content: '';
+        position: absolute;
+        left: -32px;
+        top: 0;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: var(--primary-color);
+        border: 3px solid #fff;
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+    }
+</style>
+
+<div class="dashboard-container container-fluid px-0">
+    
+    <!-- Hero Stats Grid -->
+    <div class="row g-4 mb-5">
+        {% for stat in stats_list %}
+        <div class="col-6 col-md-2">
+            <div class="stat-card shadow-sm">
+                <div class="d-flex justify-content-between mb-3">
+                    <i class="{{ stat.icon }} fs-4 text-primary"></i>
+                    <span class="badge bg-light text-primary">{{ stat.trend }}</span>
                 </div>
+                <h3 class="fw-bold mb-0 count-up" data-target="{{ stat.value }}">0</h3>
+                <p class="text-muted small mb-0">{{ stat.label }}</p>
             </div>
         </div>
-
-        <!-- Published Posts Card -->
-        <div class="col-6 col-md-4 col-lg stat-card-col" style="opacity:0; transform:scale(0.95);">
-            <div class="card stat-card border-0 p-4 h-100 position-relative overflow-hidden" 
-                 style="background: #ffffff; border-radius: 20px; transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02); border: 1px solid #f1f3f7 !important;">
-                <div class="stat-indicator" style="width: 4px; height: 35px; background: #22c55e; position: absolute; left: 0; top: 35px; border-radius: 0 4px 4px 0;"></div>
-                <div class="text-muted fw-bold text-uppercase" style="font-size:11px; letter-spacing: 1px; color: #94a3b8 !important;">Published</div>
-                <h1 class="fw-bold mt-2 mb-0 text-success" id="published-count" style="font-size: 34px; letter-spacing: -1px;">{{ published_posts }}</h1>
-                <div class="position-absolute" style="right: 24px; bottom: 20px; font-size: 28px; color: #22c55e; opacity: 0.12;">
-                    <i class="fa-solid fa-circle-check"></i>
-                </div>
-            </div>
-        </div>
-
-        <!-- Scheduled Posts Card -->
-        <div class="col-6 col-md-4 col-lg stat-card-col" style="opacity:0; transform:scale(0.95);">
-            <div class="card stat-card border-0 p-4 h-100 position-relative overflow-hidden" 
-                 style="background: #ffffff; border-radius: 20px; transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02); border: 1px solid #f1f3f7 !important;">
-                <div class="stat-indicator" style="width: 4px; height: 35px; background: #f59e0b; position: absolute; left: 0; top: 35px; border-radius: 0 4px 4px 0;"></div>
-                <div class="text-muted fw-bold text-uppercase" style="font-size:11px; letter-spacing: 1px; color: #94a3b8 !important;">Scheduled</div>
-                <h1 class="fw-bold mt-2 mb-0 text-warning" id="scheduled-count" style="font-size: 34px; letter-spacing: -1px;">{{ scheduled_posts }}</h1>
-                <div class="position-absolute" style="right: 24px; bottom: 20px; font-size: 28px; color: #f59e0b; opacity: 0.12;">
-                    <i class="fa-solid fa-clock"></i>
-                </div>
-            </div>
-        </div>
-
-        <!-- Failed Posts Card -->
-        <div class="col-6 col-md-4 col-lg stat-card-col" style="opacity:0; transform:scale(0.95);">
-            <div class="card stat-card border-0 p-4 h-100 position-relative overflow-hidden" 
-                 style="background: #ffffff; border-radius: 20px; transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02); border: 1px solid #f1f3f7 !important;">
-                <div class="stat-indicator" style="width: 4px; height: 35px; background: #ef4444; position: absolute; left: 0; top: 35px; border-radius: 0 4px 4px 0;"></div>
-                <div class="text-muted fw-bold text-uppercase" style="font-size:11px; letter-spacing: 1px; color: #94a3b8 !important;">Failed</div>
-                <h1 class="fw-bold mt-2 mb-0 text-danger" id="failed-count" style="font-size: 34px; letter-spacing: -1px;">{{ failed_posts }}</h1>
-                <div class="position-absolute" style="right: 24px; bottom: 20px; font-size: 28px; color: #ef4444; opacity: 0.12;">
-                    <i class="fa-solid fa-triangle-exclamation"></i>
-                </div>
-            </div>
-        </div>
-
-        <!-- Total Users / Team Members Card -->
-        <div class="col-6 col-md-4 col-lg stat-card-col" style="opacity:0; transform:scale(0.95);">
-            <div class="card stat-card border-0 p-4 h-100 position-relative overflow-hidden" 
-                 style="background: #ffffff; border-radius: 20px; transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02); border: 1px solid #f1f3f7 !important;">
-                <div class="stat-indicator" style="width: 4px; height: 35px; background: #06b6d4; position: absolute; left: 0; top: 35px; border-radius: 0 4px 4px 0;"></div>
-                <div class="text-muted fw-bold text-uppercase" style="font-size:11px; letter-spacing: 1px; color: #94a3b8 !important;">Team Members</div>
-                <h1 class="fw-bold mt-2 mb-0 text-info" id="users-count" style="font-size: 34px; color: #06b6d4 !important; letter-spacing: -1px;">{{ total_users }}</h1>
-                <div class="position-absolute" style="right: 24px; bottom: 20px; font-size: 28px; color: #06b6d4; opacity: 0.12;">
-                    <i class="fa-solid fa-users"></i>
-                </div>
-            </div>
-        </div>
-
+        {% endfor %}
     </div>
 
-    <!-- ── ২. TWO-COLUMN SPLIT ANALYTICS GRID ── -->
     <div class="row g-4">
-        
-        <!-- Left Column: Channel Progress list -->
-        <div class="col-md-7 d-flex flex-column h-100" id="left-pane" style="opacity:0; transform:translateY(20px);">
-            <div class="card border-0 p-4 rounded-4 shadow-sm" style="background: #ffffff; border: 1px solid var(--sidebar-border) !important; border-radius: 20px !important;">
+        <!-- Performance Section -->
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm p-4 rounded-4 h-100">
                 <div class="d-flex justify-content-between align-items-center mb-4">
-                    <h6 class="fw-bold text-dark mb-0"><i class="fa-solid fa-chart-bar text-orange me-2" style="color: var(--accent);"></i>Channel Performance</h6>
-                    <span class="badge bg-light text-secondary rounded-pill px-3 py-1.5" style="font-size: 11px; font-weight: 600;">Active Channels</span>
+                    <h5 class="fw-bold"><i class="fa-solid fa-rocket me-2 text-primary"></i>Channel Growth</h5>
                 </div>
+                {% for item in channels_data %}
+                <div class="mb-4">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="fw-medium">{{ item.account.account_name }}</span>
+                        <span class="text-primary fw-bold">{{ item.percentage }}%</span>
+                    </div>
+                    <div class="progress" style="height: 8px; border-radius: 10px;">
+                        <div class="progress-bar progress-bar-glow" style="width: 0%; background: var(--primary-gradient);" data-width="{{ item.percentage }}%"></div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
 
-                <div class="d-flex flex-column gap-4">
-                    {% for item in channels_data %}
-                        <div class="channel-progress-row p-2 rounded-3 hover-row" style="transition: all 0.2s;">
-                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                <div class="d-flex align-items-center gap-3">
-                                    <div class="channel-avatar-bubble d-flex align-items-center justify-content-center" 
-                                         style="width: 38px; height: 38px; border-radius: 12px; background: #fafbfe; border: 1px solid #f1f3f7;">
-                                        <i class="fa-brands fa-{{ item.account.platform }} fs-5"
-                                           style="color:
-                                               {% if item.account.platform == 'facebook' %}#1877f2
-                                               {% elif item.account.platform == 'instagram' %}#e1306c
-                                               {% elif item.account.platform == 'twitter' %}#1da1f2
-                                               {% elif item.account.platform == 'linkedin' %}#0077b5
-                                               {% elif item.account.platform == 'telegram' %}#0088cc
-                                               {% elif item.account.platform == 'pinterest' %}#bd081c
-                                               {% elif item.account.platform == 'reddit' %}#ff4500
-                                               {% elif item.account.platform == 'snapchat' %}#fffc00
-                                               {% elif item.account.platform == 'discord' %}#5865f2
-                                               {% elif item.account.platform == 'twitch' %}#9146ff
-                                               {% elif item.account.platform == 'youtube' %}#ff0000
-                                               {% elif item.account.platform == 'whatsapp' %}#25d366
-                                               {% elif item.account.platform == 'tiktok' %}#000000
-                                               {% elif item.account.platform == 'threads' %}#000000
-                                               {% elif item.account.platform == 'gmail' %}#ea4335
-                                               {% endif %};">
-                                        </i>
-                                    </div>
-                                    <div>
-                                        <div class="fw-bold text-dark" style="font-size: 13.5px;">{{ item.account.account_name }}</div>
-                                        <small class="text-secondary fw-semibold" style="font-size: 11px; text-transform: capitalize;">{{ item.account.platform }}</small>
-                                    </div>
-                                </div>
-                                <span class="badge rounded-pill bg-light text-secondary px-2.5 py-1.5" style="font-size: 11px; font-weight: 600;">{{ item.post_count }} Posts</span>
-                            </div>
-                            
-                            <!-- Dynamic Glowing Progress Bar -->
-                            <div class="progress-track" style="width: 100%; height: 7px; background: #f1f5f9; border-radius: 10px; overflow: hidden; position: relative;">
-                                <div class="progress-bar-fill" data-percent="{{ item.percentage }}" 
-                                     style="width: 0%; height: 100%; border-radius: 10px; transition: width 1.2s cubic-bezier(0.34, 1.56, 0.64, 1);
-                                            background: linear-gradient(90deg, 
-                                                {% if item.account.platform == 'facebook' %}#1877f2, #4c9aff
-                                                {% elif item.account.platform == 'instagram' %}#e1306c, #ff5e97
-                                                {% elif item.account.platform == 'twitter' %}#1da1f2, #60c5ff
-                                                {% elif item.account.platform == 'linkedin' %}#0077b5, #00a4f5
-                                                {% else %}var(--accent), #ff7a59{% endif %}
-                                            );">
-                                </div>
-                            </div>
-                        </div>
-                    {% empty %}
-                        <div class="py-5 text-center text-muted">
-                            <div class="p-3 bg-light rounded-circle mx-auto mb-3" style="width: 56px; height: 56px; display: flex; align-items: center; justify-content: center;">
-                                <i class="fa-solid fa-link-slash fs-4"></i>
-                            </div>
-                            <h6 class="fw-bold text-dark">No Active Channels</h6>
-                            <p class="mb-0 small text-muted">Please connect accounts first under the Accounts tab.</p>
-                        </div>
+        <!-- Activity Feed -->
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm p-4 rounded-4 h-100">
+                <h5 class="fw-bold mb-4">Latest Activity</h5>
+                <div class="timeline ps-4" style="border-left: 2px solid #e2e8f0;">
+                    {% for post in recent_posts %}
+                    <div class="timeline-item position-relative mb-4">
+                        <div class="fw-semibold text-dark">{{ post.status|title }}</div>
+                        <div class="text-muted small">{{ post.created_at|timesince }} ago</div>
+                    </div>
                     {% endfor %}
                 </div>
             </div>
         </div>
-
-        <!-- Right Column: Recent Activities Timeline Feed -->
-        <div class="col-md-5 d-flex flex-column h-100" id="right-pane" style="opacity:0; transform:translateY(20px);">
-            <div class="card border-0 shadow-sm p-4 rounded-4 h-100" style="background: #ffffff; border: 1px solid var(--sidebar-border) !important; border-radius: 20px !important;">
-                <div class="d-flex justify-content-between align-items-center mb-4">
-                    <h6 class="fw-bold text-dark mb-0"><i class="fa-solid fa-timeline text-orange me-2" style="color: var(--accent);"></i>System Feed Activity</h6>
-                    <a href="{% url 'post_list' %}" class="small text-orange text-decoration-none fw-bold" style="color: var(--accent);">View All</a>
-                </div>
-
-                <div class="activity-timeline-feed">
-                    {% if recent_posts %}
-                        <div class="timeline" style="border-left: 2px solid #f1f5f9; margin-left: 10px; padding-left: 24px; position: relative;">
-                            {% for post in recent_posts %}
-                                <div class="mb-4 position-relative">
-                                    <!-- Timeline Dot -->
-                                    <span class="position-absolute" 
-                                          style="left: -30.5px; top: 3px; width: 11px; height: 11px; border-radius: 50%; background: #ffffff; border: 2.5px solid var(--accent); box-shadow: 0 0 8px var(--accent-glow);">
-                                    </span>
-                                    
-                                    <div class="d-flex justify-content-between align-items-start">
-                                        <div class="overflow-hidden">
-                                            <div class="fw-bold text-dark" style="font-size: 13.5px;">New Post Created</div>
-                                            <p class="text-secondary mb-0 mt-1 text-truncate" style="font-size: 12.5px; max-width: 200px;">{{ post.content|default:"Media only post" }}</p>
-                                        </div>
-                                        <div class="text-end flex-shrink-0">
-                                            <span class="badge rounded-pill px-2.5 py-1.5 {% if post.status == 'published' %}bg-success{% elif post.status == 'scheduled' %}bg-warning text-dark{% else %}bg-danger{% endif %}" style="font-size: 9.5px; font-weight: 700;">
-                                                {{ post.status|capfirst }}
-                                            </span>
-                                            <small class="text-secondary d-block mt-1" style="font-size: 10.5px;">{{ post.created_at|date:"M d, h:i A" }}</small>
-                                        </div>
-                                    </div>
-                                </div>
-                            {% endfor %}
-                        </div>
-                    {% else %}
-                        <div class="py-5 text-center text-muted">
-                            <div class="p-3 bg-light rounded-circle mx-auto mb-3" style="width: 56px; height: 56px; display: flex; align-items: center; justify-content: center;">
-                                <i class="fa-solid fa-clock-rotate-left fs-4"></i>
-                            </div>
-                            <h6 class="fw-bold text-dark">No Recent Activities</h6>
-                            <p class="mb-0 small text-secondary">Your publishing activities will appear here once you post.</p>
-                        </div>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-
     </div>
 </div>
 
-<!-- Custom Page Script for Dynamic Counter & Progress Bar Growth Animation -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
 <script>
-document.addEventListener('DOMContentLoaded', () => {
-    // GSAP Timeline for entrance reveal sequence
-    const tl = gsap.timeline({ defaults: { ease: 'power2.out' } });
+    // Dynamic Counter Animation
+    document.querySelectorAll('.count-up').forEach(el => {
+        let target = parseInt(el.getAttribute('data-target'));
+        let count = 0;
+        let speed = target / 50;
+        let update = () => {
+            count += speed;
+            el.innerText = Math.floor(count);
+            if(count < target) requestAnimationFrame(update);
+            else el.innerText = target;
+        };
+        update();
+    });
 
-    // ১. Hero Card গুলোকে অত্যন্ত চমৎকারভাবে বাউন্স করে স্কেল করা হচ্ছে
-    tl.to('.stat-card-col', {
-        opacity: 1,
-        scale: 1,
-        duration: 0.5,
-        stagger: 0.08,
-        ease: 'back.out(1.5)'
-    })
-
-    // ২. ডান ও বাম পাশের প্যানেলগুলোকে রিভীল করা হচ্ছে
-    .to('#left-pane, #right-pane', {
-        opacity: 1,
-        y: 0,
-        duration: 0.6,
-        stagger: 0.12
-    }, '-=0.25')
-
-    // ৩. ডাইনামিক প্রোগ্রেস বার এনিমেশন: এটি ০% থেকে তার প্রকৃত পার্সেন্টেজে এনিমেটেড হয়ে বাড়বে
-    .to('.progress-bar-fill', {
-        width: function(index, target) {
-            return target.getAttribute('data-percent') + '%';
-        },
-        duration: 1.2,
-        stagger: 0.1,
-        ease: 'power4.out'
-    }, '-=0.3');
-
-    // ৪. ডাইনামিক কাউন্টার স্পিন এনিমেশন (prominent stats counting up!)
-    const animateCounter = (id, endVal) => {
-        const obj = { val: 0 };
-        const element = document.getElementById(id);
-        if (element) {
-            gsap.to(obj, {
-                val: endVal,
-                duration: 1.2,
-                ease: 'power3.out',
-                onUpdate: () => {
-                    element.innerHTML = Math.floor(obj.val);
-                }
-            });
-        }
-    };
-
-    // সবকটি কাউন্টারকে ০ থেকে রিয়েল-টাইমে গণনা করে বৃদ্ধি করা হচ্ছে
-    animateCounter('total-count', parseInt("{{ total_posts }}") || 0);
-    animateCounter('published-count', parseInt("{{ published_posts }}") || 0);
-    animateCounter('scheduled-count', parseInt("{{ scheduled_posts }}") || 0);
-    animateCounter('failed-count', parseInt("{{ failed_posts }}") || 0);
-    animateCounter('users-count', parseInt("{{ total_users }}") || 0);
-});
+    // Animate Progress Bars
+    document.querySelectorAll('.progress-bar-glow').forEach(el => {
+        setTimeout(() => {
+            el.style.width = el.getAttribute('data-width');
+        }, 300);
+    });
 </script>
-
-<style>
-    /* Premium SaaS Hover Interactions */
-    .stat-card {
-        cursor: pointer;
-    }
-    .stat-card:hover {
-        transform: translateY(-6px);
-        box-shadow: 0 10px 25px rgba(0,0,0,0.04) !important;
-        border-color: #cbd5e1 !important;
-    }
-    .hover-row:hover {
-        background-color: #fafbfe;
-        border-radius: 8px;
-    }
-</style>
 {% endblock %}

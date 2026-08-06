@@ -1,350 +1,343 @@
 {% extends "base.html" %}
-{% block title %}Post Detail{% endblock %}
-{% block page_title %}Post Detail{% endblock %}
+{% block title %}Post Detail — {{ post.id }}{% endblock %}
+{% block page_title %}Post Management{% endblock %}
 
 {% block content %}
 
-<div class="d-flex justify-content-between align-items-center mb-4" id="detail-header">
-    <div>
-        <h4 class="mb-0 fw-bold">Post Details</h4>
-        <small class="text-muted">View, edit or publish this post</small>
+<!-- Header Section -->
+<div class="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom" id="detail-header">
+    <div class="d-flex align-items-center gap-3">
+        <div class="bg-primary bg-opacity-10 text-primary rounded-4 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px; font-size: 20px;">
+            <i class="fa-solid fa-layer-group"></i>
+        </div>
+        <div>
+            <h4 class="mb-0 fw-bold text-dark">Post Overview</h4>
+            <small class="text-muted">Detailed view, analytics, and platform synchronization status</small>
+        </div>
     </div>
-    <a href="{% url 'post_list' %}" class="btn btn-outline-secondary btn-sm">
+    <a href="{% url 'post_list' %}" class="btn btn-light border btn-sm px-3 rounded-pill shadow-sm text-secondary fw-semibold">
         <i class="fa-solid fa-arrow-left me-1"></i>Back to Posts
     </a>
 </div>
 
 <div class="row g-4">
 
-    <!-- Left: Post content -->
+    <!-- Left Column: Post Content & Platform Statuses -->
     <div class="col-lg-8">
-        <div class="card p-4 mb-3" style="border-radius:14px; opacity:0;">
-            <div class="d-flex justify-content-between align-items-start mb-3">
+        
+        <!-- Main Content Card -->
+        <div class="card border-0 shadow-sm p-4 mb-4" style="border-radius: 16px; opacity: 0; background: #ffffff;">
+            <div class="d-flex justify-content-between align-items-center mb-4">
                 <div class="d-flex flex-wrap gap-2">
                     {% for ps in post.platform_statuses.all %}
-                    <span class="badge rounded-pill
-                        {% if ps.social_account.platform == 'facebook' %}bg-primary
-                        {% elif ps.social_account.platform == 'instagram' %}bg-danger
-                        {% elif ps.social_account.platform == 'twitter' %}bg-info
-                        {% elif ps.social_account.platform == 'linkedin' %}bg-primary
-                        {% else %}bg-secondary{% endif %}">
+                    <span class="badge rounded-pill px-3 py-2 fw-medium shadow-2sm
+                        {% if ps.social_account.platform == 'facebook' %}bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25
+                        {% elif ps.social_account.platform == 'instagram' %}bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25
+                        {% elif ps.social_account.platform == 'twitter' %}bg-info bg-opacity-10 text-info border border-info border-opacity-25
+                        {% elif ps.social_account.platform == 'linkedin' %}bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25
+                        {% else %}bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25{% endif %}">
                         <i class="fa-brands fa-{{ ps.social_account.platform }} me-1"></i>
                         {{ ps.social_account.account_name }}
                     </span>
                     {% empty %}
-                    <span class="text-muted">No platforms selected</span>
+                    <span class="badge bg-light text-muted rounded-pill px-3 py-2">No platforms selected</span>
                     {% endfor %}
                 </div>
-                <span class="badge rounded-pill px-3 py-2
-                    {% if post.status == 'published' %}bg-success
-                    {% elif post.status == 'scheduled' %}bg-warning text-dark
-                    {% elif post.status == 'failed' %}bg-danger
-                    {% elif post.status == 'draft' %}bg-secondary
+                
+                <span class="badge rounded-pill px-3 py-2 fw-semibold text-uppercase tracking-wider
+                    {% if post.status == 'published' %}bg-success bg-opacity-10 text-success border border-success border-opacity-25
+                    {% elif post.status == 'scheduled' %}bg-warning bg-opacity-10 text-warning text-dark border border-warning border-opacity-25
+                    {% elif post.status == 'failed' %}bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25
+                    {% elif post.status == 'draft' %}bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25
                     {% else %}bg-light text-dark{% endif %}">
-                    {{ post.status|capfirst|default:"Draft" }}
+                    <i class="fa-solid fa-circle me-1 small"></i> {{ post.status|capfirst|default:"Draft" }}
                 </span>
             </div>
 
-            <!-- Media from PostMedia -->
-            {% for media in post.media_items.all %}
-            <div class="mb-3">
-                {% if media.media_type == 'video' %}
-                <video src="{{ media.url }}" controls
-                       style="width:100%; border-radius:10px; max-height:400px; background:#000;">
-                </video>
-                {% else %}
-                <img src="{{ media.url }}" alt="Post media"
-                     style="width:100%; border-radius:10px; max-height:400px; object-fit:cover;">
-                {% endif %}
+            <!-- Media Gallery Component -->
+            {% if post.media_items.all %}
+            <div class="mb-4 position-relative">
+                {% for media in post.media_items.all %}
+                <div class="media-container mb-2 overflow-hidden shadow-sm" style="border-radius: 12px; background: #0f172a;">
+                    {% if media.media_type == 'video' %}
+                    <video src="{{ media.url }}" controls class="w-100" style="max-height: 420px; object-fit: contain;"></video>
+                    {% else %}
+                    <img src="{{ media.url }}" alt="Post media content" class="w-100" style="max-height: 420px; object-fit: cover;">
+                    {% endif %}
+                </div>
+                {% endfor %}
             </div>
-            {% endfor %}
-
-            {% if post.content %}
-            <p style="font-size:15px; line-height:1.7; white-space:pre-wrap;">{{ post.content|linebreaksbr }}</p>
-            {% else %}
-            <p class="text-muted fst-italic"><i class="fa-regular fa-file-lines me-1"></i>No caption</p>
             {% endif %}
 
-            <div class="d-flex justify-content-between align-items-center mt-3 pt-3"
-                 style="border-top:1px solid #f1f5f9;">
-                <small class="text-muted">
-                    <i class="fa-regular fa-calendar me-1"></i>
+            <!-- Post Text Content -->
+            <div class="post-text-body p-3 rounded-3 bg-light bg-opacity-50 mb-4" style="border: 1px solid #f8fafc;">
+                {% if post.content %}
+                <p class="mb-0 text-dark" style="font-size: 15px; line-height: 1.8; white-space: pre-wrap;">{{ post.content|linebreaksbr }}</p>
+                {% else %}
+                <p class="text-muted fst-italic mb-0"><i class="fa-regular fa-file-lines me-1"></i>No caption provided for this post.</p>
+                {% endif %}
+            </div>
+
+            <!-- Metadata Footer -->
+            <div class="d-flex justify-content-between align-items-center pt-3 text-muted border-top" style="font-size: 13px;">
+                <div>
+                    <i class="fa-regular fa-calendar-days text-primary me-1"></i>
                     {% if post.scheduled_time %}
-                        Scheduled: {{ post.scheduled_time|date:"M d, Y · H:i" }}
+                        <span class="fw-medium text-dark">Scheduled:</span> {{ post.scheduled_time|date:"M d, Y · H:i" }}
                     {% else %}
-                        Created: {{ post.created_at|date:"M d, Y · H:i" }}
+                        <span class="fw-medium text-dark">Created:</span> {{ post.created_at|date:"M d, Y · H:i" }}
                     {% endif %}
-                </small>
+                </div>
                 {% if post.created_by %}
-                <small class="text-muted">
-                    <i class="fa-regular fa-user me-1"></i>{{ post.created_by.username|default:"Unknown" }}
-                </small>
+                <div>
+                    <i class="fa-regular fa-user text-primary me-1"></i>
+                    <span class="fw-medium text-dark">{{ post.created_by.username|default:"Unknown" }}</span>
+                </div>
                 {% endif %}
             </div>
         </div>
 
-        <!-- Platform Status -->
-        <div class="card p-4" style="border-radius:14px; opacity:0;">
-            <h6 class="fw-semibold mb-3"
-                style="font-size:13px; text-transform:uppercase; letter-spacing:0.8px; color:#94a3b8;">
-                <i class="fa-solid fa-chart-bar me-2"></i>Platform Status
-            </h6>
+        <!-- Platform Status Breakdown Card -->
+        <div class="card border-0 shadow-sm p-4" style="border-radius: 16px; opacity: 0; background: #ffffff;">
+            <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom">
+                <h6 class="fw-bold mb-0 text-uppercase tracking-wider text-secondary" style="font-size: 12px; letter-spacing: 1px;">
+                    <i class="fa-solid fa-network-wired text-primary me-2"></i>Platform Sync Status
+                </h6>
+                <span class="badge bg-light text-secondary rounded-pill font-monospace">{{ post.platform_statuses.all|length }} Target(s)</span>
+            </div>
 
-            {% for ps in post.platform_statuses.all %}
-            <div class="d-flex align-items-center justify-content-between py-3"
-                 style="border-bottom:1px solid #f1f5f9; {% if forloop.last %}border-bottom:none;{% endif %}">
-
-                <div class="d-flex align-items-center gap-3">
-                    <div class="rounded-circle d-flex align-items-center justify-content-center"
-                         style="width:40px; height:40px; background:
-                            {% if ps.social_account.platform == 'facebook' %}#1877f2
-                            {% elif ps.social_account.platform == 'instagram' %}#e4405f
-                            {% elif ps.social_account.platform == 'twitter' %}#1da1f2
-                            {% elif ps.social_account.platform == 'linkedin' %}#0a66c2
-                            {% elif ps.social_account.platform == 'youtube' %}#ff0000
-                            {% elif ps.social_account.platform == 'whatsapp' %}#25d366
-                            {% else %}#6c757d{% endif %};">
-                        <i class="fa-brands fa-{{ ps.social_account.platform }} text-white" style="font-size:18px;"></i>
+            <div class="platform-list">
+                {% for ps in post.platform_statuses.all %}
+                <div class="d-flex align-items-center justify-content-between py-3 px-2 rounded-3 transition-hover mb-2 border-bottom-subtle" style="border-bottom: 1px solid #f8fafc;">
+                    
+                    <!-- Platform Brand & Account Info -->
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="rounded-circle d-flex align-items-center justify-content-center shadow-2sm flex-shrink-0"
+                             style="width: 42px; height: 42px; background: 
+                                {% if ps.social_account.platform == 'facebook' %}#1877f2
+                                {% elif ps.social_account.platform == 'instagram' %}#e4405f
+                                {% elif ps.social_account.platform == 'twitter' %}#1da1f2
+                                {% elif ps.social_account.platform == 'linkedin' %}#0a66c2
+                                {% elif ps.social_account.platform == 'youtube' %}#ff0000
+                                {% elif ps.social_account.platform == 'whatsapp' %}#25d366
+                                {% else %}#6c757d{% endif %};">
+                            <i class="fa-brands fa-{{ ps.social_account.platform }} text-white" style="font-size: 18px;"></i>
+                        </div>
+                        <div>
+                            <div class="fw-bold text-dark" style="font-size: 14px;">{{ ps.social_account.account_name }}</div>
+                            <div class="text-muted font-monospace" style="font-size: 11px;">
+                                <span class="text-uppercase text-secondary fw-semibold">{{ ps.social_account.platform }}</span>
+                                {% if ps.platform_post_id %}
+                                <span class="text-muted ms-1">· ID: {{ ps.platform_post_id|truncatechars:10 }}</span>
+                                {% endif %}
+                            </div>
+                        </div>
                     </div>
-                    <div>
-                        <div style="font-size:14px; font-weight:600;">{{ ps.social_account.account_name }}</div>
-                        <div style="font-size:11px; color:#94a3b8; text-transform:capitalize;">
-                            {{ ps.social_account.platform }}
-                            {% if ps.platform_post_id %}
-                            · ID: {{ ps.platform_post_id|truncatechars:8 }}
+
+                    <!-- Status Badges & Controls -->
+                    <div class="d-flex align-items-center gap-2 flex-wrap justify-content-end">
+                        {% if ps.status == 'published' %}
+                            <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill px-3 py-2 platform-status-badge">
+                                <i class="fa-solid fa-circle-check me-1"></i>Published
+                            </span>
+                            
+                            {% if ps.published_at %}
+                            <span class="text-muted small d-none d-md-inline">{{ ps.published_at|date:"M d, H:i" }}</span>
                             {% endif %}
+
+                            {% if ps.platform_post_id %}
+                                {% if ps.social_account.platform == 'facebook' %}
+                                <a href="https://www.facebook.com/{{ ps.platform_post_id }}" target="_blank" class="btn btn-sm btn-outline-primary rounded-pill px-3 shadow-2sm" style="font-size: 11px;">
+                                    <i class="fa-solid ps-1 fa-arrow-up-right-from-square me-1"></i>Open
+                                </a>
+                                <button type="button" class="btn btn-sm btn-outline-warning rounded-pill px-3 shadow-2sm" style="font-size: 11px;" onclick="openEditModal('editModal{{ ps.id }}')">
+                                    <i class="fa-solid fa-pen me-1"></i>Edit
+                                </button>
+                                {% endif %}
+
+                                {% if ps.social_account.platform == 'instagram' %}
+                                <a href="https://www.instagram.com/p/{{ ps.platform_post_id }}/" target="_blank" class="btn btn-sm btn-outline-danger rounded-pill px-3 shadow-2sm" style="font-size: 11px;">
+                                    <i class="fa-solid fa-arrow-up-right-from-square me-1"></i>Open
+                                </a>
+                                {% endif %}
+
+                                {% if ps.social_account.platform == 'twitter' %}
+                                <a href="https://twitter.com/i/web/status/{{ ps.platform_post_id }}" target="_blank" class="btn btn-sm btn-outline-info rounded-pill px-3 shadow-2sm" style="font-size: 11px;">
+                                    <i class="fa-solid fa-arrow-up-right-from-square me-1"></i>Open
+                                </a>
+                                {% endif %}
+
+                                {% if ps.social_account.platform == 'linkedin' %}
+                                <a href="https://www.linkedin.com/feed/update/{{ ps.platform_post_id }}" target="_blank" class="btn btn-sm btn-outline-primary rounded-pill px-3 shadow-2sm" style="font-size: 11px;">
+                                    <i class="fa-solid fa-arrow-up-right-from-square me-1"></i>Open
+                                </a>
+                                {% endif %}
+
+                                <form method="POST" action="{% url 'platform_delete' post.id ps.id %}" onsubmit="return confirm('Delete this post from {{ ps.social_account.account_name }}?')" class="d-inline">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-3 shadow-2sm" style="font-size: 11px;">
+                                        <i class="fa-solid fa-trash me-1"></i>Delete
+                                    </button>
+                                </form>
+                            {% endif %}
+
+                        {% elif ps.status == 'processing' %}
+                            <span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25 rounded-pill px-3 py-2">
+                                <i class="fa-solid fa-spinner fa-spin me-1"></i>Processing
+                            </span>
+                        {% elif ps.status == 'failed' %}
+                            <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 rounded-pill px-3 py-2">
+                                <i class="fa-solid fa-circle-xmark me-1"></i>Failed
+                            </span>
+                            {% if ps.error_message %}
+                            <small class="text-danger font-monospace text-truncate d-block" style="max-width: 150px; font-size: 11px;" title="{{ ps.error_message }}">{{ ps.error_message }}</small>
+                            {% endif %}
+                        {% elif ps.status == 'scheduled' %}
+                            <span class="badge bg-warning bg-opacity-10 text-warning text-dark border border-warning border-opacity-25 rounded-pill px-3 py-2">
+                                <i class="fa-solid fa-clock me-1"></i>Scheduled
+                            </span>
+                        {% else %}
+                            <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25 rounded-pill px-3 py-2">
+                                <i class="fa-solid fa-minus me-1"></i>Pending
+                            </span>
+                        {% endif %}
+                    </div>
+                </div>
+                {% empty %}
+                <div class="text-center py-5 text-muted">
+                    <i class="fa-regular fa-folder-open fs-3 mb-2 d-block"></i>
+                    <p class="mb-0">No platforms assigned to this publication.</p>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Instagram Notice Box -->
+            {% for ps in post.platform_statuses.all %}
+                {% if ps.social_account.platform == 'instagram' and ps.status == 'published' %}
+                <div class="mt-4 p-3 rounded-4 bg-warning bg-opacity-10 border border-warning border-opacity-25">
+                    <div class="d-flex gap-3 align-items-start">
+                        <i class="fa-solid fa-triangle-exclamation text-warning fs-5 mt-1"></i>
+                        <div class="text-dark" style="font-size: 13px;">
+                            <strong>Instagram Limitation Notice:</strong> Caption editing via third-party APIs is not supported by Meta natively. 
+                            Please <a href="https://www.instagram.com/p/{{ ps.platform_post_id }}/" target="_blank" class="text-danger fw-bold text-decoration-underline">open it directly on Instagram</a> to modify captions manually.
                         </div>
                     </div>
                 </div>
-
-                <div class="d-flex align-items-center gap-2 flex-wrap justify-content-end">
-                    {% if ps.status == 'published' %}
-                        <span class="badge bg-success rounded-pill platform-status-badge">
-                            <i class="fa-solid fa-circle-check me-1"></i>Published
-                        </span>
-                        {% if ps.published_at %}
-                        <small class="text-muted">{{ ps.published_at|date:"M d, H:i" }}</small>
-                        {% endif %}
-
-                        {% if ps.platform_post_id %}
-                            {% if ps.social_account.platform == 'facebook' %}
-                            <a href="https://www.facebook.com/{{ ps.platform_post_id }}"
-                               target="_blank" class="btn btn-sm btn-outline-primary"
-                               style="font-size:11px; border-radius:7px; padding:3px 10px;">
-                                <i class="fa-solid fa-arrow-up-right-from-square me-1"></i>Open
-                            </a>
-                            <button type="button"
-                                    class="btn btn-sm btn-outline-warning"
-                                    style="font-size:11px; border-radius:7px; padding:3px 10px;"
-                                    onclick="openEditModal('editModal{{ ps.id }}')">
-                                <i class="fa-solid fa-pen me-1"></i>Edit
-                            </button>
-                            {% endif %}
-
-                            {% if ps.social_account.platform == 'instagram' %}
-                            <a href="https://www.instagram.com/p/{{ ps.platform_post_id }}/"
-                               target="_blank" class="btn btn-sm btn-outline-danger"
-                               style="font-size:11px; border-radius:7px; padding:3px 10px;">
-                                <i class="fa-solid fa-arrow-up-right-from-square me-1"></i>Open
-                            </a>
-                            {% endif %}
-
-                            {% if ps.social_account.platform == 'twitter' %}
-                            <a href="https://twitter.com/i/web/status/{{ ps.platform_post_id }}"
-                               target="_blank" class="btn btn-sm btn-outline-info"
-                               style="font-size:11px; border-radius:7px; padding:3px 10px;">
-                                <i class="fa-solid fa-arrow-up-right-from-square me-1"></i>Open
-                            </a>
-                            {% endif %}
-
-                            {% if ps.social_account.platform == 'linkedin' %}
-                            <a href="https://www.linkedin.com/feed/update/{{ ps.platform_post_id }}"
-                               target="_blank" class="btn btn-sm btn-outline-primary"
-                               style="font-size:11px; border-radius:7px; padding:3px 10px; border-color:#0a66c2; color:#0a66c2;">
-                                <i class="fa-solid fa-arrow-up-right-from-square me-1"></i>Open
-                            </a>
-                            {% endif %}
-
-                            <form method="POST"
-                                  action="{% url 'platform_delete' post.id ps.id %}"
-                                  onsubmit="return confirm('Delete from {{ ps.social_account.account_name }}?')"
-                                  class="d-inline">
-                                {% csrf_token %}
-                                <button type="submit" class="btn btn-sm btn-outline-danger"
-                                        style="font-size:11px; border-radius:7px; padding:3px 10px;">
-                                    <i class="fa-solid fa-trash me-1"></i>Delete
-                                </button>
-                            </form>
-                        {% endif %}
-
-                    {% elif ps.status == 'processing' %}
-                        <span class="badge bg-warning text-dark rounded-pill">
-                            <i class="fa-solid fa-spinner fa-spin me-1"></i>Processing
-                        </span>
-
-                    {% elif ps.status == 'failed' %}
-                        <span class="badge bg-danger rounded-pill">
-                            <i class="fa-solid fa-circle-xmark me-1"></i>Failed
-                        </span>
-                        {% if ps.error_message %}
-                        <small class="text-danger" style="font-size:11px;">{{ ps.error_message|truncatechars:50 }}</small>
-                        {% endif %}
-
-                    {% elif ps.status == 'scheduled' %}
-                        <span class="badge bg-warning text-dark rounded-pill">
-                            <i class="fa-solid fa-clock me-1"></i>Scheduled
-                        </span>
-                        {% if post.scheduled_time %}
-                        <small class="text-muted">{{ post.scheduled_time|date:"M d, H:i" }}</small>
-                        {% endif %}
-
-                    {% else %}
-                        <span class="badge bg-secondary rounded-pill">
-                            <i class="fa-solid fa-minus me-1"></i>Pending
-                        </span>
-                    {% endif %}
-                </div>
-            </div>
-            {% empty %}
-            <div class="text-center py-4">
-                <p class="text-muted mb-0">No platforms assigned</p>
-            </div>
-            {% endfor %}
-
-            {% for ps in post.platform_statuses.all %}
-            {% if ps.social_account.platform == 'instagram' and ps.status == 'published' %}
-            <div class="mt-3 p-3 rounded-3" style="background:#fff8f0; border:1px solid #fed7aa;">
-                <div class="d-flex gap-2 align-items-start">
-                    <i class="fa-solid fa-triangle-exclamation text-warning mt-1"></i>
-                    <div style="font-size:13px;">
-                        <strong>Instagram Note:</strong> Caption editing via API is not supported by Meta.
-                        Please <a href="https://www.instagram.com/p/{{ ps.platform_post_id }}/"
-                           target="_blank" class="text-danger fw-semibold">open it in Instagram</a> and edit manually.
-                    </div>
-                </div>
-            </div>
-            {% endif %}
+                {% endif %}
             {% endfor %}
         </div>
     </div>
 
-    <!-- Right: Actions -->
+    <!-- Right Column: Quick Actions & Metrics Sidebar -->
     <div class="col-lg-4">
-        <div class="card p-4" style="border-radius:14px; opacity:0;">
-            <h6 class="fw-semibold mb-3"
-                style="font-size:13px; text-transform:uppercase; letter-spacing:0.8px; color:#94a3b8;">
-                <i class="fa-solid fa-bolt me-2"></i>Actions
+        
+        <!-- Actions Card -->
+        <div class="card border-0 shadow-sm p-4 mb-4" style="border-radius: 16px; opacity: 0; background: #ffffff;">
+            <h6 class="fw-bold mb-3 text-uppercase tracking-wider text-secondary" style="font-size: 12px; letter-spacing: 1px;">
+                <i class="fa-solid fa-bolt text-warning me-2"></i>Quick Actions
             </h6>
 
             {% if post.status != 'published' %}
             <form method="post" action="{% url 'post_publish_now' post.id %}">
                 {% csrf_token %}
-                <button type="submit" class="btn btn-primary w-100 mb-2" style="border-radius:9px;">
-                    <i class="fa-solid fa-bolt me-2"></i>Publish Now
+                <button type="submit" class="btn btn-primary w-100 mb-2 py-2 rounded-pill shadow-sm fw-semibold">
+                    <i class="fa-solid fa-rocket me-2"></i>Publish Now
                 </button>
             </form>
             {% endif %}
 
-            <a href="{% url 'post_edit' post.id %}"
-               class="btn btn-outline-secondary w-100 mb-2" style="border-radius:9px;">
-                <i class="fa-solid fa-pen me-2"></i>Edit Post
+            <a href="{% url 'post_edit' post.id %}" class="btn btn-light border w-100 mb-2 py-2 rounded-pill shadow-2sm text-secondary fw-semibold">
+                <i class="fa-solid ps-1 fa-pen-to-square me-2 text-primary"></i>Edit Post Details
             </a>
 
-            <form method="post" action="{% url 'post_delete' post.id %}"
-                  onsubmit="return confirm('Delete this post?')">
+            <form method="post" action="{% url 'post_delete' post.id %}" onsubmit="return confirm('Are you sure you want to delete this post completely?')">
                 {% csrf_token %}
-                <button type="submit" class="btn btn-outline-danger w-100" style="border-radius:9px;">
-                    <i class="fa-solid fa-trash me-2"></i>Delete Post
+                <button type="submit" class="btn btn-outline-danger w-100 py-2 rounded-pill shadow-2sm fw-semibold">
+                    <i class="fa-solid fa-trash-can me-2"></i>Delete Post
                 </button>
             </form>
 
-            <hr class="my-3">
-            <h6 class="fw-semibold mb-2"
-                style="font-size:12px; text-transform:uppercase; letter-spacing:0.8px; color:#94a3b8;">
-                <i class="fa-solid fa-link me-1"></i>Quick Links
-            </h6>
-            {% for ps in post.platform_statuses.all %}
-                {% if ps.status == 'published' and ps.platform_post_id %}
-                    {% if ps.social_account.platform == 'facebook' %}
-                    <a href="https://www.facebook.com/{{ ps.platform_post_id }}" target="_blank"
-                       class="btn btn-outline-primary w-100 mb-2"
-                       style="border-radius:9px; font-size:13px; text-align:left;">
-                        <i class="fa-brands fa-facebook me-2"></i>View on Facebook
-                        <i class="fa-solid fa-arrow-up-right-from-square float-end mt-1"></i>
-                    </a>
-                    {% endif %}
-                    {% if ps.social_account.platform == 'instagram' %}
-                    <a href="https://www.instagram.com/p/{{ ps.platform_post_id }}/" target="_blank"
-                       class="btn btn-outline-danger w-100 mb-2"
-                       style="border-radius:9px; font-size:13px; text-align:left;">
-                        <i class="fa-brands fa-instagram me-2"></i>View on Instagram
-                        <i class="fa-solid fa-arrow-up-right-from-square float-end mt-1"></i>
-                    </a>
-                    {% endif %}
-                    {% if ps.social_account.platform == 'twitter' %}
-                    <a href="https://twitter.com/i/web/status/{{ ps.platform_post_id }}" target="_blank"
-                       class="btn btn-outline-info w-100 mb-2"
-                       style="border-radius:9px; font-size:13px; text-align:left;">
-                        <i class="fa-brands fa-twitter me-2"></i>View on Twitter
-                        <i class="fa-solid fa-arrow-up-right-from-square float-end mt-1"></i>
-                    </a>
-                    {% endif %}
-                    {% if ps.social_account.platform == 'linkedin' %}
-                    <a href="https://www.linkedin.com/feed/update/{{ ps.platform_post_id }}/" target="_blank"
-                       class="btn btn-outline-primary w-100 mb-2"
-                       style="border-radius:9px; font-size:13px; text-align:left; background:#0a66c2; color:white; border-color:#0a66c2;">
-                        <i class="fa-brands fa-linkedin me-2"></i>View on LinkedIn
-                        <i class="fa-solid fa-arrow-up-right-from-square float-end mt-1"></i>
-                    </a>
-                    {% endif %}
-                {% endif %}
-            {% endfor %}
+            <hr class="my-4 text-muted opacity-25">
 
-            <hr class="my-3">
-            <div class="row text-center">
-                <div class="col-6">
-                    <div style="font-size:20px; font-weight:700;">{{ post.platform_statuses.all|length }}</div>
-                    <div style="font-size:11px; color:#94a3b8;">Platforms</div>
+            <!-- Direct Channel Navigation Links -->
+            <h6 class="fw-bold mb-3 text-uppercase tracking-wider text-secondary" style="font-size: 11px; letter-spacing: 1px;">
+                <i class="fa-solid fa-external-link-alt text-primary me-2"></i>Live Channels
+            </h6>
+            
+            <div class="d-flex flex-column gap-2">
+                {% for ps in post.platform_statuses.all %}
+                    {% if ps.status == 'published' and ps.platform_post_id %}
+                        {% if ps.social_account.platform == 'facebook' %}
+                        <a href="https://www.facebook.com/{{ ps.platform_post_id }}" target="_blank" class="btn btn-outline-primary text-start w-100 py-2 px-3 rounded-3 font-weight-medium d-flex justify-content-between align-items-center shadow-2sm" style="font-size: 13px;">
+                            <span><i class="fa-brands fa-facebook me-2 fs-6"></i>Facebook Post</span>
+                            <i class="fa-solid fa-arrow-up-right-from-square small"></i>
+                        </a>
+                        {% endif %}
+                        {% if ps.social_account.platform == 'instagram' %}
+                        <a href="https://www.instagram.com/p/{{ ps.platform_post_id }}/" target="_blank" class="btn btn-outline-danger text-start w-100 py-2 px-3 rounded-3 font-weight-medium d-flex justify-content-between align-items-center shadow-2sm" style="font-size: 13px;">
+                            <span><i class="fa-brands fa-instagram me-2 fs-6"></i>Instagram Post</span>
+                            <i class="fa-solid fa-arrow-up-right-from-square small"></i>
+                        </a>
+                        {% endif %}
+                        {% if ps.social_account.platform == 'twitter' %}
+                        <a href="https://twitter.com/i/web/status/{{ ps.platform_post_id }}" target="_blank" class="btn btn-outline-info text-start w-100 py-2 px-3 rounded-3 font-weight-medium d-flex justify-content-between align-items-center shadow-2sm" style="font-size: 13px;">
+                            <span><i class="fa-brands fa-twitter me-2 fs-6"></i>Twitter Post</span>
+                            <i class="fa-solid fa-arrow-up-right-from-square small"></i>
+                        </a>
+                        {% endif %}
+                        {% if ps.social_account.platform == 'linkedin' %}
+                        <a href="https://www.linkedin.com/feed/update/{{ ps.platform_post_id }}/" target="_blank" class="btn text-start text-white w-100 py-2 px-3 rounded-3 font-weight-medium d-flex justify-content-between align-items-center shadow-sm" style="font-size: 13px; background: #0a66c2; border-color: #0a66c2;">
+                            <span><i class="fa-brands fa-linkedin me-2 fs-6"></i>LinkedIn Post</span>
+                            <i class="fa-solid fa-arrow-up-right-from-square small"></i>
+                        </a>
+                        {% endif %}
+                    {% endif %}
+                {% endfor %}
+            </div>
+
+            <hr class="my-4 text-muted opacity-25">
+
+            <!-- Stats Analytics Summary Box -->
+            <div class="row text-center g-2 bg-light p-3 rounded-4 border border-light">
+                <div class="col-6 border-end">
+                    <div class="fs-4 fw-extrabold text-dark">{{ post.platform_statuses.all|length }}</div>
+                    <div class="text-muted fw-semibold" style="font-size: 11px; text-transform: uppercase;">Total Channels</div>
                 </div>
                 <div class="col-6">
-                    <div id="js-published-count" style="font-size:20px; font-weight:700; color:#22c55e;">0</div>
-                    <div style="font-size:11px; color:#94a3b8;">Published</div>
+                    <div id="js-published-count" class="fs-4 fw-extrabold text-success">0</div>
+                    <div class="text-muted fw-semibold" style="font-size: 11px; text-transform: uppercase;">Successfully Live</div>
                 </div>
             </div>
         </div>
+
     </div>
 </div>
 
-<!-- ✅ Modals — সম্পূর্ণ .row এর বাইরে, body-র একদম শেষে -->
+<!-- Dynamic Meta Edit Modals Container -->
 {% for ps in post.platform_statuses.all %}
 {% if ps.social_account.platform == 'facebook' and ps.status == 'published' and ps.platform_post_id %}
-<div class="modal fade" id="editModal{{ ps.id }}" tabindex="-1">
+<div class="modal fade" id="editModal{{ ps.id }}" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content rounded-4 border-0 shadow">
-            <div class="modal-header border-0 pb-0">
-                <h6 class="modal-title fw-bold">
-                    <i class="fa-brands fa-facebook text-primary me-2"></i>
-                    Edit Caption — {{ ps.social_account.account_name }}
-                </h6>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        <div class="modal-content rounded-4 border-0 shadow-lg">
+            <div class="modal-header border-0 pb-0 pt-4 px-4">
+                <h5 class="modal-title fw-bold text-dark">
+                    <i class="fa-brands fa-facebook text-primary me-2"></i>Edit Facebook Caption
+                </h5>
+                <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form method="POST" action="{% url 'platform_edit' post.id ps.id %}">
                 {% csrf_token %}
-                <div class="modal-body">
-                    <label class="form-label fw-semibold text-secondary" style="font-size:13px;">New Caption</label>
-                    <textarea name="new_content"
-                              class="form-control rounded-3"
-                              rows="5"
-                              placeholder="Enter new caption...">{{ post.content }}</textarea>
-                    <small class="text-muted mt-1 d-block">
-                        <i class="fa-solid fa-circle-info me-1"></i>
-                        This will update the caption on Facebook only.
-                    </small>
+                <div class="modal-body px-4 py-3">
+                    <label class="form-label fw-semibold text-secondary small mb-2">Updated Caption Text</label>
+                    <textarea name="new_content" class="form-control rounded-3 border shadow-none p-3" rows="5" placeholder="Enter updated caption...">{{ post.content }}</textarea>
+                    <div class="form-text text-muted mt-2" style="font-size: 12px;">
+                        <i class="fa-solid fa-circle-info text-primary me-1"></i> This action modifies the live caption text on Facebook instantly.
+                    </div>
                 </div>
-                <div class="modal-footer border-0 pt-0">
-                    <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary btn-sm">
-                        <i class="fa-solid fa-check me-1"></i>Update Caption
+                <div class="modal-footer border-0 pt-0 pb-4 px-4">
+                    <button type="button" class="btn btn-light rounded-pill px-4 btn-sm text-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary rounded-pill px-4 btn-sm shadow-sm">
+                        <i class="fa-solid fa-check me-1"></i>Save Changes
                     </button>
                 </div>
             </form>
@@ -354,17 +347,23 @@
 {% endif %}
 {% endfor %}
 
+<!-- GSAP Animation Engine -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-    const tl = gsap.timeline({ defaults: { ease: 'power2.out' } });
-    tl.from('#detail-header', { opacity: 0, y: -16, duration: 0.4 })
-      .to('.card', { opacity: 1, duration: 0.35, stagger: 0.1 }, '-=0.2');
+    // Smooth GSAP Entrance Animation
+    const tl = gsap.timeline({ defaults: { ease: 'power3.out' } });
+    tl.from('#detail-header', { opacity: 0, y: -20, duration: 0.5 })
+      .to('.card', { opacity: 1, y: 0, duration: 0.4, stagger: 0.12 }, '-=0.3');
 
+    // Dynamic Published Counter calculation
     const publishedBadges = document.querySelectorAll('.platform-status-badge');
     const counter = document.getElementById('js-published-count');
-    if (counter) counter.textContent = publishedBadges.length;
+    if (counter) {
+        counter.textContent = publishedBadges.length;
+    }
 
+    // Initialize Bootstrap Tooltips safely if available
     if (typeof bootstrap !== 'undefined' && bootstrap.Tooltip) {
         document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => {
             new bootstrap.Tooltip(el);
@@ -372,8 +371,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// Modal opener — data-bs-toggle এর বদলে JS দিয়ে modal খোলা হচ্ছে
-// এতে GSAP animation এর z-index conflict এড়ানো যাচ্ছে
+// Programmatic modal trigger to override CSS stacking context / GSAP conflicts
 function openEditModal(modalId) {
     const modalEl = document.getElementById(modalId);
     if (modalEl && typeof bootstrap !== 'undefined') {
@@ -383,13 +381,20 @@ function openEditModal(modalId) {
 }
 </script>
 
+<!-- Custom Styles & Enhancements -->
 <style>
     .card {
-        border: 1px solid #f1f5f9;
-        transition: box-shadow 0.3s ease;
+        border: 1px solid #f1f5f9 !important;
+        transition: transform 0.2s ease, box-shadow 0.3s ease;
     }
     .card:hover {
-        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.04), 0 8px 10px -6px rgba(0, 0, 0, 0.04) !important;
+    }
+    .shadow-2sm {
+        box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.03);
+    }
+    .fw-extrabold {
+        font-weight: 800;
     }
     .modal { z-index: 1055 !important; }
     .modal-backdrop { z-index: 1050 !important; }

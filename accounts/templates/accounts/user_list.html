@@ -72,7 +72,7 @@
                         <td class="px-4 py-3">
                             <div class="d-flex align-items-center gap-3">
                                 <div class="avatar-circle">
-                                    {{ u.full_name|first|upper|default:u.username|first|upper }}
+                                    {{ u.full_name|default:u.username|slice:":1"|upper }}
                                 </div>
                                 <div>
                                     <a href="{% url 'accounts:user_detail' u.id %}" class="text-dark fw-bold text-decoration-none d-block">
