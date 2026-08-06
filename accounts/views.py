@@ -20,6 +20,8 @@ def is_admin(user):
 
 def Login(request):
     if request.user.is_authenticated:
+        if request.user.is_superuser or getattr(request.user, 'user_type', None) == 'admin':
+            return redirect('/posts/dashboard/')
         return redirect('/posts/')
     if request.method == 'POST':
         username = request.POST.get('username')
@@ -27,6 +29,8 @@ def Login(request):
         user = authenticate(request, username=username, password=password)
         if user:
             login(request, user)
+            if user.is_superuser or getattr(user, 'user_type', None) == 'admin':
+                return redirect('/posts/dashboard/')
             return redirect('/posts/')
         messages.error(request, "Invalid username or password.")
     return render(request, 'registration/login.html')
