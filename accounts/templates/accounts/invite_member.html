@@ -1,94 +1,113 @@
 {% extends "base.html" %}
 {% block title %}Invite Member{% endblock %}
-{% block page_title %}Invite Member{% endblock %}
 
 {% block content %}
-<div class="container-fluid px-0" style="margin-top: -15px;">
-    
-    <!-- Top Action Bar -->
-    <div class="d-flex justify-content-between align-items-center mb-4 bg-white p-3 rounded-4 border border-1 border-light shadow-sm">
+<style>
+    .invite-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 20px;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+        padding: 32px;
+        max-width: 600px;
+        margin: 0 auto;
+    }
+
+    .channel-item {
+        background: #f8fafc;
+        border: 1.5px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 12px 16px;
+        transition: all 0.2s ease;
+    }
+
+    .channel-item:hover {
+        border-color: var(--primary-brand);
+        background: #f5f3ff;
+    }
+
+    .form-check-input {
+        width: 1.2em; height: 1.2em;
+        margin-top: 0;
+        cursor: pointer;
+    }
+
+    .btn-invite {
+        background: var(--primary-gradient);
+        color: white;
+        border: none;
+        padding: 14px;
+        border-radius: 10px;
+        font-weight: 700;
+        width: 100%;
+        transition: all 0.3s ease;
+    }
+
+    .btn-invite:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 15px -3px rgba(79, 70, 229, 0.3);
+    }
+</style>
+
+<div class="container-fluid px-0">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <h5 class="mb-0 fw-bold text-dark"><i class="fa-solid fa-user-plus text-orange me-2" style="color: var(--accent);"></i>Invite Member</h5>
-            <small class="text-muted" style="font-size: 12px;">Add a new member to your team workspace</small>
+            <h4 class="fw-bold mb-1">Invite Member</h4>
+            <p class="text-muted small">Grant access to specific team channels.</p>
         </div>
-        <a href="{% url 'accounts:user_list' %}" class="btn btn-outline-primary btn-sm px-4 d-flex align-items-center gap-2" style="border-radius: 9px; font-weight: 600;">
-            <i class="fa-solid fa-arrow-left"></i>Back to List
+        <a href="{% url 'accounts:user_list' %}" class="btn btn-light btn-sm px-3 rounded-pill fw-semibold">
+            <i class="fa-solid fa-arrow-left me-2"></i>Back to List
         </a>
     </div>
 
-    <!-- Invite Form Card -->
-    <div class="card border-0 shadow-sm rounded-4 p-4 mx-auto" style="max-width: 600px; background: #ffffff; border: 1px solid var(--sidebar-border) !important;">
-        <p class="text-muted mb-4" style="font-size: 13.5px; line-height: 1.6;">
-            Enter the email and username of the person you want to invite. 
-            Select which connected social media channels this team member is allowed to manage.
-        </p>
-
+    <!-- Invite Form -->
+    <div class="invite-card">
         <form method="POST" class="needs-validation" novalidate>
             {% csrf_token %}
             
-            <div class="row g-3">
-                
-                <!-- Email Address Field (Required) -->
-                <div class="col-12">
-                    <label class="form-label fw-semibold text-dark" style="font-size: 13.5px;">Email Address</label>
-                    <input type="email" name="email" class="form-control rounded-3" placeholder="email@example.com" required style="font-size: 13.5px; padding: 10px;">
+            <div class="row g-4">
+                <div class="col-md-6">
+                    <label class="form-label text-xs fw-bold text-uppercase text-muted" style="font-size: 11px;">Email Address</label>
+                    <input type="email" name="email" class="form-control" placeholder="colleague@example.com" required>
                 </div>
 
-                <!-- Username Field (Optional - falls back to email if blank in backend) -->
-                <div class="col-12">
-                    <label class="form-label fw-semibold text-dark" style="font-size: 13.5px;">Username (Optional)</label>
-                    <div class="input-group">
-                        <span class="input-group-text bg-light text-muted" style="font-size: 13.5px; border-radius: 8px 0 0 8px;">@</span>
-                        <input type="text" name="username" class="form-control" placeholder="username" style="font-size: 13.5px; padding: 10px; border-radius: 0 8px 8px 0;">
-                    </div>
+                <div class="col-md-6">
+                    <label class="form-label text-xs fw-bold text-uppercase text-muted" style="font-size: 11px;">Username (Optional)</label>
+                    <input type="text" name="username" class="form-control" placeholder="username">
                 </div>
 
-                <!-- Select Permitted Social Accounts (Dynamic Checkboxes - নতুন যুক্ত করা হয়েছে) -->
-                <div class="col-12 mt-3">
-                    <label class="form-label fw-semibold text-dark" style="font-size: 13px;">Assign Social Channels</label>
-                    <p class="text-muted small mb-2" style="font-size: 11.5px;">Specify which social accounts this team member can access and manage.</p>
-                    
-                    <div class="row g-2 bg-light p-3 rounded-3 border border-light" style="background-color: #fafbfe !important;">
+                <div class="col-12">
+                    <label class="form-label text-xs fw-bold text-uppercase text-muted mb-3" style="font-size: 11px;">Assign Social Channels</label>
+                    <div class="row g-2">
                         {% for sa in connected_accounts %}
                         <div class="col-sm-6">
-                            <div class="form-check d-flex align-items-center gap-2">
-                                <input class="form-check-input flex-shrink-0" type="checkbox" name="permitted_accounts" value="{{ sa.id }}" id="sa-{{ sa.id }}" checked style="width: 16px; height: 16px; border-radius: 4px; cursor: pointer; accent-color: var(--accent);">
-                                <label class="form-check-label d-flex align-items-center gap-2 text-dark small" for="sa-{{ sa.id }}" style="cursor: pointer; font-weight: 600; font-size: 13px;">
-                                    <i class="fa-brands fa-{{ sa.platform }} fs-6" 
-                                       style="color: {% if sa.platform == 'facebook' %}#1877f2
-                                                     {% elif sa.platform == 'instagram' %}#e1306c
-                                                     {% elif sa.platform == 'twitter' %}#1da1f2
-                                                     {% elif sa.platform == 'youtube' %}#ff0000
-                                                     {% elif sa.platform == 'whatsapp' %}#25d366
-                                                     {% elif sa.platform == 'linkedin' %}#0077b5
-                                                     {% else %}#64748b{% endif %};">
+                            <label class="channel-item d-flex align-items-center cursor-pointer">
+                                <input class="form-check-input me-3" type="checkbox" name="permitted_accounts" value="{{ sa.id }}" checked>
+                                <div class="d-flex align-items-center">
+                                    <i class="fa-brands fa-{{ sa.platform }} me-2" style="font-size: 16px; 
+                                        color: {% if sa.platform == 'facebook' %}#1877f2{% elif sa.platform == 'instagram' %}#e1306c{% elif sa.platform == 'twitter' %}#1da1f2{% elif sa.platform == 'youtube' %}#ff0000{% elif sa.platform == 'linkedin' %}#0077b5{% else %}#64748b{% endif %};">
                                     </i>
-                                    {{ sa.account_name|truncatechars:20 }}
-                                </label>
-                            </div>
+                                    <span class="small fw-semibold text-dark">{{ sa.account_name|truncatechars:18 }}</span>
+                                </div>
+                            </label>
                         </div>
                         {% empty %}
-                        <div class="col-12 text-center text-muted py-2 small">
-                            <i class="fa-solid fa-triangle-exclamation me-1 text-warning"></i>No connected accounts found. Please connect accounts first.
-                        </div>
+                        <div class="text-muted p-3 text-center border-dashed rounded">No accounts available.</div>
                         {% endfor %}
                     </div>
                 </div>
 
-                <!-- Notice -->
-                <div class="col-12 mt-3">
-                    <div class="p-3 rounded-3" style="background-color: #fafbfe; border: 1px solid #f1f5f9;">
-                        <small class="text-muted d-block" style="font-size: 12px; line-height: 1.5;">
-                            <i class="fa-solid fa-circle-info text-primary me-1"></i>
-                            <strong>SaaS Workspace Notice:</strong> Invited team members can only see the social channels assigned to them in their sidebar, posts, and inbox views. They cannot view unassigned channels.
-                        </small>
+                <div class="col-12">
+                    <div class="bg-light p-3 rounded-3 border-start border-primary border-4 text-muted small">
+                        <i class="fa-solid fa-circle-info text-primary me-2"></i>
+                        Invited members will only see the channels assigned above in their dashboard.
                     </div>
                 </div>
 
-                <!-- Submit Button -->
-                <div class="col-12 mt-4 text-end">
-                    <button type="submit" class="btn btn-primary px-5 py-2.5 fw-bold" style="border-radius: 9px; background: var(--accent); border: none; font-size: 14px; width: 100%;">
-                        <i class="fa-solid fa-paper-plane me-1"></i>Send Invitation & Create Account
+                <div class="col-12">
+                    <button type="submit" class="btn-invite">
+                        Send Invitation <i class="fa-solid fa-paper-plane ms-2"></i>
                     </button>
                 </div>
             </div>

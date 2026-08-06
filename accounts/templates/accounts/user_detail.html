@@ -1,147 +1,131 @@
 {% extends "base.html" %}
 {% block title %}Member Details & Permissions{% endblock %}
-{% block page_title %}Member Workspace{% endblock %}
 
 {% block content %}
-<div class="container-fluid px-0" style="margin-top: -15px;">
+<style>
+    /* Custom Modern Design */
+    .member-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 20px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        padding: 24px;
+    }
     
-    <!-- Top Action Bar -->
-    <div class="d-flex justify-content-between align-items-center mb-4 bg-white p-3 rounded-4 border border-1 border-light shadow-sm">
-        <div class="d-flex align-items-center gap-3">
-            <div class="avatar-bubble bg-orange text-white" style="width: 44px; height: 44px; font-size: 16px;">
-                {% if user_obj.full_name %}{{ user_obj.full_name|first|upper }}{% else %}{{ user_obj.username|first|upper }}{% endif %}
-            </div>
-            <div>
-                <h5 class="mb-0 fw-bold text-dark">{{ user_obj.full_name|default:user_obj.username }}</h5>
-                <small class="text-muted" style="font-size: 12px;">Workspace role: <span class="badge bg-primary-light text-primary rounded-pill px-2 py-0.5" style="text-transform: capitalize;">{{ user_obj.user_type }}</span></small>
-            </div>
+    .section-title {
+        font-weight: 700;
+        color: #1e293b;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .channel-row {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 12px 16px;
+        margin-bottom: 8px;
+        transition: all 0.2s ease;
+    }
+    .channel-row:hover {
+        border-color: #6366f1;
+        background: #f5f3ff;
+    }
+
+    .btn-save {
+        background: var(--primary-gradient);
+        color: white;
+        border: none;
+        border-radius: 12px;
+        padding: 12px;
+        font-weight: 700;
+        transition: all 0.3s;
+    }
+    .btn-save:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 15px -3px rgba(79, 70, 229, 0.3);
+    }
+</style>
+
+<div class="container-fluid px-0">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="fw-bold mb-1">Member Workspace</h4>
+            <p class="text-muted small">Manage {{ user_obj.full_name|default:user_obj.username }}'s access and view activities.</p>
         </div>
-        <a href="{% url 'accounts:user_list' %}" class="btn btn-outline-primary btn-sm px-4 d-flex align-items-center gap-2" style="border-radius: 9px; font-weight: 600;">
-            <i class="fa-solid fa-arrow-left"></i>Back to Team
+        <a href="{% url 'accounts:user_list' %}" class="btn btn-light rounded-pill px-4 fw-semibold">
+            <i class="fa-solid fa-arrow-left me-2"></i>Back to Team
         </a>
     </div>
 
     <div class="row g-4">
-        
-        <!-- Left Column: Profile Details & Activity Log -->
-        <div class="col-md-7 d-flex flex-column gap-4">
-            
-            <!-- Profile Info Card -->
-            <div class="card border-0 shadow-sm rounded-4 p-4" style="background: #ffffff; border: 1px solid var(--sidebar-border) !important;">
-                <h6 class="fw-bold text-dark mb-3"><i class="fa-solid fa-address-card text-orange me-2"></i>Profile Details</h6>
+        <!-- Left: Profile & Activity -->
+        <div class="col-lg-7">
+            <!-- Profile Info -->
+            <div class="member-card mb-4">
+                <div class="d-flex align-items-center gap-3 mb-4">
+                    <div style="width: 50px; height: 50px; background: var(--primary-brand); color: white; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 800;">
+                        {{ user_obj.full_name|first|upper }}
+                    </div>
+                    <div>
+                        <h5 class="fw-bold mb-0">{{ user_obj.full_name|default:user_obj.username }}</h5>
+                        <span class="badge bg-indigo-subtle text-indigo rounded-pill px-3">{{ user_obj.user_type|title }}</span>
+                    </div>
+                </div>
                 <div class="row g-3">
-                    <div class="col-sm-6">
-                        <small class="text-muted d-block" style="font-size: 11.5px;">Username</small>
-                        <span class="fw-semibold text-dark" style="font-size: 13.5px;">@{{ user_obj.username }}</span>
-                    </div>
-                    <div class="col-sm-6">
-                        <small class="text-muted d-block" style="font-size: 11.5px;">Email Address</small>
-                        <span class="fw-semibold text-dark" style="font-size: 13.5px;">{{ user_obj.email }}</span>
-                    </div>
-                    <div class="col-sm-6">
-                        <small class="text-muted d-block" style="font-size: 11.5px;">Phone</small>
-                        <span class="fw-semibold text-dark" style="font-size: 13.5px;">{{ user_obj.phone|default:"-" }}</span>
-                    </div>
-                    <div class="col-sm-6">
-                        <small class="text-muted d-block" style="font-size: 11.5px;">Joined At</small>
-                        <span class="fw-semibold text-dark" style="font-size: 13.5px;">{{ user_obj.date_joined|date:"M d, Y" }}</span>
-                    </div>
+                    <div class="col-6"><small class="text-muted d-block">Username</small><span class="fw-bold">@{{ user_obj.username }}</span></div>
+                    <div class="col-6"><small class="text-muted d-block">Email</small><span class="fw-bold">{{ user_obj.email }}</span></div>
+                    <div class="col-6"><small class="text-muted d-block">Phone</small><span class="fw-bold">{{ user_obj.phone|default:"-" }}</span></div>
+                    <div class="col-6"><small class="text-muted d-block">Joined</small><span class="fw-bold">{{ user_obj.date_joined|date:"M d, Y" }}</span></div>
                 </div>
             </div>
 
-            <!-- Activity Log Card (সাম্প্রতিক কাজের তালিকা) -->
-            <div class="card border-0 shadow-sm rounded-4 p-4" style="background: #ffffff; border: 1px solid var(--sidebar-border) !important;">
-                <h6 class="fw-bold text-dark mb-3"><i class="fa-solid fa-chart-line text-orange me-2"></i>Recent Post Activities</h6>
-                <div class="activity-feed">
-                    {% if user_posts %}
-                        <div class="timeline" style="border-left: 2px solid #f1f5f9; margin-left: 10px; padding-left: 20px;">
-                            {% for post in user_posts %}
-                                <div class="mb-4 position-relative">
-                                    <!-- Timeline Dot -->
-                                    <span class="position-absolute" style="left: -26px; top: 4px; width: 10px; height: 10px; border-radius: 50%; background: var(--accent); border: 2px solid #ffffff;"></span>
-                                    
-                                    <div class="d-flex justify-content-between align-items-start">
-                                        <div>
-                                            <span class="text-dark fw-bold" style="font-size: 13.5px;">নতুন পোস্ট তৈরি করেছেন</span>
-                                            <p class="text-muted mb-0 mt-1" style="font-size: 12.5px;">{{ post.content|truncatechars:60 }}</p>
-                                        </div>
-                                        <small class="text-muted" style="font-size: 11px;">{{ post.created_at|date:"M d, h:i A" }}</small>
-                                    </div>
-                                </div>
-                            {% endfor %}
+            <!-- Activity Log -->
+            <div class="member-card">
+                <h6 class="section-title"><i class="fa-solid fa-clock-rotate-left text-primary"></i> Recent Activities</h6>
+                <div class="timeline ps-2">
+                    {% for post in user_posts %}
+                    <div class="d-flex gap-3 mb-3 pb-3 border-bottom">
+                        <div class="mt-1 text-primary"><i class="fa-solid fa-circle-check"></i></div>
+                        <div>
+                            <p class="mb-0 fw-semibold text-dark small">Published new post</p>
+                            <small class="text-muted">{{ post.content|truncatechars:40 }}</small>
+                            <div class="text-xs text-muted mt-1">{{ post.created_at|timesince }} ago</div>
                         </div>
-                    {% else %}
-                        <div class="py-4 text-center text-muted">
-                            <i class="fa-solid fa-clock-rotate-left fs-3 mb-2"></i>
-                            <p class="mb-0 small">No recent activities found for this user.</p>
-                        </div>
-                    {% endif %}
+                    </div>
+                    {% empty %}
+                    <p class="text-muted small">No recent activity.</p>
+                    {% endfor %}
                 </div>
             </div>
-
         </div>
 
-        <!-- Right Column: Live Permissions Controller -->
-        <div class="col-md-5">
-            <div class="card border-0 shadow-sm rounded-4 p-4 h-100" style="background: #ffffff; border: 1px solid var(--sidebar-border) !important;">
-                <h6 class="fw-bold text-dark mb-3"><i class="fa-solid fa-shield-halved text-orange me-2"></i>Social Channel Permissions</h6>
-                <p class="text-muted small mb-3" style="font-size: 12.5px; line-height: 1.5;">Check or uncheck the social channels below to easily control what channels this user is permitted to manage.</p>
+        <!-- Right: Permissions -->
+        <div class="col-lg-5">
+            <div class="member-card h-100">
+                <h6 class="section-title"><i class="fa-solid fa-shield-halved text-indigo"></i> Channel Permissions</h6>
+                <p class="text-muted small mb-4">Toggle access for specific social media channels.</p>
                 
                 <form method="POST">
                     {% csrf_token %}
-                    
-                    <div class="d-flex flex-column gap-2 mb-4 bg-light p-3 rounded-4" style="background-color: #fafbfe !important; border: 1px solid #f1f5f9;">
+                    <div class="mb-4">
                         {% for sa in all_accounts %}
-                            <div class="p-2.5 rounded-3 d-flex align-items-center justify-content-between hover-bg-light" style="display: flex; transition: background 0.2s;">
-                                <div class="form-check d-flex align-items-center gap-2">
-                                    <input class="form-check-input" type="checkbox" name="permitted_accounts" value="{{ sa.id }}" id="sa-{{ sa.id }}"
-                                           {% if sa.id in user_permitted_ids %}checked{% endif %}
-                                           style="width: 17px; height: 16px; border-radius: 4px; accent-color: var(--accent); cursor: pointer;">
-                                    <label class="form-check-label d-flex align-items-center gap-2 text-dark fw-semibold" for="sa-{{ sa.id }}" style="cursor: pointer; font-size: 13.5px;">
-                                        <i class="fa-brands fa-{{ sa.platform }} fs-5" 
-                                           style="color: {% if sa.platform == 'facebook' %}#1877f2
-                                                         {% elif sa.platform == 'instagram' %}#e1306c
-                                                         {% elif sa.platform == 'twitter' %}#1da1f2
-                                                         {% elif sa.platform == 'youtube' %}#ff0000
-                                                         {% elif sa.platform == 'whatsapp' %}#25d366
-                                                         {% elif sa.platform == 'linkedin' %}#0077b5
-                                                         {% else %}#64748b{% endif %};">
-                                        </i>
-                                        {{ sa.account_name|truncatechars:24 }}
-                                    </label>
-                                </div>
+                        <label class="channel-row d-flex align-items-center justify-content-between cursor-pointer">
+                            <div class="d-flex align-items-center gap-3">
+                                <input class="form-check-input" type="checkbox" name="permitted_accounts" value="{{ sa.id }}" {% if sa.id in user_permitted_ids %}checked{% endif %}>
+                                <i class="fa-brands fa-{{ sa.platform }}" style="color: {% if sa.platform == 'facebook' %}#1877f2{% elif sa.platform == 'instagram' %}#e1306c{% elif sa.platform == 'twitter' %}#1da1f2{% elif sa.platform == 'linkedin' %}#0077b5{% else %}#64748b{% endif %}; font-size: 18px;"></i>
+                                <span class="fw-semibold text-dark small">{{ sa.account_name }}</span>
                             </div>
-                        {% empty %}
-                            <div class="text-center text-muted py-3 small">
-                                <i class="fa-solid fa-triangle-exclamation me-1 text-warning"></i>No active social accounts connected.
-                            </div>
+                        </label>
                         {% endfor %}
                     </div>
-
-                    <!-- Submit Button -->
-                    {% if all_accounts.exists %}
-                        <button type="submit" class="btn btn-primary w-100 fw-bold py-2.5" style="border-radius: 10px; background: var(--accent); border: none; font-size: 13.5px;">
-                            <i class="fa-solid fa-circle-check me-1"></i>Save Permissions
-                        </button>
-                    {% endif %}
+                    <button type="submit" class="btn-save w-100">Save Permissions</button>
                 </form>
             </div>
         </div>
-
     </div>
 </div>
-
-<style>
-    .bg-primary-light { background: rgba(59, 130, 246, 0.08); }
-    .text-primary { color: #3b82f6 !important; }
-    .avatar-bubble {
-        width: 38px; height: 38px;
-        border-radius: 50%;
-        background: #e2e8f0;
-        color: #475569;
-        display: flex; align-items: center; justify-content: center;
-        font-weight: 700; font-size: 14px; flex-shrink: 0;
-    }
-    .hover-bg-light:hover { background-color: #f1f5f9; }
-</style>
 {% endblock %}

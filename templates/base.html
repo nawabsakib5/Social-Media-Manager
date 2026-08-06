@@ -125,6 +125,29 @@
             font-weight: 700;
         }
 
+        /* Special Quick Invite Button in Nav */
+        .btn-nav-invite {
+            background: #eef2ff;
+            color: var(--primary-brand);
+            border: 1.5px dashed #c7d2fe;
+            border-radius: 8px;
+            padding: 7px 12px;
+            font-size: 13px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+
+        .btn-nav-invite:hover {
+            background: var(--primary-brand);
+            color: #ffffff;
+            border-color: var(--primary-brand);
+            box-shadow: 0 4px 12px var(--primary-glow);
+        }
+
         /* Dropdown Styling */
         .dropdown-menu {
             border-radius: 12px;
@@ -315,22 +338,28 @@
                 </ul>
             </div>
 
-            <!-- Admin Dropdown -->
+            <!-- Admin Dropdown (Includes User List & Invite Member) -->
             {% if user.is_staff or user.is_superuser %}
             <div class="dropdown">
-                <a href="#" class="nav-item-link dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                <a href="#" class="nav-item-link dropdown-toggle {% if request.resolver_match.url_name == 'user_list' or request.resolver_match.url_name == 'invite_member' %}active{% endif %}" data-bs-toggle="dropdown" aria-expanded="false">
                     <i class="fa-solid fa-shield-halved"></i> Admin
                 </a>
                 <ul class="dropdown-menu dropdown-menu-end">
-                    <li><a class="dropdown-item" href="{% url 'accounts:user_list' %}"><i class="fa-solid fa-users me-2"></i> Users</a></li>
-                    <li><a class="dropdown-item" href="{% url 'accounts:invite_member' %}"><i class="fa-solid fa-user-plus me-2"></i> Invite Member</a></li>
+                    <li><a class="dropdown-item" href="{% url 'accounts:user_list' %}"><i class="fa-solid fa-users me-2 text-primary"></i> Team Users</a></li>
+                    <li><a class="dropdown-item" href="{% url 'accounts:invite_member' %}"><i class="fa-solid fa-user-plus me-2 text-success"></i> Invite Member</a></li>
                 </ul>
             </div>
             {% endif %}
         </div>
 
-        <!-- Right Side: User & Logout -->
+        <!-- Right Side: Quick Invite Button, User Pill & Logout -->
         <div class="d-flex align-items-center gap-3">
+            {% if user.is_staff or user.is_superuser %}
+            <a href="{% url 'accounts:invite_member' %}" class="btn-nav-invite d-none d-xl-flex">
+                <i class="fa-solid fa-user-plus"></i> Invite
+            </a>
+            {% endif %}
+
             <div class="user-profile-pill">
                 <div class="user-avatar-circle">{{ user.username|first|upper }}</div>
                 <span class="d-none d-md-inline" style="font-size: 13px; font-weight: 600;">{{ user.username }}</span>
