@@ -1,147 +1,263 @@
 {% extends "base.html" %}
-{% block title %}Create New Post{% endblock %}
+{% block title %}Create New Social Post{% endblock %}
+{% block page_title %}Post Creation Studio{% endblock %}
 
 {% block content %}
-<div class="container py-4" style="max-width: 800px;">
-    <div class="card border-0 shadow-sm rounded-4 p-4 bg-white">
-        <h5 class="fw-bold text-dark mb-4">
-            <i class="fa-solid fa-pen-to-square text-primary me-2"></i>Create New Social Post
-        </h5>
+<div class="container py-4" style="max-width: 840px;">
 
-        <form method="POST" enctype="multipart/form-data">
+    <!-- Header Section -->
+    <div class="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom" id="create-header">
+        <div class="d-flex align-items-center gap-3">
+            <div class="bg-primary bg-opacity-10 text-primary rounded-4 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px; font-size: 20px;">
+                <i class="fa-solid fa-pen-nib"></i>
+            </div>
+            <div>
+                <h4 class="mb-0 fw-bold text-dark">Create New Social Post</h4>
+                <small class="text-muted">Draft, schedule, and broadcast content across multiple social channels</small>
+            </div>
+        </div>
+        <a href="{% url 'post_list' %}" class="btn btn-light border btn-sm px-3 rounded-pill shadow-sm text-secondary fw-semibold">
+            <i class="fa-solid fa-arrow-left me-1"></i>Back to Posts
+        </a>
+    </div>
+
+    <!-- Main Creation Form Card -->
+    <div class="card border-0 shadow-sm p-4 p-md-5 bg-white" style="border-radius: 20px; opacity: 0;" id="create-card">
+        
+        <form method="POST" enctype="multipart/form-data" id="postCreateForm">
             {% csrf_token %}
 
-            <!-- Post Caption -->
+            <!-- Post Caption Section -->
             <div class="mb-4">
-                <label class="form-label fw-bold text-secondary">
-                    Post Caption / Message <span class="text-muted fw-normal">(Optional)</span>
+                <label class="form-label fw-bold text-dark d-flex justify-content-between" style="font-size: 14px;">
+                    <span><i class="fa-solid fa-message text-primary me-2"></i>Post Caption / Message</span>
+                    <span class="text-muted fw-normal small">Optional</span>
                 </label>
-                <textarea name="content" class="form-control rounded-3 p-3" rows="4"
-                    placeholder="Write your post caption here..."></textarea>
+                <div class="position-relative">
+                    <textarea name="content" class="form-control rounded-4 p-3 shadow-none border" rows="5"
+                        placeholder="What would you like to share across your networks today?" style="background-color: #fafbfc; font-size: 15px;"></textarea>
+                </div>
             </div>
 
-            <!-- Multi Media Upload -->
+            <!-- Multi Media Upload Section -->
             <div class="mb-4">
-                <label class="form-label fw-bold text-secondary">
-                    <i class="fa-solid fa-images text-primary me-1"></i>
-                    Upload Images / Videos
-                    <span class="text-muted fw-normal">(একাধিক file select করতে পারবে)</span>
+                <label class="form-label fw-bold text-dark" style="font-size: 14px;">
+                    <i class="fa-solid fa-images text-primary me-2"></i>Upload Images / Videos
                 </label>
-                <input type="file" name="media_files" id="mediaInput"
-                    class="form-control rounded-3"
-                    accept="image/*,video/*"
-                    multiple
-                    onchange="previewMediaFiles(event)">
-                <small class="text-muted mt-1 d-block">
-                    <i class="fa-solid fa-circle-info me-1"></i>
-                    Facebook-এ সর্বোচ্চ ১০টি image একটি post-এ দেওয়া যায়।
-                </small>
+                
+                <!-- Custom Drag & Drop Box -->
+                <div class="upload-dropzone p-4 rounded-4 text-center position-relative border border-2 border-dashed bg-light bg-opacity-50 transition-hover" style="cursor: pointer; border-color: #cbd5e1 !important;">
+                    <input type="file" name="media_files" id="mediaInput"
+                        class="position-absolute top-0 start-0 w-100 h-100 opacity-0"
+                        style="cursor: pointer; z-index: 5;"
+                        accept="image/*,video/*"
+                        multiple
+                        onchange="previewMediaFiles(event)">
+                    
+                    <div class="py-3">
+                        <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-inline-flex align-items-center justify-content-center mb-3 shadow-2sm" style="width: 50px; height: 50px;">
+                            <i class="fa-solid fa-cloud-arrow-up fs-4"></i>
+                        </div>
+                        <h6 class="fw-bold text-dark mb-1">Click to upload or drag & drop media</h6>
+                        <p class="text-muted small mb-0">Supports images and videos (Multiple files allowed)</p>
+                    </div>
+                </div>
+
+                <div class="d-flex align-items-center justify-content-between mt-2 px-1">
+                    <small class="text-muted" style="font-size: 12px;">
+                        <i class="fa-solid fa-circle-info text-primary me-1"></i>Facebook supports up to 10 images per single post.
+                    </small>
+                    <span id="fileCountBadge" class="badge bg-secondary bg-opacity-10 text-secondary rounded-pill font-monospace small px-2 py-1 d-none">0 files selected</span>
+                </div>
 
                 <!-- Preview Grid -->
-                <div id="previewGrid" class="row g-2 mt-2"></div>
+                <div id="previewGrid" class="row g-3 mt-3"></div>
             </div>
 
-            <!-- Select Platforms -->
+            <hr class="my-4 opacity-25">
+
+            <!-- Select Platforms Section -->
             <div class="mb-4">
-                <label class="form-label fw-bold text-secondary">Select Social Platforms</label>
-                <div class="d-flex flex-wrap gap-3">
+                <label class="form-label fw-bold text-dark mb-3" style="font-size: 14px;">
+                    <i class="fa-solid fa-share-nodes text-primary me-2"></i>Target Social Platforms
+                </label>
+                
+                <div class="platform-checkbox-container">
                     {{ form.social_accounts }}
                 </div>
+                
                 {% if form.social_accounts.errors %}
-                    <div class="text-danger small mt-1">{{ form.social_accounts.errors }}</div>
+                    <div class="text-danger small mt-2 bg-danger bg-opacity-10 p-2 rounded-3">{{ form.social_accounts.errors }}</div>
                 {% endif %}
             </div>
 
-            <!-- Post Type -->
+            <hr class="my-4 opacity-25">
+
+            <!-- Post Type Selection -->
             <div class="mb-4">
-                <label class="form-label fw-bold text-secondary">Post Type</label>
-                <div class="d-flex gap-4">
-                    <div class="form-check">
-                        <input class="form-check-input" type="radio" name="post_type"
-                            id="type_instant" value="instant" checked onchange="toggleSchedule()">
-                        <label class="form-check-label fw-semibold" for="type_instant">
-                            <i class="fa-solid fa-paper-plane text-primary me-1"></i>Publish Now
+                <label class="form-label fw-bold text-dark mb-3" style="font-size: 14px;">
+                    <i class="fa-solid fa-clock-rotate-left text-primary me-2"></i>Publication Schedule Type
+                </label>
+                
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <input class="btn-check" type="radio" name="post_type" id="type_instant" value="instant" checked onchange="toggleSchedule()">
+                        <label class="btn btn-outline-light text-dark border w-100 p-3 rounded-4 text-start d-flex align-items-center gap-3 shadow-2sm schedule-option-card active" for="type_instant">
+                            <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width: 40px; height: 40px;">
+                                <i class="fa-solid fa-paper-plane"></i>
+                            </div>
+                            <div>
+                                <div class="fw-bold text-dark">Publish Now</div>
+                                <small class="text-muted">Broadcast to selected channels instantly</small>
+                            </div>
                         </label>
                     </div>
-                    <div class="form-check">
-                        <input class="form-check-input" type="radio" name="post_type"
-                            id="type_scheduled" value="scheduled" onchange="toggleSchedule()">
-                        <label class="form-check-label fw-semibold" for="type_scheduled">
-                            <i class="fa-solid fa-clock text-warning me-1"></i>Schedule for Later
+
+                    <div class="col-md-6">
+                        <input class="btn-check" type="radio" name="post_type" id="type_scheduled" value="scheduled" onchange="toggleSchedule()">
+                        <label class="btn btn-outline-light text-dark border w-100 p-3 rounded-4 text-start d-flex align-items-center gap-3 shadow-2sm schedule-option-card" for="type_scheduled">
+                            <div class="bg-warning bg-opacity-10 text-warning rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width: 40px; height: 40px;">
+                                <i class="fa-solid fa-clock"></i>
+                            </div>
+                            <div>
+                                <div class="fw-bold text-dark">Schedule for Later</div>
+                                <small class="text-muted">Queue post for a future date & time</small>
+                            </div>
                         </label>
                     </div>
                 </div>
             </div>
 
-            <!-- Schedule DateTime -->
-            <div class="mb-4 d-none" id="scheduleBox">
-                <label class="form-label fw-bold text-secondary">
-                    <i class="fa-solid fa-calendar-days text-warning me-1"></i>Schedule Date & Time
+            <!-- Schedule DateTime (Hidden by default) -->
+            <div class="mb-4 d-none p-4 rounded-4 bg-light border border-warning border-opacity-25 animate-fade-in" id="scheduleBox">
+                <label class="form-label fw-bold text-dark mb-2" style="font-size: 13px;">
+                    <i class="fa-solid fa-calendar-days text-warning me-2"></i>Select Exact Schedule Date & Time
                 </label>
                 <input type="datetime-local" name="scheduled_time" id="scheduledTime"
-                    class="form-control rounded-3">
+                    class="form-control rounded-3 p-3 bg-white shadow-none border">
             </div>
 
-            <!-- Action Buttons -->
-            <div class="d-flex justify-content-end gap-2 pt-3 border-top">
-                <a href="{% url 'post_list' %}" class="btn btn-light px-4 fw-bold">Cancel</a>
-                <button type="submit" class="btn btn-primary px-4 fw-bold shadow-sm" id="submitBtn">
-                    <i class="fa-solid fa-paper-plane me-1"></i>Publish Now
+            <!-- Action Buttons Footer -->
+            <div class="d-flex justify-content-end align-items-center gap-3 pt-4 border-top mt-5">
+                <a href="{% url 'post_list' %}" class="btn btn-light border px-4 py-2 rounded-pill fw-semibold text-secondary shadow-2sm">Cancel</a>
+                <button type="submit" class="btn btn-primary px-5 py-2 rounded-pill fw-bold shadow-sm d-flex align-items-center gap-2" id="submitBtn">
+                    <i class="fa-solid fa-paper-plane"></i>Publish Now
                 </button>
             </div>
         </form>
     </div>
 </div>
 
+<!-- GSAP Animation Engine -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
 <script>
+document.addEventListener('DOMContentLoaded', () => {
+    // Entrance animations matching your post detail page style
+    const tl = gsap.timeline({ defaults: { ease: 'power3.out' } });
+    tl.from('#create-header', { opacity: 0, y: -20, duration: 0.5 })
+      .to('#create-card', { opacity: 1, y: 0, duration: 0.5 }, '-=0.2');
+
+    // Style Django checkboxes if rendered as raw inputs/labels
+    document.querySelectorAll('.platform-checkbox-container input[type="checkbox"]').forEach(cb => {
+        cb.classList.add('form-check-input');
+    });
+});
+
 function toggleSchedule() {
     const isScheduled = document.getElementById('type_scheduled').checked;
     const scheduleBox = document.getElementById('scheduleBox');
     const submitBtn = document.getElementById('submitBtn');
     const scheduledTime = document.getElementById('scheduledTime');
+    const instantCard = document.querySelector('label[for="type_instant"]');
+    const scheduledCard = document.querySelector('label[for="type_scheduled"]');
 
     if (isScheduled) {
         scheduleBox.classList.remove('d-none');
         scheduledTime.required = true;
         submitBtn.innerHTML = '<i class="fa-solid fa-clock me-1"></i>Schedule Post';
         submitBtn.classList.replace('btn-primary', 'btn-warning');
+        
+        scheduledCard.classList.add('border-warning', 'bg-warning', 'bg-opacity-10');
+        instantCard.classList.remove('border-primary', 'bg-primary', 'bg-opacity-10');
     } else {
         scheduleBox.classList.add('d-none');
         scheduledTime.required = false;
         submitBtn.innerHTML = '<i class="fa-solid fa-paper-plane me-1"></i>Publish Now';
         submitBtn.classList.replace('btn-warning', 'btn-primary');
+        
+        instantCard.classList.add('border-primary', 'bg-primary', 'bg-opacity-10');
+        scheduledCard.classList.remove('border-warning', 'bg-warning', 'bg-opacity-10');
     }
 }
 
 function previewMediaFiles(event) {
     const files = Array.from(event.target.files);
     const grid = document.getElementById('previewGrid');
+    const countBadge = document.getElementById('fileCountBadge');
     grid.innerHTML = '';
 
-    files.forEach((file, index) => {
+    if (files.length > 0) {
+        countBadge.textContent = `${files.length} file(s) selected`;
+        countBadge.classList.remove('d-none');
+    } else {
+        countBadge.classList.add('d-none');
+    }
+
+    files.forEach((file) => {
         const isVideo = file.type.startsWith('video/');
         const reader = new FileReader();
         reader.onload = function(e) {
             const col = document.createElement('div');
-            col.className = 'col-6 col-md-4 position-relative';
+            col.className = 'col-6 col-md-3 position-relative';
 
-            const badge = `<span class="badge bg-${isVideo ? 'danger' : 'primary'} position-absolute top-0 start-0 m-1" style="font-size:10px;">${isVideo ? '🎥 Video' : '🖼️ Image'}</span>`;
+            const badgeType = isVideo ? '<span class="badge bg-danger shadow-2sm"><i class="fa-solid fa-video me-1"></i>Video</span>' : '<span class="badge bg-primary shadow-2sm"><i class="fa-solid fa-image me-1"></i>Image</span>';
 
-            if (isVideo) {
-                col.innerHTML = `
-                    ${badge}
-                    <video src="${e.target.result}" class="w-100 rounded-3 border" style="height:120px; object-fit:cover;" muted></video>
-                `;
-            } else {
-                col.innerHTML = `
-                    ${badge}
-                    <img src="${e.target.result}" class="w-100 rounded-3 border" style="height:120px; object-fit:cover;">
-                `;
-            }
+            col.innerHTML = `
+                <div class="card border-0 shadow-sm overflow-hidden position-relative rounded-3" style="background: #0f172a;">
+                    <div class="position-absolute top-0 start-0 m-2 z-3">${badgeType}</div>
+                    ${isVideo ? 
+                        `<video src="${e.target.result}" class="w-100" style="height: 130px; object-fit: cover;" muted></video>` : 
+                        `<img src="${e.target.result}" class="w-100" style="height: 130px; object-fit: cover;">`
+                    }
+                </div>
+            `;
             grid.appendChild(col);
         };
         reader.readAsDataURL(file);
     });
 }
 </script>
+
+<!-- Custom Styling Enhancements -->
+<style>
+    .card {
+        border: 1px solid #f1f5f9 !important;
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.04), 0 8px 10px -6px rgba(0, 0, 0, 0.04) !important;
+    }
+    .shadow-2sm {
+        box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.03);
+    }
+    .upload-dropzone {
+        transition: all 0.2s ease-in-out;
+    }
+    .upload-dropzone:hover {
+        border-color: #0d6efd !important;
+        background-color: rgba(13, 110, 253, 0.02) !important;
+    }
+    .schedule-option-card {
+        transition: all 0.2s ease;
+    }
+    .schedule-option-card:hover {
+        border-color: #cbd5e1 !important;
+    }
+    .btn-check:checked + .schedule-option-card {
+        border-color: #0d6efd !important;
+        background-color: rgba(13, 110, 253, 0.03);
+    }
+    textarea.form-control:focus {
+        border-color: #0d6efd;
+        background-color: #fff !important;
+        box-shadow: 0 0 0 4px rgba(13, 110, 253, 0.1);
+    }
+</style>
 {% endblock %}
