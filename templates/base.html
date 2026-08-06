@@ -6,29 +6,29 @@
     <title>{% block title %}SocialManager{% endblock %}</title>
     
     <!-- Fonts & Icons -->
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
     
     <style>
-        /* ── Minimalist Light SaaS Color Tokens ── */
+        /* ── Advanced SaaS Color Tokens & 10x Glassmorphism ── */
         :root {
-            --sidebar-width: 240px; 
-            --sidebar-bg: #ffffff; /* হোয়াইট সাইডবার */
-            --sidebar-border: #f1f3f7;
+            --sidebar-width: 260px; 
+            --sidebar-bg: rgba(255, 255, 255, 0.92);
+            --sidebar-border: rgba(226, 232, 240, 0.8);
             --sidebar-hover: #f8fafc;
             
-            /* কোরাল-অরেঞ্জ একটিভ কালার থিম */
-            --sidebar-active-bg: rgba(242, 92, 56, 0.08); 
+            --sidebar-active-bg: linear-gradient(135deg, rgba(242, 92, 56, 0.12), rgba(255, 122, 89, 0.05));
             --sidebar-active-color: #f25c38; 
             
             --accent: #f25c38;
-            --accent-glow: rgba(242, 92, 56, 0.15);
-            --topbar-bg: rgba(255, 255, 255, 0.95);
-            --body-bg: #f8fafc; /* সফট আল্ট্রা-লাইট গ্রে ব্যাকগ্রাউন্ড */
+            --accent-gradient: linear-gradient(135deg, #f25c38, #ff7a59);
+            --accent-glow: rgba(242, 92, 56, 0.2);
+            --topbar-bg: rgba(255, 255, 255, 0.85);
+            --body-bg: #f4f6f9;
             --card-bg: #ffffff;
-            --text-dark: #1e293b;
-            --text-muted-custom: #64748b;
+            --text-dark: #0f172a;
+            --text-muted: #64748b;
         }
 
         * { 
@@ -42,71 +42,76 @@
             overflow-x: hidden;
             color: var(--text-dark);
             -webkit-font-smoothing: antialiased;
-            perspective: 1200px; /* ৩ডি রিভীলের জন্য পার্সপেক্টিভ থ্রেশহোল্ড */
+            perspective: 1400px;
         }
 
-        /* ── Modern Scrollbar ── */
+        /* ── Ultra Smooth Scrollbar ── */
         ::-webkit-scrollbar {
-            width: 5px;
-            height: 5px;
+            width: 6px;
+            height: 6px;
         }
         ::-webkit-scrollbar-track {
             background: transparent;
         }
         ::-webkit-scrollbar-thumb {
             background: #cbd5e1;
-            border-radius: 10px;
+            border-radius: 20px;
         }
         ::-webkit-scrollbar-thumb:hover {
             background: #94a3b8;
         }
 
-        /* ── Sidebar Style (InApp White Layout with soft Shadow) ── */
+        /* ── Sidebar Style (Glassmorphism & Micro-Interactions) ── */
         .sidebar {
             position: fixed;
             top: 0; left: 0;
             width: var(--sidebar-width);
             height: 100vh;
             background: var(--sidebar-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
             display: flex;
             flex-direction: column;
             z-index: 1000;
             padding: 0;
             border-right: 1px solid var(--sidebar-border);
-            box-shadow: 4px 0 24px rgba(15, 23, 42, 0.015); /* সফট সাইডবার শ্যাডো */
+            box-shadow: 6px 0 30px rgba(15, 23, 42, 0.03);
             overflow: hidden;
         }
 
         .sidebar-brand {
             display: flex;
             align-items: center;
-            gap: 12px;
-            padding: 24px 24px;
+            gap: 14px;
+            padding: 26px 24px;
             color: var(--text-dark);
-            font-size: 17px;
-            font-weight: 700;
-            letter-spacing: -0.4px;
+            font-size: 18px;
+            font-weight: 800;
+            letter-spacing: -0.5px;
             text-decoration: none;
             border-bottom: 1px solid var(--sidebar-border);
             flex-shrink: 0;
         }
 
         .sidebar-brand .brand-icon {
-            width: 34px; height: 34px;
-            background: linear-gradient(135deg, var(--accent), #ff7a59);
-            border-radius: 9px;
+            width: 38px; height: 38px;
+            background: var(--accent-gradient);
+            border-radius: 11px;
             display: flex; align-items: center; justify-content: center;
-            font-size: 15px;
-            box-shadow: 0 4px 12px var(--accent-glow);
+            font-size: 16px;
+            box-shadow: 0 6px 16px var(--accent-glow);
             color: #fff;
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
 
-        /* স্ক্রোলযোগ্য নেভিগেশন এরিয়া */
+        .sidebar-brand:hover .brand-icon {
+            transform: scale(1.08) rotate(6deg);
+        }
+
         .sidebar-menu {
             flex-grow: 1;
             overflow-y: auto;
-            padding-top: 16px;
-            padding-bottom: 16px;
+            padding: 16px 12px;
         }
 
         .sidebar-menu::-webkit-scrollbar {
@@ -115,56 +120,52 @@
         }
 
         .nav-section-label {
-            font-size: 13px;
-            font-weight: 600;
-            color: #1e293b;
-            padding: 18px 24px 8px;
-            text-transform: none;
+            font-size: 11.5px;
+            font-weight: 700;
+            color: #94a3b8;
+            padding: 16px 14px 8px;
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
         }
 
-        /* লিঙ্ক স্টাইলিং - Fail-Safe CSS Transitions */
         .sidebar-link {
             display: flex;
             align-items: center;
             gap: 14px;
-            padding: 11px 20px;
-            margin: 4px 14px;
+            padding: 12px 16px;
+            margin: 4px 0;
             border-radius: 12px;
-            color: #475569;
+            color: var(--text-muted);
             text-decoration: none;
-            font-size: 14.5px;
-            font-weight: 500;
+            font-size: 14px;
+            font-weight: 600;
             transition: all 0.25s cubic-bezier(0.25, 0.8, 0.25, 1);
             position: relative;
             border: 1px solid transparent;
         }
 
         .sidebar-link i {
-            width: 20px;
+            width: 22px;
             text-align: center;
             font-size: 16px;
-            transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            transition: transform 0.25s ease, color 0.25s ease;
         }
 
-        /* মাউস হোভার ইফেক্টস */
         .sidebar-link:hover {
             background-color: var(--sidebar-hover);
-            color: var(--sidebar-active-color) !important;
-            transform: translateX(6px);
+            color: var(--accent);
+            transform: translateX(4px);
         }
 
         .sidebar-link:hover i {
-            transform: scale(1.2) rotate(8deg);
+            transform: scale(1.15);
         }
 
-        /* একটিভ স্টেট ডিজাইন (Glowing Glassmorphic Card State) */
         .sidebar-link.active {
-            background-color: var(--sidebar-bg) !important;
+            background: var(--sidebar-active-bg) !important;
             color: var(--sidebar-active-color) !important;
             font-weight: 700;
-            border-radius: 12px;
-            box-shadow: 0 10px 25px rgba(242, 92, 56, 0.08), 0 4px 12px rgba(242, 92, 56, 0.04) !important;
-            border: 1px solid rgba(242, 92, 56, 0.1) !important;
+            box-shadow: inset 0 0 0 1px rgba(242, 92, 56, 0.15);
             transform: translateX(4px);
         }
 
@@ -172,15 +173,12 @@
             color: var(--sidebar-active-color) !important;
         }
 
-        .sidebar-link.active::before {
-            display: none !important;
-        }
-
         .sidebar-bottom {
             margin-top: auto;
-            padding: 20px 14px;
+            padding: 16px 14px;
             border-top: 1px solid var(--sidebar-border);
             flex-shrink: 0;
+            background: rgba(255, 255, 255, 0.5);
         }
 
         /* ── Main Layout Panel ── */
@@ -194,13 +192,13 @@
             transform-style: preserve-3d;
         }
 
-        /* ── Modern Blurred Topbar ── */
+        /* ── Premium Glassmorphic Topbar ── */
         .topbar {
             background: var(--topbar-bg);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            padding: 0 32px;
-            height: 64px;
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            padding: 0 36px;
+            height: 70px;
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -211,10 +209,10 @@
         }
 
         .topbar-title {
-            font-size: 15px;
+            font-size: 17px;
             font-weight: 700;
             color: var(--text-dark);
-            letter-spacing: -0.1px;
+            letter-spacing: -0.3px;
         }
 
         .topbar-right {
@@ -226,74 +224,75 @@
         .user-pill {
             display: flex;
             align-items: center;
-            gap: 8px;
-            background: #fafbfe;
-            padding: 5px 12px 5px 6px;
-            border-radius: 30px;
-            font-size: 13px;
-            font-weight: 600;
-            color: #334155;
-            border: 1px solid var(--sidebar-border);
-            transition: all 0.2s ease;
-        }
-        .user-pill:hover {
+            gap: 10px;
             background: #ffffff;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+            padding: 6px 14px 6px 6px;
+            border-radius: 30px;
+            font-size: 13.5px;
+            font-weight: 600;
+            color: var(--text-dark);
+            border: 1px solid var(--sidebar-border);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+            transition: all 0.25s ease;
+        }
+        
+        .user-pill:hover {
+            box-shadow: 0 6px 16px rgba(0,0,0,0.05);
             border-color: #cbd5e1;
         }
 
         .user-avatar {
-            width: 26px; height: 26px;
-            background: linear-gradient(135deg, var(--accent), #ff7a59);
+            width: 30px; height: 30px;
+            background: var(--accent-gradient);
             border-radius: 50%;
             display: flex; align-items: center; justify-content: center;
-            font-size: 11px;
+            font-size: 12px;
             color: #fff;
             font-weight: 700;
             box-shadow: 0 2px 6px var(--accent-glow);
         }
 
         .btn-logout {
-            font-size: 12.5px;
+            font-size: 13px;
             font-weight: 600;
-            padding: 6px 16px;
-            border-radius: 8px;
+            padding: 7px 18px;
+            border-radius: 10px;
             border: 1px solid var(--sidebar-border);
-            color: #475569;
+            color: var(--text-muted);
             background: #ffffff;
             text-decoration: none;
             transition: all 0.2s ease;
         }
 
         .btn-logout:hover {
-            background: var(--sidebar-hover);
-            color: var(--accent);
-            border-color: var(--accent);
+            background: #fef2f2;
+            color: #ef4444;
+            border-color: #fecaca;
         }
 
-        /* ── Page Content Container (Centered) ── */
+        /* ── Page Content Container ── */
         .page-content {
-            padding: 32px 40px;
+            padding: 36px 40px;
             flex: 1;
             display: flex;
             flex-direction: column;
             align-items: center; 
         }
 
-        /* ── Modern Dismissible Alerts ── */
+        /* ── Modern Alerts ── */
         .alert {
             border: 1px solid transparent;
-            border-radius: 12px;
+            border-radius: 14px;
             font-size: 14px;
-            padding: 12px 18px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.02);
+            padding: 14px 20px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.03);
         }
-        .alert-info    { background: #f0f9ff; color: #0369a1; border-color: #bae6fd; }
+        .alert-info    { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
         .alert-success { background: #f0fdf4; color: #15803d; border-color: #bbf7d0; }
-        .alert-warning { background: #fffbeb; color: #a16207; border-color: #fef08a; }
+        .alert-warning { background: #fffbeb; color: #b45309; border-color: #fef08a; }
         .alert-danger  { background: #fef2f2; color: #b91c1c; border-color: #fecaca; }
 
-        /* ── Modern Bright Screen Loader ── */
+        /* ── Cinematic Screen Loader ── */
         #page-loader {
             position: fixed;
             inset: 0;
@@ -307,18 +306,18 @@
         }
 
         .loader-logo {
-            width: 52px; height: 52px;
-            background: linear-gradient(135deg, var(--accent), #ff7a59);
-            border-radius: 14px;
+            width: 60px; height: 60px;
+            background: var(--accent-gradient);
+            border-radius: 16px;
             display: flex; align-items: center; justify-content: center;
-            font-size: 22px;
+            font-size: 24px;
             color: #fff;
-            box-shadow: 0 8px 24px var(--accent-glow);
+            box-shadow: 0 10px 30px var(--accent-glow);
         }
 
         .loader-bar {
-            width: 160px; height: 3.5px;
-            background: #edf2f9;
+            width: 180px; height: 4px;
+            background: #f1f5f9;
             border-radius: 10px;
             overflow: hidden;
             position: relative;
@@ -327,20 +326,18 @@
         .loader-bar-fill {
             height: 100%;
             width: 0%;
-            background: linear-gradient(90deg, var(--accent), #ff7a59);
+            background: var(--accent-gradient);
             border-radius: 10px;
         }
 
-        /* ── Fixed Stacking Context CSS for Modals ── */
+        /* ── Modals Stacking Fix ── */
         .modal { 
             z-index: 1055 !important;
-            /* ডিফল্ট ত্রুটিপূর্ণ বুটস্ট্র্যাপ ব্যাকড্রপের জায়গায় মোডালের নিজস্ব ব্লার ব্যাকগ্রাউন্ড */
-            background: rgba(15, 23, 42, 0.4) !important;
-            backdrop-filter: blur(4px) !important;
-            -webkit-backdrop-filter: blur(4px) !important;
+            background: rgba(15, 23, 42, 0.45) !important;
+            backdrop-filter: blur(6px) !important;
+            -webkit-backdrop-filter: blur(6px) !important;
         }
         
-        /* বডির সাথে যুক্ত ডিফল্ট ব্যাকড্রপ লেয়ারটি ব্লক করা হচ্ছে */
         .modal-backdrop { 
             display: none !important; 
         }
@@ -351,31 +348,27 @@
         }
         .modal-content { 
             position: relative; 
-            z-index: 1057 !important; 
-        }
-        .modal-content textarea,
-        .modal-content input,
-        .modal-content button {
-            position: relative;
-            z-index: 1058 !important;
-            pointer-events: auto !important;
+            z-index: 1057 !important;
+            border-radius: 16px;
+            border: 1px solid var(--sidebar-border);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
         }
     </style>
 </head>
 <body>
 
-<!-- Hidden Global Logout Form to comply with Django 5.x/6.0 specs -->
+<!-- Hidden Global Logout Form -->
 <form method="post" action="{% url 'accounts:logout' %}" id="logout-form" class="d-none">
     {% csrf_token %}
 </form>
 
-<!-- Interactive InApp Screen Loader -->
+<!-- Cinematic Interactive Screen Loader -->
 <div id="page-loader">
     <div class="loader-logo" id="loader-icon"><i class="fa-solid fa-share-nodes"></i></div>
     <div class="loader-bar"><div class="loader-bar-fill" id="loader-fill"></div></div>
 </div>
 
-<div id="app-shell" style="opacity:0; transform: scale(0.97);">
+<div id="app-shell" style="opacity:0; transform: scale(0.98);">
     <div class="d-flex">
 
         <!-- ── Navigation Sidebar ── -->
@@ -385,12 +378,11 @@
                 SocialManager
             </a>
 
-            <!-- স্ক্রোলযোগ্য নেভিগেশন লিংক এরিয়া -->
+            <!-- Scrollable Navigation Area -->
             <div class="sidebar-menu">
                 {% if user.is_authenticated %}
-                <div class="nav-section-label">Main</div>
+                <div class="nav-section-label">General</div>
 
-                <!-- নতুন ড্যাশবোর্ড বাটনটি মেন্যুর শুরুতে অ্যাড করা হয়েছে (গ্লোয়িং একটিভ কার্ড লজিকসহ) -->
                 <a href="{% url 'dashboard' %}"
                    class="sidebar-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
                     <i class="fa-solid fa-chart-pie"></i> Dashboard
@@ -401,14 +393,13 @@
                     <i class="fa-solid fa-pen-to-square"></i> Posts
                 </a>
 
-                <!-- ইনবক্স লিংক: গ্লোবাল আনরেড মেসেজ নোটিফিকেশন ব্যাজ সাপোর্টসহ -->
                 <a href="{% url 'inbox_list' %}"
                    class="sidebar-link {% if request.resolver_match.url_name == 'inbox_list' %}active{% endif %} d-flex align-items-center justify-content-between">
                     <div>
                         <i class="fa-solid fa-inbox"></i> Inbox
                     </div>
                     {% if unread_inbox_count > 0 %}
-                        <span class="badge bg-danger rounded-pill flex-shrink-0" style="font-size: 10px; padding: 4px 8px; margin-left: 10px;">
+                        <span class="badge bg-danger rounded-pill flex-shrink-0" style="font-size: 10px; padding: 4px 8px;">
                             {{ unread_inbox_count }}
                         </span>
                     {% endif %}
@@ -419,27 +410,23 @@
                     <i class="fa-solid fa-plug"></i> Accounts
                 </a>
 
-                <!-- আপনার ডাইনামিক Channels সেকশন -->
+                <!-- Dynamic Channels Section -->
                 <div class="nav-section-label">Channels</div>
 
                 {% for acc in connected_accounts %}
                 <a href="{% url 'social_accounts:workspace' acc.id %}"
                    class="sidebar-link {% if request.resolver_match.url_name == 'workspace' and request.GET.account_id == acc.id|stringformat:'s' %}active{% endif %}">
-
                     <i class="fa-brands fa-{{ acc.platform }}"
-                       style="color:
+                       style="color: 
                            {% if acc.platform == 'facebook' %}#1877f2
                            {% elif acc.platform == 'instagram' %}#e1306c
                            {% elif acc.platform == 'twitter' %}#1da1f2
                            {% elif acc.platform == 'linkedin' %}#0077b5
-                           
-                           /* নতুন কাঙ্ক্ষিত সোশ্যাল প্ল্যাটফর্মসমূহের অফিশিয়াল ব্র্যান্ড লোগো কালারস */
                            {% elif acc.platform == 'telegram' %}#0088cc
                            {% elif acc.platform == 'pinterest' %}#bd081c
                            {% elif acc.platform == 'reddit' %}#ff4500
-                           {% elif acc.platform == 'snapchat' %}#fffc00
+                           {% elif acc.platform == 'snapchat' %}#e7b10a
                            {% elif acc.platform == 'discord' %}#5865f2
-                           
                            {% elif acc.platform == 'youtube' %}#ff0000
                            {% elif acc.platform == 'whatsapp' %}#25d366
                            {% elif acc.platform == 'tiktok' %}#000000
@@ -447,21 +434,17 @@
                            {% elif acc.platform == 'gmail' %}#ea4335
                            {% else %}#64748b{% endif %};">
                     </i>
-
-                    {{ acc.account_name|truncatechars:20 }}
-
-                    <span class="ms-auto" style="width:7px; height:7px; border-radius:50%;
-                                                  background:#22c55e; display:inline-block; flex-shrink:0;">
-                    </span>
+                    <span class="text-truncate">{{ acc.account_name|truncatechars:18 }}</span>
+                    <span class="ms-auto" style="width:6px; height:6px; border-radius:50%; background:#22c55e; display:inline-block; flex-shrink:0;"></span>
                 </a>
                 {% empty %}
-                <div class="sidebar-link" style="color:#94a3b8; font-size:13px; cursor:default;">
-                    <i class="fa-solid fa-plug"></i> No accounts connected
+                <div class="sidebar-link text-muted" style="font-size: 13px; cursor: default;">
+                    <i class="fa-solid fa-triangle-exclamation"></i> No channels connected
                 </div>
                 {% endfor %}
 
                 {% if user.is_staff or user.is_superuser %}
-                <div class="nav-section-label">Admin</div>
+                <div class="nav-section-label">Administration</div>
                 <a href="{% url 'accounts:user_list' %}"
                    class="sidebar-link {% if request.resolver_match.url_name == 'user_list' %}active{% endif %}">
                     <i class="fa-solid fa-users"></i> Users
@@ -474,10 +457,10 @@
                 {% endif %}
             </div>
 
-            <!-- ফিক্সড ফুটার (লগআউট) -->
+            <!-- Sidebar Footer / Logout -->
             {% if user.is_authenticated %}
             <div class="sidebar-bottom">
-                <a href="#" onclick="document.getElementById('logout-form').submit(); return false;" class="sidebar-link text-danger-hover" style="color:#ef4444; margin: 0;">
+                <a href="#" onclick="document.getElementById('logout-form').submit(); return false;" class="sidebar-link" style="color:#ef4444; margin:0; padding: 10px 14px;">
                     <i class="fa-solid fa-right-from-bracket"></i> Logout
                 </a>
             </div>
@@ -500,16 +483,15 @@
             </div>
             {% endif %}
 
-            <!-- Dynamic content injection -->
+            <!-- Dynamic Content Area -->
             <div class="page-content">
-                <!-- কন্টেন্ট অতিরিক্ত চওড়া হওয়া প্রতিরোধে 960px ম্যাক্স-উইডথ রেডিমেড র্যাপার -->
-                <div style="max-width: 960px; width: 100%;">
+                <div style="max-width: 1000px; width: 100%;">
                     {% if messages %}
                     <div id="messages-container" class="mb-4">
                         {% for message in messages %}
                         <div class="alert alert-{{ message.tags }} alert-dismissible fade show shadow-sm"
-                             style="opacity:0; transform:translateY(-12px);" role="alert">
-                            <i class="fa-solid
+                             style="opacity:0; transform:translateY(-10px);" role="alert">
+                            <i class="fa-solid 
                                 {% if message.tags == 'success' %}fa-circle-check
                                 {% elif message.tags == 'error' or message.tags == 'danger' %}fa-circle-xmark
                                 {% elif message.tags == 'warning' %}fa-triangle-exclamation
@@ -530,149 +512,56 @@
     </div>
 </div>
 
-<!-- JS Core Bundle -->
+<!-- JS Core & GSAP Engine -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
 
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-    // GSAP global config
     gsap.config({ force3D: true });
 
-    // ── ১. ভ্যানিলা ফলব্যাক (Fail-Safe Fallback) ──
+    // ── 1. Fail-Safe Vanilla Fallback ──
     setTimeout(() => {
         const loader = document.getElementById('page-loader');
         const shell = document.getElementById('app-shell');
         if (loader && loader.style.display !== 'none') {
-            console.warn("[Loader Fallback] Force hiding loader.");
             loader.style.display = 'none';
             if (shell) {
                 shell.style.opacity = '1';
                 shell.style.transform = 'scale(1)';
             }
         }
-    }, 1200);
+    }, 1000);
 
-    // ── ২. স্বাধীন এবং আন-চেইন্ড গ্লোবাল অ্যানিমেশন (১00% ফেইল-সেফ কনফিগারেশন) ──
+    // ── 2. Cinematic GSAP Reveal Animation ──
     try {
         if (typeof gsap !== 'undefined') {
-            gsap.config({ force3D: true });
+            const tl = gsap.timeline({defaults: {ease: 'power3.out'}});
 
-            // লোডার ফিল এনিমেশন
-            gsap.to('#loader-fill', {
-                width: '100%',
-                duration: 0.4,
-                ease: 'power3.inOut'
-            });
-
-            // লোডার আইকন স্পিন আউট
-            gsap.to('#loader-icon', {
-                scale: 0.8,
-                rotate: -15,
-                opacity: 0,
-                duration: 0.25,
-                delay: 0.3,
-                ease: 'power2.in'
-            });
-
-            // মেইন স্ক্রিন কার্টেন রাইজিং
-            gsap.to('#page-loader', {
-                yPercent: -100,
-                duration: 0.6,
-                delay: 0.4,
-                ease: 'power4.inOut',
-                onComplete: () => {
-                    const loader = document.getElementById('page-loader');
-                    if (loader) loader.style.display = 'none';
-                }
-            });
-
-            // ড্যাশবোর্ড রিভীল স্লাইড
-            gsap.to('#app-shell', { 
-                opacity: 1, 
-                scale: 1,
-                duration: 0.7,
-                delay: 0.5,
-                ease: 'power3.out'
-            });
-
-            // সাইডবার স্বাধীন এনিমেশন
-            if (document.getElementById('sidebar')) {
-                gsap.from('#sidebar', {
-                    x: -45,
-                    duration: 0.6,
-                    delay: 0.5,
-                    ease: 'power3.out'
-                });
-            }
-
-            // টপবার স্বাধীন এনিমেশন
-            if (document.getElementById('topbar')) {
-                gsap.from('#topbar', {
-                    y: -18,
-                    opacity: 0,
-                    duration: 0.5,
-                    delay: 0.6,
-                    ease: 'power2.out'
-                });
-            }
-
-            // সাইডবার লিংকগুলোর জন্য স্বাধীন স্কিউ স্লাইড অ্যানিমেশন (Skew & Slide Stagger)
-            if (document.querySelectorAll('.sidebar-link').length > 0) {
-                gsap.from('.sidebar-link', {
-                    x: -25,
-                    duration: 0.45,
-                    delay: 0.6,
-                    stagger: 0.04,
-                    ease: 'power2.out'
-                });
-            }
+            tl.to('#loader-fill', { width: '100%', duration: 0.35, ease: 'power2.inOut' })
+              .to('#loader-icon', { scale: 0.8, rotate: -10, opacity: 0, duration: 0.2 }, "-=0.1")
+              .to('#page-loader', { yPercent: -100, duration: 0.5, ease: 'power4.inOut', onComplete: () => {
+                  const loader = document.getElementById('page-loader');
+                  if (loader) loader.style.display = 'none';
+              }})
+              .to('#app-shell', { opacity: 1, scale: 1, duration: 0.6 }, "-=0.3")
+              .from('#sidebar', { x: -30, duration: 0.5 }, "-=0.4")
+              .from('#topbar', { y: -15, opacity: 0, duration: 0.4 }, "-=0.3")
+              .from('.sidebar-link', { x: -15, opacity: 0, duration: 0.35, stagger: 0.03 }, "-=0.2");
 
             if (document.querySelector('.alert')) {
-                gsap.to('.alert', {
-                    opacity: 1,
-                    y: 0,
-                    duration: 0.4,
-                    stagger: 0.05,
-                    ease: 'back.out(1.4)'
-                });
+                gsap.to('.alert', { opacity: 1, y: 0, duration: 0.4, stagger: 0.05, ease: 'back.out(1.4)', delay: 0.2 });
             }
         }
     } catch (e) {
-        console.error("GSAP execution error:", e);
-    }
-
-    // Brand Logo soft rotation interaction (ডাইনামিক বাউন্স রোটেশন)
-    const brand = document.querySelector('.sidebar-brand');
-    if (brand && document.getElementById('brand-logo')) {
-        brand.addEventListener('mouseenter', () => {
-            if (typeof gsap !== 'undefined') {
-                gsap.to('#brand-logo', {
-                    rotate: 45,
-                    duration: 0.45,
-                    ease: 'back.out(2.2)'
-                });
-            }
-        });
-        brand.addEventListener('mouseleave', () => {
-            if (typeof gsap !== 'undefined') {
-                gsap.to('#brand-logo', {
-                    rotate: 0,
-                    duration: 0.35,
-                    ease: 'power3.out'
-                });
-            }
-        });
+        console.error("GSAP Animation error:", e);
     }
 });
 
-// Modal Fix: GSAP app-shell animation শেষ হওয়ার পর modal ঠিকমতো কাজ করার জন্য
-document.addEventListener('show.bs.modal', function(e) {
+// Modal Stacking & Perspective Fix
+document.addEventListener('show.bs.modal', function() {
     const appShell = document.getElementById('app-shell');
-    if (appShell) {
-        appShell.style.transform = 'none';
-        appShell.style.perspective = 'none';
-    }
+    if (appShell) appShell.style.transform = 'none';
     document.body.style.perspective = 'none';
 });
 </script>
