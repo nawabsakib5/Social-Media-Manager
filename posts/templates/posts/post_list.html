@@ -29,22 +29,32 @@
         </div>
     </div>
 
-    <!-- Filter & Search Toolbar Card -->
-    <div class="card border-0 p-3 mb-5 rounded-4 filter-toolbar glass-card shadow-lg" style="opacity: 0; position: relative; z-index: 10;">
-        <div class="row g-3 align-items-center justify-content-between">
-            <!-- Search Bar Column -->
-            <div class="col-12 col-lg-6">
-                <div class="input-group input-group-sm rounded-pill search-input-3d bg-white overflow-hidden border">
-                    <span class="input-group-text bg-transparent border-0 ps-3 text-primary"><i class="fa-solid fa-magnifying-glass fs-6"></i></span>
-                    <input type="text" id="postSearchInput" class="form-control bg-transparent border-0 shadow-none ps-2 py-2 text-dark fw-medium" placeholder="Search posts by content or keyword..." autocomplete="off">
+    <!-- 3D Enhanced Filter & Search Toolbar (Single Line Perfect Alignment) -->
+    <div class="card border-0 p-3 mb-5 rounded-4 filter-toolbar glass-card-3d shadow-xl" style="opacity: 0; position: relative; z-index: 10;">
+        <div class="row align-items-center g-3">
+            <!-- Search Bar with 3D Depth & Button -->
+            <div class="col-12 col-lg-7">
+                <div class="search-box-3d-wrapper p-1 rounded-pill bg-white shadow-inner-custom border">
+                    <div class="input-group input-group-sm align-items-center">
+                        <span class="input-group-text bg-transparent border-0 ps-3 text-primary">
+                            <i class="fa-solid fa-magnifying-glass fs-6"></i>
+                        </span>
+                        <input type="text" id="postSearchInput" class="form-control bg-transparent border-0 shadow-none px-2 py-2 text-dark fw-medium" placeholder="Search posts by content, keyword..." autocomplete="off">
+                        <button type="button" id="searchSubmitBtn" class="btn btn-primary btn-sm rounded-pill px-4 py-2 fw-semibold shadow-sm btn-3d-search">
+                            Search
+                        </button>
+                    </div>
                 </div>
             </div>
-            <!-- Status Filter Buttons Column -->
-            <div class="col-12 col-lg-6 d-flex justify-content-lg-end gap-1.5 flex-wrap">
-                <button type="button" class="btn btn-sm rounded-pill px-3.5 py-2 fw-semibold filter-btn active shadow-sm" data-filter="all">All</button>
-                <button type="button" class="btn btn-sm rounded-pill px-3.5 py-2 fw-semibold filter-btn shadow-sm" data-filter="published">Published</button>
-                <button type="button" class="btn btn-sm rounded-pill px-3.5 py-2 fw-semibold filter-btn shadow-sm" data-filter="scheduled">Scheduled</button>
-                <button type="button" class="btn btn-sm rounded-pill px-3.5 py-2 fw-semibold filter-btn shadow-sm" data-filter="failed">Failed</button>
+
+            <!-- Status Filter Buttons -->
+            <div class="col-12 col-lg-5">
+                <div class="d-flex align-items-center justify-content-lg-end gap-1.5 flex-wrap">
+                    <button type="button" class="btn btn-sm rounded-pill px-3 py-2 fw-semibold filter-btn active shadow-sm" data-filter="all">All</button>
+                    <button type="button" class="btn btn-sm rounded-pill px-3 py-2 fw-semibold filter-btn shadow-sm" data-filter="published">Published</button>
+                    <button type="button" class="btn btn-sm rounded-pill px-3 py-2 fw-semibold filter-btn shadow-sm" data-filter="scheduled">Scheduled</button>
+                    <button type="button" class="btn btn-sm rounded-pill px-3 py-2 fw-semibold filter-btn shadow-sm" data-filter="failed">Failed</button>
+                </div>
             </div>
         </div>
     </div>
@@ -52,110 +62,112 @@
     <!-- Post List Container -->
     <div id="posts-container" class="d-flex flex-column gap-4">
         {% for post in posts %}
-        <a href="{% url 'post_detail' post.id %}" class="post-card-wrapper text-decoration-none" data-status="{{ post.status }}">
-            <div class="card post-card border-0 p-4 bg-white shadow-lg card-3d-hover" style="opacity: 0; transform: translateY(20px); border-radius: 20px;">
-                <div class="card-body p-0">
+        <div class="post-card-wrapper" data-status="{{ post.status|lower }}">
+            <a href="{% url 'post_detail' post.id %}" class="text-decoration-none">
+                <div class="card post-card border-0 p-4 bg-white shadow-lg card-3d-hover" style="opacity: 0; transform: translateY(20px); border-radius: 20px;">
+                    <div class="card-body p-0">
 
-                    <!-- Top Row: Target Platforms + Master Status -->
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <div class="d-flex flex-wrap gap-2 align-items-center">
-                            {% for ps in post.platform_statuses.all %}
-                            <span class="platform-badge badge rounded-pill px-3 py-2 fw-semibold shadow-2sm
-                                {% if ps.social_account.platform == 'facebook' %}bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25
-                                {% elif ps.social_account.platform == 'instagram' %}bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25
-                                {% elif ps.social_account.platform == 'twitter' %}bg-info bg-opacity-10 text-info border border-info border-opacity-25
-                                {% elif ps.social_account.platform == 'linkedin' %}bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25
-                                {% else %}bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25{% endif %}">
-                                <i class="fa-brands fa-{{ ps.social_account.platform }} me-1"></i>
-                                {{ ps.social_account.account_name }}
+                        <!-- Top Row: Target Platforms + Master Status -->
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div class="d-flex flex-wrap gap-2 align-items-center">
+                                {% for ps in post.platform_statuses.all %}
+                                <span class="platform-badge badge rounded-pill px-3 py-2 fw-semibold shadow-2sm
+                                    {% if ps.social_account.platform == 'facebook' %}bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25
+                                    {% elif ps.social_account.platform == 'instagram' %}bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25
+                                    {% elif ps.social_account.platform == 'twitter' %}bg-info bg-opacity-10 text-info border border-info border-opacity-25
+                                    {% elif ps.social_account.platform == 'linkedin' %}bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25
+                                    {% else %}bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25{% endif %}">
+                                    <i class="fa-brands fa-{{ ps.social_account.platform }} me-1"></i>
+                                    {{ ps.social_account.account_name }}
+                                </span>
+                                {% empty %}
+                                <span class="badge bg-light text-muted rounded-pill px-3 py-2 border shadow-2sm">No platform selected</span>
+                                {% endfor %}
+                            </div>
+
+                            <span class="status-pill badge rounded-pill px-3 py-2 fw-bold text-uppercase tracking-wider shadow-sm
+                                {% if post.status == 'published' %}bg-success bg-opacity-10 text-success border border-success border-opacity-25
+                                {% elif post.status == 'scheduled' %}bg-warning bg-opacity-10 text-warning text-dark border border-warning border-opacity-25
+                                {% elif post.status == 'failed' %}bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25
+                                {% else %}bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25{% endif %}" style="font-size: 11px;">
+                                {% if post.status == 'published' %}<i class="fa-solid fa-circle-check me-1"></i>
+                                {% elif post.status == 'scheduled' %}<i class="fa-solid fa-clock me-1"></i>
+                                {% elif post.status == 'failed' %}<i class="fa-solid fa-circle-xmark me-1"></i>
+                                {% else %}<i class="fa-solid fa-circle me-1"></i>{% endif %}
+                                {{ post.status|capfirst }}
                             </span>
-                            {% empty %}
-                            <span class="badge bg-light text-muted rounded-pill px-3 py-2 border shadow-2sm">No platform selected</span>
+                        </div>
+
+                        <!-- Post Body Preview -->
+                        <div class="mb-3">
+                            {% if post.content %}
+                            <p class="mb-0 text-dark post-content-text" style="font-size: 15px; line-height: 1.7;">
+                                {{ post.content }}
+                            </p>
+                            {% else %}
+                            <p class="mb-0 text-muted fst-italic" style="font-size: 14px;">
+                                <i class="fa-regular fa-image me-1 text-primary"></i>Media-only publication asset
+                            </p>
+                            {% endif %}
+                        </div>
+
+                        <!-- Per-Platform Micro Status Row -->
+                        <div class="d-flex flex-wrap gap-2 mb-3 pt-2">
+                            {% for ps in post.platform_statuses.all %}
+                            <div class="d-flex align-items-center gap-2 px-3 py-1.5 rounded-pill shadow-2sm"
+                                   style="font-size: 12px; background: #f8fafc; border: 1px solid #e2e8f0;">
+                                <i class="fa-brands fa-{{ ps.social_account.platform }}
+                                    {% if ps.social_account.platform == 'facebook' %}text-primary
+                                    {% elif ps.social_account.platform == 'instagram' %}text-danger
+                                    {% elif ps.social_account.platform == 'twitter' %}text-info
+                                    {% elif ps.social_account.platform == 'whatsapp' %}text-success
+                                    {% else %}text-secondary{% endif %}"></i>
+                                <span class="text-secondary fw-semibold">{{ ps.social_account.platform|capfirst }}</span>
+                                
+                                {% if ps.status == 'published' %}
+                                    <span class="text-success fw-bold">· Live</span>
+                                {% elif ps.status == 'processing' %}
+                                    <span class="text-warning fw-bold">· Syncing</span>
+                                {% elif ps.status == 'failed' %}
+                                    <span class="text-danger fw-bold">· Error</span>
+                                {% else %}
+                                    <span class="text-muted">· Queued</span>
+                                {% endif %}
+                            </div>
                             {% endfor %}
                         </div>
 
-                        <span class="status-pill badge rounded-pill px-3 py-2 fw-bold text-uppercase tracking-wider shadow-sm
-                            {% if post.status == 'published' %}bg-success bg-opacity-10 text-success border border-success border-opacity-25
-                            {% elif post.status == 'scheduled' %}bg-warning bg-opacity-10 text-warning text-dark border border-warning border-opacity-25
-                            {% elif post.status == 'failed' %}bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25
-                            {% else %}bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25{% endif %}" style="font-size: 11px;">
-                            {% if post.status == 'published' %}<i class="fa-solid fa-circle-check me-1"></i>
-                            {% elif post.status == 'scheduled' %}<i class="fa-solid fa-clock me-1"></i>
-                            {% elif post.status == 'failed' %}<i class="fa-solid fa-circle-xmark me-1"></i>
-                            {% else %}<i class="fa-solid fa-circle me-1"></i>{% endif %}
-                            {{ post.status|capfirst }}
-                        </span>
-                    </div>
-
-                    <!-- Post Body Preview -->
-                    <div class="mb-3">
-                        {% if post.content %}
-                        <p class="mb-0 text-dark post-content-text" style="font-size: 15px; line-height: 1.7;">
-                            {{ post.content|truncatewords:28 }}
-                        </p>
-                        {% else %}
-                        <p class="mb-0 text-muted fst-italic" style="font-size: 14px;">
-                            <i class="fa-regular fa-image me-1 text-primary"></i>Media-only publication asset
-                        </p>
-                        {% endif %}
-                    </div>
-
-                    <!-- Per-Platform Micro Status Row -->
-                    <div class="d-flex flex-wrap gap-2 mb-3 pt-2">
-                        {% for ps in post.platform_statuses.all %}
-                        <div class="d-flex align-items-center gap-2 px-3 py-1.5 rounded-pill shadow-2sm"
-                             style="font-size: 12px; background: #f8fafc; border: 1px solid #e2e8f0;">
-                            <i class="fa-brands fa-{{ ps.social_account.platform }}
-                                {% if ps.social_account.platform == 'facebook' %}text-primary
-                                {% elif ps.social_account.platform == 'instagram' %}text-danger
-                                {% elif ps.social_account.platform == 'twitter' %}text-info
-                                {% elif ps.social_account.platform == 'whatsapp' %}text-success
-                                {% else %}text-secondary{% endif %}"></i>
-                            <span class="text-secondary fw-semibold">{{ ps.social_account.platform|capfirst }}</span>
+                        <!-- Card Footer Details -->
+                        <div class="d-flex justify-content-between align-items-center pt-3 text-muted border-top border-light" style="font-size: 13px;">
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="icon-box-sm bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center" style="width: 26px; height: 26px;">
+                                    <i class="fa-regular fa-calendar-days small"></i>
+                                </div>
+                                <span>
+                                    {% if post.scheduled_time %}
+                                        <strong class="text-dark">Scheduled:</strong> {{ post.scheduled_time|date:"M d, Y · H:i" }}
+                                    {% else %}
+                                        <strong class="text-dark">Created:</strong> {{ post.created_at|date:"M d, Y · H:i" }}
+                                    {% endif %}
+                                </span>
+                            </div>
                             
-                            {% if ps.status == 'published' %}
-                                <span class="text-success fw-bold">· Live</span>
-                            {% elif ps.status == 'processing' %}
-                                <span class="text-warning fw-bold">· Syncing</span>
-                            {% elif ps.status == 'failed' %}
-                                <span class="text-danger fw-bold">· Error</span>
-                            {% else %}
-                                <span class="text-muted">· Queued</span>
-                            {% endif %}
-                        </div>
-                        {% endfor %}
-                    </div>
-
-                    <!-- Card Footer Details -->
-                    <div class="d-flex justify-content-between align-items-center pt-3 text-muted border-top border-light" style="font-size: 13px;">
-                        <div class="d-flex align-items-center gap-2">
-                            <div class="icon-box-sm bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center" style="width: 26px; height: 26px;">
-                                <i class="fa-regular fa-calendar-days small"></i>
-                            </div>
-                            <span>
-                                {% if post.scheduled_time %}
-                                    <strong class="text-dark">Scheduled:</strong> {{ post.scheduled_time|date:"M d, Y · H:i" }}
-                                {% else %}
-                                    <strong class="text-dark">Created:</strong> {{ post.created_at|date:"M d, Y · H:i" }}
+                            <div class="d-flex align-items-center gap-3">
+                                {% if post.created_by %}
+                                <span class="d-flex align-items-center gap-1 text-secondary fw-medium">
+                                    <i class="fa-regular fa-user text-primary"></i>{{ post.created_by.username }}
+                                </span>
                                 {% endif %}
-                            </span>
-                        </div>
-                        
-                        <div class="d-flex align-items-center gap-3">
-                            {% if post.created_by %}
-                            <span class="d-flex align-items-center gap-1 text-secondary fw-medium">
-                                <i class="fa-regular fa-user text-primary"></i>{{ post.created_by.username }}
-                            </span>
-                            {% endif %}
-                            <div class="bg-light text-primary rounded-circle d-flex align-items-center justify-content-center shadow-sm chevron-icon-3d" style="width: 32px; height: 32px;">
-                                <i class="fa-solid fa-chevron-right small"></i>
+                                <div class="bg-light text-primary rounded-circle d-flex align-items-center justify-content-center shadow-sm chevron-icon-3d" style="width: 32px; height: 32px;">
+                                    <i class="fa-solid fa-chevron-right small"></i>
+                                </div>
                             </div>
                         </div>
-                    </div>
 
+                    </div>
                 </div>
-            </div>
-        </a>
+            </a>
+        </div>
         {% empty %}
         <div id="empty-state" class="card border-0 shadow-lg text-center py-5 px-4 rounded-4 bg-white" style="opacity: 0;">
             <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-inline-flex align-items-center justify-content-center mb-3 shadow-inner" style="width: 75px; height: 75px;">
@@ -190,7 +202,7 @@ document.addEventListener('DOMContentLoaded', () => {
         tl.to(empty, { opacity: 1, y: 0, duration: 0.4 }, '-=0.2');
     }
 
-    // Vanilla-Tilt 3D Effect for Cards (Disabled glare element pointer events to ensure clickability)
+    // Vanilla-Tilt 3D Effect for Cards
     VanillaTilt.init(document.querySelectorAll('.post-card'), {
         max: 2.5,
         speed: 400,
@@ -199,32 +211,40 @@ document.addEventListener('DOMContentLoaded', () => {
         scale: 1.01
     });
 
-    // Unified Filtering & Search Logic
+    // Combined Search and Filter Logic
     const filterBtns = document.querySelectorAll('.filter-btn');
     const postWrappers = document.querySelectorAll('.post-card-wrapper');
     const searchInput = document.getElementById('postSearchInput');
+    const searchSubmitBtn = document.getElementById('searchSubmitBtn');
 
-    function applyFilters() {
+    function filterAndSearchPosts() {
         const activeBtn = document.querySelector('.filter-btn.active');
         const filterValue = activeBtn ? activeBtn.getAttribute('data-filter') : 'all';
+        
+        // সার্চ কুয়েরিকে ছোট হাতের অক্ষরে রূপান্তর করা হচ্ছে যাতে case sensitivity কাজ না করে
         const query = searchInput ? searchInput.value.toLowerCase().trim() : '';
 
         postWrappers.forEach(wrapper => {
-            const status = wrapper.getAttribute('data-status');
-            const text = wrapper.innerText.toLowerCase();
+            const cardStatus = wrapper.getAttribute('data-status');
+            
+            // কার্ডের ভেতরের সমস্ত টেক্সট (কন্টেন্ট, হ্যাশট্যাগ, প্ল্যাটফর্ম নাম, স্ট্যাটাস ইত্যাদি) একসাথে নিয়ে লোয়ারকেস করা হচ্ছে
+            const fullCardText = wrapper.innerText.toLowerCase();
 
-            const matchesFilter = (filterValue === 'all' || status === filterValue);
-            const matchesSearch = (text.includes(query));
+            const matchesFilter = (filterValue === 'all' || cardStatus === filterValue);
+            
+            // সার্চ বক্স খালি থাকলে সব দেখাবে, আর কিছু লিখলে সেটি কার্ডের যেকোনো জায়গায় থাকলেই ম্যাচ করবে
+            const matchesSearch = (query === '' || fullCardText.includes(query));
 
             if (matchesFilter && matchesSearch) {
                 wrapper.style.display = 'block';
+                gsap.to(wrapper, { opacity: 1, scale: 1, duration: 0.2, overwrite: 'auto' });
             } else {
                 wrapper.style.display = 'none';
             }
         });
     }
 
-    // Filter button click events
+    // Filter Button Clicks
     filterBtns.forEach(btn => {
         btn.addEventListener('click', () => {
             filterBtns.forEach(b => {
@@ -234,14 +254,23 @@ document.addEventListener('DOMContentLoaded', () => {
             btn.classList.add('active', 'btn-dark', 'shadow-lg');
             btn.classList.remove('btn-light', 'border', 'text-secondary');
 
-            applyFilters();
+            filterAndSearchPosts();
         });
     });
 
-    // Search input live event
+    // Live Search Input Event
     if (searchInput) {
         searchInput.addEventListener('input', () => {
-            applyFilters();
+            filterAndSearchPosts();
+        });
+    }
+
+    // Search Button Click Event
+    if (searchSubmitBtn) {
+        searchSubmitBtn.addEventListener('click', () => {
+            filterAndSearchPosts();
+            // 3D pop effect on click
+            gsap.fromTo(searchSubmitBtn, { scale: 0.95 }, { scale: 1, duration: 0.2, ease: 'back.out(1.7)' });
         });
     }
 });
@@ -257,10 +286,35 @@ document.addEventListener('DOMContentLoaded', () => {
         background: var(--primary-gradient);
     }
 
-    .glass-card {
-        background: rgba(255, 255, 255, 0.9);
-        backdrop-filter: blur(10px);
-        border: 1px solid rgba(226, 232, 240, 0.8) !important;
+    .glass-card-3d {
+        background: rgba(255, 255, 255, 0.92);
+        backdrop-filter: blur(16px);
+        border: 1px solid rgba(226, 232, 240, 0.9) !important;
+        box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.07), 0 0 1px 1px rgba(255, 255, 255, 0.8) inset;
+    }
+
+    .search-box-3d-wrapper {
+        box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.02), 0 4px 12px rgba(79, 70, 229, 0.04);
+        transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        border: 1px solid #e2e8f0;
+    }
+
+    .search-box-3d-wrapper:focus-within {
+        border-color: #4f46e5 !important;
+        box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.02), 0 0 0 4px rgba(79, 70, 229, 0.15), 0 8px 20px -4px rgba(79, 70, 229, 0.2);
+        transform: translateY(-1px);
+    }
+
+    .btn-3d-search {
+        background: var(--primary-gradient);
+        border: none;
+        box-shadow: 0 4px 12px rgba(79, 70, 229, 0.35);
+        transition: all 0.25s ease;
+    }
+
+    .btn-3d-search:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 6px 16px rgba(79, 70, 229, 0.5);
     }
 
     .post-card {
@@ -274,7 +328,6 @@ document.addEventListener('DOMContentLoaded', () => {
         box-shadow: 0 20px 30px -10px rgba(79, 70, 229, 0.1) !important;
     }
 
-    /* Fix to ensure tilt glare doesn't block clicks */
     .js-tilt-glare {
         pointer-events: none !important;
     }
@@ -307,16 +360,6 @@ document.addEventListener('DOMContentLoaded', () => {
     .filter-btn:hover:not(.active) {
         background: #f1f5f9;
         color: #1e293b;
-    }
-
-    .search-input-3d {
-        box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.01);
-        transition: all 0.3s ease;
-    }
-
-    .search-input-3d:focus-within {
-        border-color: #4f46e5 !important;
-        box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
     }
 
     .chevron-icon-3d {
