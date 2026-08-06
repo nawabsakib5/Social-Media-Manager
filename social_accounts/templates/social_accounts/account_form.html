@@ -1,20 +1,152 @@
 {% extends "base.html" %}
 {% block title %}Connect Account{% endblock %}
 {% block page_title %}Connect Account{% endblock %}
+
 {% block content %}
-<div class="card p-4" style="max-width: 600px;">
-    <h5 class="mb-4">Connect New Account</h5>
-    <form method="post">
-        {% csrf_token %}
-        {% for field in form %}
-        <div class="mb-3">
-            <label class="form-label fw-semibold">{{ field.label }}</label>
-            <div>{{ field }}</div>
+<div class="container py-5 d-flex justify-content-center align-items-center" style="min-height: 80vh;">
+    
+    <!-- 3D Card Container with Perspective -->
+    <div class="w-100" style="max-width: 600px; perspective: 1000px;">
+        
+        <div class="card border-0 p-4 p-md-5 rounded-4 glass-card-3d shadow-xl position-relative overflow-hidden connect-card-3d" style="opacity: 0; transform: translateY(30px);">
+            
+            <!-- Decorative Glow Background Elements -->
+            <div class="position-absolute top-0 start-50 translate-middle-x bg-gradient-primary opacity-10 rounded-circle blur-circle" style="width: 250px; height: 250px; z-index: 0; filter: blur(50px);"></div>
+
+            <!-- Card Header -->
+            <div class="d-flex align-items-center gap-3 mb-4 pb-3 border-bottom position-relative" style="z-index: 1;" id="connect-header">
+                <div class="header-icon-3d bg-gradient-primary text-white rounded-4 d-flex align-items-center justify-content-center flex-shrink-0 shadow-lg" style="width: 52px; height: 52px; font-size: 22px;">
+                    <i class="fa-solid fa-plug-circle-bolt"></i>
+                </div>
+                <div>
+                    <h4 class="mb-0 fw-bold text-dark tracking-tight">Connect New Account</h4>
+                    <p class="text-muted mb-0 small fw-medium">Link your social media profile to start publishing content</p>
+                </div>
+            </div>
+
+            <!-- Form Section -->
+            <form method="post" class="position-relative" style="z-index: 1;" id="connect-form">
+                {% csrf_token %}
+                
+                {% for field in form %}
+                <div class="mb-4 form-field-wrapper">
+                    <label class="form-label fw-semibold text-secondary small text-uppercase tracking-wider mb-2">
+                        {{ field.label }}
+                    </label>
+                    <div class="input-3d-container rounded-pill bg-white border transition-all">
+                        {{ field }}
+                    </div>
+                    {% if field.errors %}
+                        <div class="text-danger small mt-1 ps-3 fw-medium">
+                            {% for error in field.errors %}
+                                <i class="fa-solid fa-circle-exclamation me-1"></i>{{ error }}
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+
+                <div class="d-flex align-items-center justify-content-end gap-3 pt-3">
+                    <button type="submit" class="btn btn-primary btn-sm px-5 py-3 rounded-pill shadow-lg fw-semibold d-flex align-items-center gap-2 btn-3d-glow w-100 justify-content-center" id="connectSubmitBtn">
+                        <i class="fa-solid fa-plug fs-6"></i>Connect Account
+                    </button>
+                </div>
+            </form>
+
         </div>
-        {% endfor %}
-        <button type="submit" class="btn btn-primary">
-            <i class="fa-solid fa-plug me-1"></i>Connect
-        </button>
-    </form>
+    </div>
 </div>
+
+<!-- GSAP & Vanilla-Tilt Engines -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/vanilla-tilt/1.8.1/vanilla-tilt.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // GSAP Entrance Animation
+    const tl = gsap.timeline({ defaults: { ease: 'power3.out' } });
+
+    tl.to('.connect-card-3d', { opacity: 1, y: 0, duration: 0.6 })
+      .from('#connect-header', { opacity: 0, y: -15, duration: 0.4 }, '-=0.3')
+      .from('#connect-form > div', { opacity: 0, y: 15, duration: 0.4, stagger: 0.1 }, '-=0.2');
+
+    // Vanilla-Tilt 3D Effect for Card Hover
+    VanillaTilt.init(document.querySelector('.connect-card-3d'), {
+        max: 3,
+        speed: 400,
+        glare: true,
+        "max-glare": 0.04,
+        scale: 1.01
+    });
+
+    // Auto-inject Bootstrap classes to Django form inputs dynamically if not styled
+    const formInputs = document.querySelectorAll('#connect-form input, #connect-form select, #connect-form textarea');
+    formInputs.forEach(input => {
+        if (!input.classList.contains('form-control') && !input.classList.contains('form-select')) {
+            if (input.tagName === 'SELECT') {
+                input.classList.add('form-select');
+            } else {
+                input.classList.add('form-control');
+            }
+        }
+        // Add 3D Clean Styling to inputs
+        input.classList.add('bg-transparent', 'border-0', 'shadow-none', 'px-4', 'py-2.5', 'text-dark', 'fw-medium');
+    });
+
+    // Button click interactive animation
+    const submitBtn = document.getElementById('connectSubmitBtn');
+    if (submitBtn) {
+        submitBtn.addEventListener('click', () => {
+            gsap.fromTo(submitBtn, { scale: 0.96 }, { scale: 1, duration: 0.2, ease: 'back.out(1.7)' });
+        });
+    }
+});
+</script>
+
+<!-- Custom Styles for 10x Modern UI -->
+<style>
+    :root {
+        --primary-gradient: linear-gradient(135deg, #4f46e5 0%, #3b82f6 100%);
+    }
+
+    .bg-gradient-primary {
+        background: var(--primary-gradient);
+    }
+
+    .glass-card-3d {
+        background: rgba(255, 255, 255, 0.92);
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(226, 232, 240, 0.9) !important;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.08), 0 0 1px 1px rgba(255, 255, 255, 0.9) inset;
+        transform-style: preserve-3d;
+    }
+
+    .input-3d-container {
+        box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.02), 0 4px 12px rgba(79, 70, 229, 0.03);
+        border: 1px solid #e2e8f0 !important;
+        transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .input-3d-container:focus-within {
+        border-color: #4f46e5 !important;
+        box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.02), 0 0 0 4px rgba(79, 70, 229, 0.15), 0 8px 20px -4px rgba(79, 70, 229, 0.15);
+        transform: translateY(-1px);
+    }
+
+    .btn-3d-glow {
+        background: var(--primary-gradient);
+        border: none;
+        box-shadow: 0 10px 25px -4px rgba(79, 70, 229, 0.45);
+        transition: all 0.3s ease;
+    }
+
+    .btn-3d-glow:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 15px 30px -4px rgba(79, 70, 229, 0.6);
+    }
+
+    .js-tilt-glare {
+        pointer-events: none !important;
+        border-radius: 20px;
+    }
+</style>
 {% endblock %}
