@@ -1,22 +1,73 @@
 {% extends "base.html" %}
-{% block title %}Reply{% endblock %}
-{% block page_title %}Reply{% endblock %}
+{% block title %}Reply to {{ item.sender_name }}{% endblock %}
+
 {% block content %}
-<div class="card p-4" style="max-width: 600px;">
-    <h5 class="mb-3">Reply to <strong>{{ item.sender_name }}</strong></h5>
-    <div class="bg-light p-3 rounded mb-4 border-start border-primary border-3">
-        <p class="mb-0 text-muted">{{ item.content }}</p>
+<style>
+    .reply-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 24px;
+        padding: 32px;
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+        max-width: 600px;
+        margin: 20px auto;
+    }
+    
+    .original-msg {
+        background: #f8fafc;
+        border-left: 4px solid var(--primary-brand);
+        padding: 16px;
+        border-radius: 0 12px 12px 0;
+        font-style: italic;
+        color: #475569;
+        margin-bottom: 24px;
+    }
+
+    .form-control {
+        border-radius: 12px;
+        padding: 12px 16px;
+        border: 1px solid #e2e8f0;
+        transition: all 0.3s;
+    }
+    .form-control:focus {
+        border-color: var(--primary-brand);
+        box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+    }
+</style>
+
+<div class="reply-card">
+    <!-- Header -->
+    <div class="d-flex align-items-center gap-3 mb-4">
+        <div class="avatar-bubble" style="width: 48px; height: 48px; font-size: 18px;">
+            {{ item.sender_name|first|upper }}
+        </div>
+        <div>
+            <h5 class="fw-bold mb-0">Reply to {{ item.sender_name }}</h5>
+            <small class="text-muted">{{ item.get_type_display|title }} via {{ item.social_account.platform|title }}</small>
+        </div>
     </div>
+
+    <!-- Quoted Message -->
+    <div class="original-msg">
+        <p class="mb-0 small">"{{ item.content|truncatechars:150 }}"</p>
+    </div>
+
+    <!-- Form -->
     <form method="post">
         {% csrf_token %}
         {% for field in form %}
-        <div class="mb-3">
-            {{ field }}
-        </div>
+            <div class="mb-4">
+                <label class="form-label fw-semibold small text-muted">Your Response</label>
+                {{ field }}
+            </div>
         {% endfor %}
-        <button type="submit" class="btn btn-primary">
-            <i class="fa-solid fa-paper-plane me-1"></i>Send Reply
-        </button>
+        
+        <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary flex-grow-1 py-3 fw-bold" style="border-radius: 12px; background: var(--primary-brand);">
+                <i class="fa-solid fa-paper-plane me-2"></i>Send Reply
+            </button>
+            <a href="javascript:history.back()" class="btn btn-light py-3 px-4 fw-bold" style="border-radius: 12px;">Cancel</a>
+        </div>
     </form>
 </div>
 {% endblock %}
