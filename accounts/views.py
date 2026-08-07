@@ -22,17 +22,21 @@ def Login(request):
     if request.user.is_authenticated:
         if request.user.is_superuser or getattr(request.user, 'user_type', None) == 'admin':
             return redirect('/posts/dashboard/')
-        return redirect('/posts/')
+        return redirect('/accounts/users/')  # অথবা সাধারণ ইউজারের ড্যাশবোর্ড পাথ
+        
     if request.method == 'POST':
         username = request.POST.get('username')
         password = request.POST.get('password')
         user = authenticate(request, username=username, password=password)
+        
         if user:
             login(request, user)
             if user.is_superuser or getattr(user, 'user_type', None) == 'admin':
                 return redirect('/posts/dashboard/')
-            return redirect('/posts/')
+            return redirect('/accounts/users/')  # সাধারণ ইউজার রিডিরেক্ট পাথ
+            
         messages.error(request, "Invalid username or password.")
+        
     return render(request, 'registration/login.html')
 
 
@@ -236,3 +240,50 @@ def user_detail(request, user_id):
         'user_posts': user_posts,
     }
     return render(request, 'accounts/user_detail.html', context)
+
+
+
+@login_required
+def connect_social_account(request):
+    
+    # শুধুমাত্র এডমিন অথবা অনুমোদিত ব্যবহারকারীরা নতুন অ্যাকাউন্ট কানেক্ট করতে পারবেন
+    is_admin = request.user.is_superuser or getattr(request.user, 'user_type', None) == 'admin'
+    
+    if request.method == 'POST':
+        platform = request.POST.get('platform', '').strip().lower()
+        account_name = request.POST.get('account_name', '').strip()
+        account_username = request.POST.get('account_username', '').strip()
+        platform_account_id = request.POST.get('platform_account_id', '').strip()
+        access_token = request.POST.get('access_token', '').strip()
+        
+        if not platform or not account_name:
+            messages.error(request, "Platform and Account Name are required fields.")
+            return render(request, 'accounts/connect_social_account.html')
+            
+        # SocialAccount মডেলে ডাটা আপডেট বা নতুন ক্রিয়েট করা
+        sa, created = SocialAccount.objects.update_or_create(
+            platform=platform,
+            platform_account_id=platform_account_id if platform_account_id else account_name,
+            defaults={
+                'account_name': account_name,
+                'account_username': account_username,
+                'status': 'connected',
+                'connected_by': request.user,
+            }
+        )
+        
+        # টোকেন থাকলে তা সেট করা
+        if access_token:
+            sa.access_token = access_token
+            sa.save()
+            
+        # সাধারণ মেম্বার হলে স্বয়ংক্রিয়ভাবে তার পারমিশন লিস্টে যুক্ত করে নেওয়া
+        if not is_admin:
+            sa.permitted_users.add(request.user)
+            
+        messages.success(request, f"Successfully connected {platform.capitalize()} account: {account_name}!")
+        
+        # আপনার প্রজেক্টের রাউট স্ট্রাকচার অনুযায়ী রিডাইরেক্ট পাথ 
+        return redirect('social_accounts:account_list')
+        
+    return render(request, 'accounts/connect_social_account.html')

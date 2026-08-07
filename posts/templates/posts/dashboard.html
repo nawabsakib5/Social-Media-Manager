@@ -1,290 +1,329 @@
 {% extends "base.html" %}
-{% block title %}Analytics Dashboard{% endblock %}
+{% block title %}Enterprise Dashboard - SocialManager{% endblock %}
 
 {% block content %}
 <style>
-    /* ── 3D Glassmorphism Dashboard Styling ── */
-    .dashboard-wrapper {
-        perspective: 1500px;
+    :root {
+        --primary-teal: #0d9488;
+        --teal-glow: rgba(13, 148, 136, 0.15);
+        --card-bg: rgba(255, 255, 255, 0.95);
+        --border-glass: rgba(226, 232, 240, 0.8);
     }
 
-    .dashboard-container { 
-        animation: fadeIn 0.8s ease-out; 
+    .dashboard-wrapper {
+        perspective: 1200px;
+        background: radial-gradient(circle at top right, #f8fafc, #f1f5f9);
+        padding: 20px;
+        border-radius: 30px;
     }
-    
-    /* Modern 3D Glass Cards */
-    .stat-card {
-        background: rgba(255, 255, 255, 0.85);
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
-        border: 1px solid rgba(226, 232, 240, 0.8);
-        border-radius: 28px;
-        padding: 26px;
-        transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
-        transform-style: preserve-3d;
-        box-shadow: 0 20px 50px rgba(15, 23, 42, 0.06);
-        opacity: 0;
-        transform: translateY(30px) translateZ(-40px);
+
+    /* Enterprise Metric Card */
+    .metric-card {
+        background: #ffffff;
+        border: 1px solid var(--border-glass);
+        border-radius: 20px;
+        padding: 22px;
+        box-shadow: 0 10px 30px -5px rgba(15, 23, 42, 0.04);
+        transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+        position: relative;
+        overflow: hidden;
     }
-    
-    .stat-card:hover { 
-        transform: translateY(-8px) translateZ(15px); 
-        box-shadow: 0 30px 60px rgba(13, 148, 136, 0.12);
+    .metric-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 20px 40px -10px rgba(13, 148, 136, 0.1);
         border-color: rgba(13, 148, 136, 0.3);
     }
 
-    .analytics-card {
-        background: rgba(255, 255, 255, 0.85);
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
-        border: 1px solid rgba(226, 232, 240, 0.8);
-        border-radius: 28px;
-        padding: 32px;
-        box-shadow: 0 20px 50px rgba(15, 23, 42, 0.06);
-        transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
-        opacity: 0;
-        transform: translateY(30px) translateZ(-40px);
+    /* Enterprise Channel Analytics Card */
+    .channel-card {
+        background: var(--card-bg);
+        backdrop-filter: blur(25px);
+        -webkit-backdrop-filter: blur(25px);
+        border: 1px solid var(--border-glass);
+        border-radius: 24px;
+        padding: 24px;
+        box-shadow: 0 20px 40px rgba(15, 23, 42, 0.04);
+        transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
         height: 100%;
-    }
-
-    .analytics-card:hover {
-        box-shadow: 0 30px 60px rgba(15, 23, 42, 0.1);
-    }
-
-    /* Progress Glow Bars */
-    .progress-bar-glow {
-        box-shadow: 0 0 20px rgba(13, 148, 136, 0.4);
-        transition: width 1.5s cubic-bezier(0.25, 0.8, 0.25, 1);
-        border-radius: 10px;
-    }
-
-    /* Timeline 3D Polish */
-    .timeline-item {
-        padding-left: 12px;
-        transition: all 0.3s ease;
-    }
-    .timeline-item:hover {
-        transform: translateX(4px);
-    }
-    .timeline-item::before {
-        content: '';
-        position: absolute;
-        left: -33px;
-        top: 4px;
-        width: 14px;
-        height: 14px;
-        border-radius: 50%;
-        background: var(--accent, #0d9488);
-        border: 3px solid #fff;
-        box-shadow: 0 0 0 4px rgba(13, 148, 136, 0.2);
-    }
-
-    .chart-container {
         position: relative;
-        height: 260px;
-        width: 100%;
+    }
+    .channel-card:hover {
+        transform: translateY(-6px);
+        box-shadow: 0 25px 50px rgba(13, 148, 136, 0.08);
+        border-color: rgba(13, 148, 136, 0.3);
     }
 
-    .icon-box {
-        width: 48px;
-        height: 48px;
-        background: rgba(13, 148, 136, 0.1);
-        color: var(--accent, #0d9488);
-        border-radius: 16px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 20px;
-        box-shadow: 0 8px 20px rgba(13, 148, 136, 0.15);
+    /* Professional Analytics Summary Strip */
+    .analytics-strip {
+        background: #f8fafc;
+        border: 1px solid #f1f5f9;
+        border-radius: 14px;
+        padding: 12px 16px;
+        margin-top: 14px;
+        margin-bottom: 14px;
+    }
+
+    .mini-chart-container {
+        position: relative;
+        height: 110px;
+        width: 100%;
+        margin-top: 10px;
+    }
+
+    .icon-box-3d {
+        width: 48px; height: 48px;
+        background: linear-gradient(135deg, rgba(13, 148, 136, 0.12), rgba(13, 148, 136, 0.02));
+        color: var(--primary-teal);
+        border-radius: 14px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 18px;
+        box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.8);
+    }
+
+    .custom-badge {
+        background: var(--teal-glow);
+        color: var(--primary-teal);
+        padding: 6px 14px;
+        border-radius: 20px;
+        font-weight: 700;
+        font-size: 11px;
+        letter-spacing: 0.3px;
+    }
+
+    .table-custom tr {
+        transition: background-color 0.2s ease;
+    }
+    .table-custom tr:hover {
+        background-color: rgba(13, 148, 136, 0.02);
     }
 </style>
 
-<div class="dashboard-wrapper container-fluid px-0">
-    
-    <!-- Hero Stats Grid -->
-    <div class="row g-4 mb-4" id="statsGrid">
-        {% for stat in stats_list %}
-        <div class="col-6 col-md-2">
-            <div class="stat-card shadow-sm">
+<div class="dashboard-wrapper container-fluid px-2 py-3">
+    <!-- Top Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h3 class="fw-extrabold mb-1" style="font-weight: 800; color: #0f172a; letter-spacing: -0.8px;">
+                {% if request.user.is_superuser or request.user.user_type == 'admin' %}Enterprise Command Center{% else %}Creator Performance Hub{% endif %}
+            </h3>
+            <p class="text-muted small mb-0">Welcome back, <span class="fw-bold text-dark">{{ request.user.username }}</span>! Real-time social campaigns & throughput analytics.</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'accounts:change_password' %}" class="btn btn-light d-flex align-items-center gap-2 shadow-sm px-3 py-2" style="border-radius: 14px; font-weight: 600; border: 1px solid #e2e8f0; color: #334155;">
+                <i class="fa-solid fa-key text-teal"></i> Security Settings
+            </a>
+        </div>
+    </div>
+
+    <!-- Summary Metrics Cards -->
+    <div class="row g-3 mb-4">
+        {% if request.user.is_superuser or request.user.user_type == 'admin' %}
+        <div class="col-xl-2 col-md-4 col-sm-6">
+            <div class="metric-card">
+                <span class="text-muted small d-block mb-1 fw-semibold text-uppercase" style="font-size: 10px; letter-spacing: 0.5px;">Total Users</span>
+                <h3 class="fw-bold mb-0 text-dark">{{ total_users }}</h3>
+            </div>
+        </div>
+        {% endif %}
+        <div class="col-xl-2 col-md-4 col-sm-6">
+            <div class="metric-card">
+                <span class="text-muted small d-block mb-1 fw-semibold text-uppercase" style="font-size: 10px; letter-spacing: 0.5px;">Total Campaigns</span>
+                <h3 class="fw-bold mb-0 text-dark">{{ total_posts }}</h3>
+            </div>
+        </div>
+        <div class="col-xl-2 col-md-4 col-sm-6">
+            <div class="metric-card">
+                <span class="text-muted small d-block mb-1 fw-semibold text-uppercase text-success" style="font-size: 10px; letter-spacing: 0.5px;">Published</span>
+                <h3 class="fw-bold mb-0 text-success">{{ published_posts }}</h3>
+            </div>
+        </div>
+        <div class="col-xl-2 col-md-4 col-sm-6">
+            <div class="metric-card">
+                <span class="text-muted small d-block mb-1 fw-semibold text-uppercase text-warning" style="font-size: 10px; letter-spacing: 0.5px;">Scheduled</span>
+                <h3 class="fw-bold mb-0 text-warning">{{ scheduled_posts }}</h3>
+            </div>
+        </div>
+        <div class="col-xl-2 col-md-4 col-sm-6">
+            <div class="metric-card">
+                <span class="text-muted small d-block mb-1 fw-semibold text-uppercase text-danger" style="font-size: 10px; letter-spacing: 0.5px;">Failed</span>
+                <h3 class="fw-bold mb-0 text-danger">{{ failed_posts }}</h3>
+            </div>
+        </div>
+        <div class="col-xl-2 col-md-4 col-sm-6">
+            <div class="metric-card">
+                <span class="text-muted small d-block mb-1 fw-semibold text-uppercase text-info" style="font-size: 10px; letter-spacing: 0.5px;">Unread Inbox</span>
+                <h3 class="fw-bold mb-0 text-info">{{ unread_inbox }}</h3>
+            </div>
+        </div>
+    </div>
+
+    <!-- Enterprise Connected Channels Performance Section -->
+    <div class="row g-4 mb-4">
+        <div class="col-12 d-flex justify-content-between align-items-center">
+            <div>
+                <h5 class="fw-bold mb-0 text-dark" style="font-size: 18px; letter-spacing: -0.3px;">Connected Channels Performance</h5>
+                <p class="text-muted small mb-0">Multi-platform campaign analytics & weekly engagement overview</p>
+            </div>
+            <span class="badge bg-white text-secondary border px-3 py-2 shadow-sm rounded-pill fw-semibold" style="font-size: 11px;">
+                <i class="fa-solid fa-chart-line text-teal me-1"></i> Live Enterprise Sync
+            </span>
+        </div>
+        
+        {% for item in channels_data %}
+        <div class="col-lg-4 col-md-6">
+            <div class="channel-card">
+                <!-- Channel Header -->
                 <div class="d-flex justify-content-between align-items-center mb-3">
-                    <div class="icon-box">
-                        <i class="{{ stat.icon }}"></i>
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="icon-box-3d">
+                            <i class="fa-solid fa-bullhorn"></i>
+                        </div>
+                        <div>
+                            <h6 class="fw-bold mb-0 text-dark" style="font-size: 16px;">{{ item.account.account_name }}</h6>
+                            <span class="text-muted small text-uppercase" style="font-size: 10px; font-weight: 700; letter-spacing: 0.6px;">{{ item.account.platform }}</span>
+                        </div>
                     </div>
-                    <span class="badge rounded-pill px-2.5 py-1" style="background: rgba(13, 148, 136, 0.1); color: var(--accent, #0d9488); font-weight: 700; font-size: 11px;">{{ stat.trend }}</span>
+                    <span class="custom-badge">{{ item.percentage }}% ROI</span>
                 </div>
-                <h3 class="fw-extrabold mb-1 count-up" data-target="{{ stat.value }}" style="font-weight: 800; color: #0f172a; letter-spacing: -0.5px;">0</h3>
-                <p class="text-muted small mb-0 fw-semibold" style="font-size: 13px;">{{ stat.label }}</p>
+
+                <!-- Professional Analytics Summary Strip -->
+                <div class="analytics-strip d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="text-muted d-block" style="font-size: 10px; font-weight: 600; text-transform: uppercase;">Campaign Output</span>
+                        <strong class="text-dark" style="font-size: 13px;">{{ item.post_count }} Posts</strong>
+                    </div>
+                    <div class="text-end">
+                        <span class="text-muted d-block" style="font-size: 10px; font-weight: 600; text-transform: uppercase;">Growth Index</span>
+                        <span class="text-success fw-bold" style="font-size: 13px;"><i class="fa-solid fa-arrow-trend-up me-1"></i>+{{ item.percentage }}%</span>
+                    </div>
+                </div>
+
+                <!-- Mini Chart Container -->
+                <div class="mini-chart-container">
+                    <canvas class="platformChart" data-percentage="{{ item.percentage }}"></canvas>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <div class="channel-card text-center py-5">
+                <div class="text-muted py-4">
+                    <div class="icon-box-3d mx-auto mb-3" style="width: 64px; height: 64px; font-size: 24px;">
+                        <i class="fa-solid fa-chart-pie"></i>
+                    </div>
+                    <h6 class="fw-bold text-dark mb-1">No active ad/social channels connected</h6>
+                    <p class="text-muted small mb-0">Connect your enterprise channels to unlock advanced performance graphs.</p>
+                </div>
             </div>
         </div>
         {% endfor %}
     </div>
 
-    <div class="row g-4">
-        <!-- Performance Section with Graph / Visual Analytics -->
-        <div class="col-lg-8">
-            <div class="analytics-card" id="analyticsCard1">
-                <div class="d-flex justify-content-between align-items-center mb-4">
-                    <div>
-                        <h5 class="fw-extrabold mb-1" style="font-weight: 800; color: #0f172a;"><i class="fa-solid fa-chart-line me-2" style="color: var(--accent, #0d9488);"></i>Social Performance Analytics</h5>
-                        <p class="text-muted small mb-0">Real-time engagement trends and channel growth metrics.</p>
-                    </div>
-                </div>
-
-                <!-- Interactive Line Chart Canvas -->
-                <div class="chart-container mb-4">
-                    <canvas id="performanceChart"></canvas>
-                </div>
-
-                <hr class="text-muted opacity-25 my-4">
-
-                <!-- Channel Progress Bars -->
-                <h6 class="fw-bold text-dark mb-3" style="font-size: 15px;">Channel Distribution</h6>
-                {% for item in channels_data %}
-                <div class="mb-3">
-                    <div class="d-flex justify-content-between mb-1.5">
-                        <span class="fw-bold text-dark small">{{ item.account.account_name }}</span>
-                        <span class="fw-extrabold small" style="color: var(--accent, #0d9488);">{{ item.percentage }}%</span>
-                    </div>
-                    <div class="progress" style="height: 10px; border-radius: 12px; background: rgba(226, 232, 240, 0.6);">
-                        <div class="progress-bar progress-bar-glow" style="width: 0%; background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%);" data-width="{{ item.percentage }}%"></div>
-                    </div>
-                </div>
-                {% endfor %}
-            </div>
-        </div>
-
-        <!-- Activity Feed -->
-        <div class="col-lg-4">
-            <div class="analytics-card" id="analyticsCard2">
-                <div class="d-flex align-items-center justify-content-between mb-4">
-                    <h5 class="fw-extrabold mb-0" style="font-weight: 800; color: #0f172a;"><i class="fa-solid fa-bolt me-2" style="color: var(--accent, #0d9488);"></i>Latest Activity</h5>
-                    <span class="badge bg-light text-muted border px-2 py-1" style="font-size: 10px; font-weight: 700;">LIVE FEED</span>
-                </div>
-                <div class="timeline ps-4" style="border-left: 2px dashed rgba(203, 213, 225, 0.8);">
-                    {% for post in recent_posts %}
-                    <div class="timeline-item position-relative mb-4">
-                        <div class="fw-bold text-dark small" style="font-size: 14px;">{{ post.status|title }}</div>
-                        <div class="text-muted mt-0.5" style="font-size: 11px; font-weight: 600;">{{ post.created_at|timesince }} ago</div>
-                    </div>
-                    {% empty %}
-                    <div class="text-muted py-5 text-center small font-monospace">No recent activity recorded.</div>
-                    {% endfor %}
+    <!-- Recent Posts / Campaign Stream Section -->
+    <div class="row">
+        <div class="col-12">
+            <div class="channel-card">
+                <h5 class="fw-bold mb-4 text-dark" style="font-size: 18px; letter-spacing: -0.3px;">Recent Campaign Activity Stream</h5>
+                <div class="table-responsive">
+                    <table class="table table-custom align-middle mb-0">
+                        <thead class="text-muted text-uppercase" style="font-size: 10px; letter-spacing: 0.8px; background: rgba(241, 245, 249, 0.6);">
+                            <tr>
+                                <th class="py-3 ps-3 rounded-start">Campaign Content Preview</th>
+                                <th class="py-3">Status</th>
+                                <th class="py-3 pe-3 rounded-end">Timestamp</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for post in recent_posts %}
+                            <tr>
+                                <td class="text-truncate ps-3 py-3" style="max-width: 350px; font-weight: 500; color: #1e293b;">
+                                    {{ post.content|default:"No description available" }}
+                                </td>
+                                <td class="py-3">
+                                    <span class="badge {% if post.status == 'published' %}bg-success-subtle text-success{% elif post.status == 'scheduled' %}bg-warning-subtle text-warning{% else %}bg-danger-subtle text-danger{% endif %}" style="padding: 6px 12px; border-radius: 10px; font-weight: 600; font-size: 11px;">
+                                        {{ post.status|title }}
+                                    </span>
+                                </td>
+                                <td class="text-muted small py-3 pe-3 font-monospace">{{ post.created_at|date:"M d, Y, H:i" }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="3" class="text-center text-muted py-5">
+                                    <i class="fa-regular fa-folder-open fs-3 mb-2 d-block text-teal"><span>No recent campaign records found.</span></i>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Chart.js & GSAP Animation Scripts -->
+<!-- Chart.js Enterprise Script -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-    // 1. Initialize Chart.js Performance Graph
-    const ctx = document.getElementById('performanceChart').getContext('2d');
-    const performanceChart = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-            datasets: [{
-                label: 'Engagement Score',
-                data: [65, 82, 78, 95, 110, 135, 150],
-                borderColor: '#0d9488',
-                backgroundColor: function(context) {
-                    const chart = context.chart;
-                    const {ctx, chartArea} = chart;
-                    if (!chartArea) return null;
-                    const gradient = ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
-                    gradient.addColorStop(0, 'rgba(13, 148, 136, 0.0)');
-                    gradient.addColorStop(1, 'rgba(13, 148, 136, 0.25)');
-                    return gradient;
-                },
-                borderWidth: 3,
-                fill: true,
-                tension: 0.4,
-                pointBackgroundColor: '#0d9488',
-                pointBorderColor: '#fff',
-                pointBorderWidth: 2,
-                pointRadius: 4,
-                pointHoverRadius: 6
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: { display: false },
-                tooltip: {
-                    backgroundColor: 'rgba(15, 23, 42, 0.9)',
-                    titleFont: { weight: 'bold', size: 13 },
-                    bodyFont: { size: 12 },
-                    padding: 12,
-                    cornerRadius: 12,
-                    displayColors: false
-                }
+    document.querySelectorAll('.platformChart').forEach((canvas) => {
+        const baseVal = parseInt(canvas.getAttribute('data-percentage')) || 50;
+        const ctx = canvas.getContext('2d');
+        
+        const gradient = ctx.createLinearGradient(0, 0, 0, 110);
+        gradient.addColorStop(0, 'rgba(13, 148, 136, 0.35)');
+        gradient.addColorStop(1, 'rgba(13, 148, 136, 0.0)');
+
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                datasets: [{
+                    data: [
+                        Math.max(5, baseVal - 20), 
+                        Math.max(8, baseVal - 12), 
+                        Math.max(10, baseVal - 8), 
+                        baseVal, 
+                        Math.min(100, baseVal + 5), 
+                        Math.min(100, baseVal + 10), 
+                        Math.min(100, baseVal + 15)
+                    ],
+                    borderColor: '#0d9488',
+                    borderWidth: 3,
+                    fill: true,
+                    backgroundColor: gradient,
+                    tension: 0.42,
+                    pointRadius: 2.5,
+                    pointBackgroundColor: '#ffffff',
+                    pointBorderColor: '#0d9488',
+                    pointBorderWidth: 2,
+                    pointHoverRadius: 6
+                }]
             },
-            scales: {
-                x: {
-                    grid: { display: false },
-                    ticks: { color: '#64748b', font: { weight: '600', size: 11 } }
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { 
+                    legend: { display: false }, 
+                    tooltip: { 
+                        enabled: true,
+                        backgroundColor: 'rgba(15, 23, 42, 0.95)',
+                        titleFont: { size: 11, weight: 'bold' },
+                        bodyFont: { size: 11 },
+                        padding: 10,
+                        cornerRadius: 8,
+                        displayColors: false
+                    } 
                 },
-                y: {
-                    grid: { color: 'rgba(241, 245, 249, 0.8)' },
-                    ticks: { color: '#64748b', font: { weight: '600', size: 11 } },
-                    border: { dash: [4, 4] }
+                scales: { 
+                    x: { display: false }, 
+                    y: { display: false, min: 0, max: 110 } 
+                },
+                interaction: {
+                    mode: 'index',
+                    intersect: false,
                 }
             }
-        }
+        });
     });
-
-    // 2. Dynamic Counter Animation
-    document.querySelectorAll('.count-up').forEach(el => {
-        let target = parseInt(el.getAttribute('data-target')) || 0;
-        let count = 0;
-        let speed = target / 40 || 1;
-        let update = () => {
-            count += speed;
-            if(count < target) {
-                el.innerText = Math.floor(count);
-                requestAnimationFrame(update);
-            } else {
-                el.innerText = target;
-            }
-        };
-        update();
-    });
-
-    // 3. Animate Progress Bars width
-    document.querySelectorAll('.progress-bar-glow').forEach(el => {
-        setTimeout(() => {
-            el.style.width = el.getAttribute('data-width');
-        }, 400);
-    });
-
-    // 4. GSAP Entry Animation
-    if (typeof gsap !== 'undefined') {
-        const tl = gsap.timeline();
-        tl.to("#statsGrid", {
-            opacity: 1,
-            y: 0,
-            duration: 0.6,
-            ease: "power2.out"
-        })
-        .to("#analyticsCard1", {
-            opacity: 1,
-            y: 0,
-            z: 0,
-            duration: 0.7,
-            ease: "power3.out"
-        }, "-=0.3")
-        .to("#analyticsCard2", {
-            opacity: 1,
-            y: 0,
-            z: 0,
-            duration: 0.8,
-            ease: "power3.out"
-        }, "-=0.5");
-    }
 });
 </script>
 {% endblock %}

@@ -11,4 +11,5 @@ urlpatterns = [
     path('logout/', views.logoutpage, name='logout'), 
     path('users/invite/accept/<str:token>/', views.accept_invitation, name='accept_invitation'),
     path('users/<int:user_id>/', views.user_detail, name='user_detail'),
+    path('connect/', views.connect_social_account, name='connect_social_account'),
 ]
