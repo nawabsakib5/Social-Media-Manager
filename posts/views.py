@@ -363,7 +363,32 @@ def platform_edit(request, post_id, ps_id):
 
 def dashboard_live_stats(request):
     if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-        # আপনার প্রজেক্টের ইনবক্স মডেলের নাম InboxItem (স্ক্রিনশট অনুযায়ী লাইন ১৬ তে দেখা যাচ্ছে)
-        unread_count = InboxItem.objects.filter(is_read=False).count()
-        return JsonResponse({'unread_inbox': unread_count})
+        if request.user.is_superuser or getattr(request.user, 'user_type', None) == 'admin':
+            accounts = SocialAccount.objects.filter(status='connected')
+            posts_query = Post.objects.all()
+            total_users_count = User.objects.count()
+        else:
+            accounts = SocialAccount.objects.filter(permitted_users=request.user, status='connected')
+            posts_query = Post.objects.filter(created_by=request.user)
+            total_users_count = 1
+
+        total_posts = posts_query.count()
+        published_posts = posts_query.filter(status='published').count()
+        scheduled_posts = posts_query.filter(status='scheduled').count()
+        failed_posts = posts_query.filter(status='failed').count()
+        
+        unread_inbox = 0
+        try:
+            unread_inbox = InboxItem.objects.filter(social_account__in=accounts, is_read=False).count()
+        except Exception:
+            pass
+
+        return JsonResponse({
+            'total_users': total_users_count,
+            'total_posts': total_posts,
+            'published_posts': published_posts,
+            'scheduled_posts': scheduled_posts,
+            'failed_posts': failed_posts,
+            'unread_inbox': unread_inbox,
+        })
     return JsonResponse({'error': 'Invalid request'}, status=400)
