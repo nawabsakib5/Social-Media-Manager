@@ -291,9 +291,11 @@
         document.getElementById('detailedItemSection').classList.add('d-none');
     }
 
-    // প্রতি ১০ সেকেন্ড পরপর রিয়েল-টাইম ডাটা ফেচ করার জন্য রুট পাথ সরাসরি ব্যবহার করা হলো
+    // জ্যাঙ্গোর নিজস্ব url ট্যাগ ব্যবহার করে রিয়েল-টাইম ডাটা ফেচ করার সঠিক পাথ তৈরি করা হলো
+    const liveStatsUrl = "{% url 'dashboard_live_stats' %}";
+
     function pollUnreadInboxMessages() {
-        fetch("/posts/dashboard/live-stats/", {
+        fetch(liveStatsUrl, {
             headers: {
                 'X-Requested-With': 'XMLHttpRequest'
             }
