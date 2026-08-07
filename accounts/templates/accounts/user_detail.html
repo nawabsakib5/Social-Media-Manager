@@ -3,61 +3,128 @@
 
 {% block content %}
 <style>
-    /* Custom Modern Design */
+    /* ── 3D Glassmorphism Cards ── */
     .member-card {
-        background: #ffffff;
-        border: 1px solid #e2e8f0;
-        border-radius: 20px;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-        padding: 24px;
+        background: rgba(255, 255, 255, 0.85);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(226, 232, 240, 0.8);
+        border-radius: 28px;
+        box-shadow: 0 20px 50px rgba(15, 23, 42, 0.08);
+        padding: 32px;
+        transform-style: preserve-3d;
+        transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+        opacity: 0;
+        transform: translateY(30px) translateZ(-50px);
+    }
+
+    .member-card:hover {
+        transform: translateY(-5px) translateZ(10px);
+        box-shadow: 0 30px 60px rgba(15, 23, 42, 0.12);
+        border-color: rgba(13, 148, 136, 0.3);
     }
     
     .section-title {
-        font-weight: 700;
-        color: #1e293b;
+        font-weight: 800;
+        color: #0f172a;
         margin-bottom: 20px;
         display: flex;
         align-items: center;
-        gap: 10px;
+        gap: 12px;
+        font-size: 17px;
+        letter-spacing: -0.3px;
     }
 
+    /* ── 3D Interactive Channel Rows ── */
     .channel-row {
-        background: #f8fafc;
-        border: 1px solid #e2e8f0;
-        border-radius: 12px;
-        padding: 12px 16px;
-        margin-bottom: 8px;
+        background: rgba(248, 250, 252, 0.9);
+        border: 1.5px solid #e2e8f0;
+        border-radius: 14px;
+        padding: 14px 18px;
+        margin-bottom: 10px;
+        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .channel-row:hover {
+        border-color: var(--accent, #0d9488);
+        background: rgba(240, 253, 250, 0.9);
+        transform: translateY(-2px) translateZ(5px);
+        box-shadow: 0 8px 20px rgba(13, 148, 136, 0.1);
+    }
+
+    .form-check-input {
+        width: 1.3em;
+        height: 1.3em;
+        cursor: pointer;
+        border: 1.5px solid #cbd5e1;
         transition: all 0.2s ease;
     }
-    .channel-row:hover {
-        border-color: #6366f1;
-        background: #f5f3ff;
+
+    .form-check-input:checked {
+        background-color: var(--accent, #0d9488);
+        border-color: var(--accent, #0d9488);
     }
 
     .btn-save {
-        background: var(--primary-gradient);
+        background: var(--accent-gradient, linear-gradient(135deg, #0d9488 0%, #14b8a6 100%));
         color: white;
         border: none;
-        border-radius: 12px;
-        padding: 12px;
+        border-radius: 14px;
+        padding: 14px;
         font-weight: 700;
-        transition: all 0.3s;
+        font-size: 15px;
+        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        box-shadow: 0 8px 25px var(--accent-glow, rgba(13, 148, 136, 0.3));
+        width: 100%;
     }
+
     .btn-save:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 10px 15px -3px rgba(79, 70, 229, 0.3);
+        transform: translateY(-2px) translateZ(10px);
+        box-shadow: 0 12px 30px rgba(13, 148, 136, 0.4);
+        color: white;
+    }
+
+    .avatar-box {
+        width: 60px;
+        height: 60px;
+        background: var(--accent-gradient, linear-gradient(135deg, #0d9488 0%, #14b8a6 100%));
+        color: white;
+        border-radius: 18px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        font-weight: 800;
+        box-shadow: 0 10px 25px var(--accent-glow, rgba(13, 148, 136, 0.3));
+    }
+
+    .badge-role {
+        background: rgba(13, 148, 136, 0.1);
+        color: var(--accent, #0d9488);
+        border: 1px solid rgba(13, 148, 136, 0.2);
+        font-weight: 700;
+        letter-spacing: 0.5px;
+    }
+
+    .header-anim {
+        opacity: 0;
+        transform: translateY(-20px);
     }
 </style>
 
-<div class="container-fluid px-0">
+<div class="container-fluid px-0" style="perspective: 1500px;">
     <!-- Header -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-4 header-anim" id="pageHeader">
         <div>
-            <h4 class="fw-bold mb-1">Member Workspace</h4>
-            <p class="text-muted small">Manage {{ user_obj.full_name|default:user_obj.username }}'s access and view activities.</p>
+            <h4 class="fw-bold mb-1" style="font-weight: 800; letter-spacing: -0.5px; color: #0f172a;">Member Workspace</h4>
+            <p class="text-muted small" style="font-size: 14px;">Manage {{ user_obj.full_name|default:user_obj.username }}'s access and review activities.</p>
         </div>
-        <a href="{% url 'accounts:user_list' %}" class="btn btn-light rounded-pill px-4 fw-semibold">
-            <i class="fa-solid fa-arrow-left me-2"></i>Back to Team
+        <a href="{% url 'accounts:user_list' %}" class="btn btn-light rounded-pill px-4 fw-semibold shadow-sm" style="border: 1px solid #e2e8f0; transition: all 0.3s ease;">
+            <i class="fa-solid fa-arrow-left me-2" style="color: var(--accent, #0d9488);"></i>Back to Team
         </a>
     </div>
 
@@ -65,39 +132,39 @@
         <!-- Left: Profile & Activity -->
         <div class="col-lg-7">
             <!-- Profile Info -->
-            <div class="member-card mb-4">
+            <div class="member-card mb-4" id="profileCard">
                 <div class="d-flex align-items-center gap-3 mb-4">
-                    <div style="width: 50px; height: 50px; background: var(--primary-brand); color: white; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 800;">
-                        {{ user_obj.full_name|first|upper }}
+                    <div class="avatar-box">
+                        {{ user_obj.full_name|first|upper|default:"U" }}
                     </div>
                     <div>
-                        <h5 class="fw-bold mb-0">{{ user_obj.full_name|default:user_obj.username }}</h5>
-                        <span class="badge bg-indigo-subtle text-indigo rounded-pill px-3">{{ user_obj.user_type|title }}</span>
+                        <h5 class="fw-extrabold mb-1" style="font-weight: 800; color: #0f172a;">{{ user_obj.full_name|default:user_obj.username }}</h5>
+                        <span class="badge badge-role rounded-pill px-3 py-1.5">{{ user_obj.user_type|title|default:"Member" }}</span>
                     </div>
                 </div>
-                <div class="row g-3">
-                    <div class="col-6"><small class="text-muted d-block">Username</small><span class="fw-bold">@{{ user_obj.username }}</span></div>
-                    <div class="col-6"><small class="text-muted d-block">Email</small><span class="fw-bold">{{ user_obj.email }}</span></div>
-                    <div class="col-6"><small class="text-muted d-block">Phone</small><span class="fw-bold">{{ user_obj.phone|default:"-" }}</span></div>
-                    <div class="col-6"><small class="text-muted d-block">Joined</small><span class="fw-bold">{{ user_obj.date_joined|date:"M d, Y" }}</span></div>
+                <div class="row g-3 pt-2 border-top border-light">
+                    <div class="col-6"><small class="text-muted d-block text-uppercase fw-bold" style="font-size: 10px; letter-spacing: 0.8px;">Username</small><span class="fw-bold text-dark">@{{ user_obj.username }}</span></div>
+                    <div class="col-6"><small class="text-muted d-block text-uppercase fw-bold" style="font-size: 10px; letter-spacing: 0.8px;">Email</small><span class="fw-bold text-dark text-truncate d-block">{{ user_obj.email }}</span></div>
+                    <div class="col-6"><small class="text-muted d-block text-uppercase fw-bold" style="font-size: 10px; letter-spacing: 0.8px;">Phone</small><span class="fw-bold text-dark">{{ user_obj.phone|default:"-" }}</span></div>
+                    <div class="col-6"><small class="text-muted d-block text-uppercase fw-bold" style="font-size: 10px; letter-spacing: 0.8px;">Joined</small><span class="fw-bold text-dark">{{ user_obj.date_joined|date:"M d, Y" }}</span></div>
                 </div>
             </div>
 
             <!-- Activity Log -->
-            <div class="member-card">
-                <h6 class="section-title"><i class="fa-solid fa-clock-rotate-left text-primary"></i> Recent Activities</h6>
+            <div class="member-card" id="activityCard">
+                <h6 class="section-title"><i class="fa-solid fa-clock-rotate-left" style="color: var(--accent, #0d9488);"></i> Recent Activities</h6>
                 <div class="timeline ps-2">
                     {% for post in user_posts %}
-                    <div class="d-flex gap-3 mb-3 pb-3 border-bottom">
-                        <div class="mt-1 text-primary"><i class="fa-solid fa-circle-check"></i></div>
+                    <div class="d-flex gap-3 mb-3 pb-3 border-bottom border-light">
+                        <div class="mt-1" style="color: var(--accent, #0d9488);"><i class="fa-solid fa-circle-check"></i></div>
                         <div>
                             <p class="mb-0 fw-semibold text-dark small">Published new post</p>
-                            <small class="text-muted">{{ post.content|truncatechars:40 }}</small>
-                            <div class="text-xs text-muted mt-1">{{ post.created_at|timesince }} ago</div>
+                            <small class="text-muted">{{ post.content|truncatechars:45 }}</small>
+                            <div class="text-xs text-muted mt-1" style="font-size: 11px;">{{ post.created_at|timesince }} ago</div>
                         </div>
                     </div>
                     {% empty %}
-                    <p class="text-muted small">No recent activity.</p>
+                    <div class="text-muted p-4 text-center border rounded-3 bg-light font-monospace small">No recent activity recorded.</div>
                     {% endfor %}
                 </div>
             </div>
@@ -105,27 +172,68 @@
 
         <!-- Right: Permissions -->
         <div class="col-lg-5">
-            <div class="member-card h-100">
-                <h6 class="section-title"><i class="fa-solid fa-shield-halved text-indigo"></i> Channel Permissions</h6>
-                <p class="text-muted small mb-4">Toggle access for specific social media channels.</p>
-                
-                <form method="POST">
-                    {% csrf_token %}
-                    <div class="mb-4">
-                        {% for sa in all_accounts %}
-                        <label class="channel-row d-flex align-items-center justify-content-between cursor-pointer">
-                            <div class="d-flex align-items-center gap-3">
-                                <input class="form-check-input" type="checkbox" name="permitted_accounts" value="{{ sa.id }}" {% if sa.id in user_permitted_ids %}checked{% endif %}>
-                                <i class="fa-brands fa-{{ sa.platform }}" style="color: {% if sa.platform == 'facebook' %}#1877f2{% elif sa.platform == 'instagram' %}#e1306c{% elif sa.platform == 'twitter' %}#1da1f2{% elif sa.platform == 'linkedin' %}#0077b5{% else %}#64748b{% endif %}; font-size: 18px;"></i>
-                                <span class="fw-semibold text-dark small">{{ sa.account_name }}</span>
-                            </div>
-                        </label>
-                        {% endfor %}
-                    </div>
-                    <button type="submit" class="btn-save w-100">Save Permissions</button>
+            <div class="member-card h-100 d-flex flex-column justify-content-between" id="permissionsCard">
+                <div>
+                    <h6 class="section-title"><i class="fa-solid fa-shield-halved" style="color: var(--accent, #0d9488);"></i> Channel Permissions</h6>
+                    <p class="text-muted small mb-4">Toggle access control for specific social media channels.</p>
+                    
+                    <form method="POST" id="permissionsForm">
+                        {% csrf_token %}
+                        <div class="mb-4">
+                            {% for sa in all_accounts %}
+                            <label class="channel-row">
+                                <div class="d-flex align-items-center gap-3 overflow-hidden">
+                                    <input class="form-check-input" type="checkbox" name="permitted_accounts" value="{{ sa.id }}" {% if sa.id in user_permitted_ids %}checked{% endif %}>
+                                    <i class="fa-brands fa-{{ sa.platform }}" style="color: {% if sa.platform == 'facebook' %}#1877f2{% elif sa.platform == 'instagram' %}#e1306c{% elif sa.platform == 'twitter' %}#1da1f2{% elif sa.platform == 'youtube' %}#ff0000{% elif sa.platform == 'linkedin' %}#0077b5{% else %}#64748b{% endif %}; font-size: 18px;"></i>
+                                    <span class="fw-semibold text-dark small text-truncate">{{ sa.account_name }}</span>
+                                </div>
+                            </label>
+                            {% empty %}
+                            <div class="text-muted p-4 text-center border rounded-3 bg-light font-monospace small">No channels available.</div>
+                            {% endfor %}
+                        </div>
+                </div>
+                        <button type="submit" class="btn-save mt-3">Save Access Permissions <i class="fa-solid fa-floppy-disk ms-2"></i></button>
                 </form>
             </div>
         </div>
     </div>
 </div>
+
+<!-- GSAP Animation Script -->
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    if (typeof gsap !== 'undefined') {
+        const tl = gsap.timeline();
+
+        tl.to("#pageHeader", {
+            opacity: 1,
+            y: 0,
+            duration: 0.6,
+            ease: "power2.out"
+        })
+        .to("#profileCard", {
+            opacity: 1,
+            y: 0,
+            z: 0,
+            duration: 0.7,
+            ease: "power3.out"
+        }, "-=0.3")
+        .to("#activityCard", {
+            opacity: 1,
+            y: 0,
+            z: 0,
+            duration: 0.7,
+            ease: "power3.out"
+        }, "-=0.4")
+        .to("#permissionsCard", {
+            opacity: 1,
+            y: 0,
+            z: 0,
+            duration: 0.8,
+            ease: "power3.out"
+        }, "-=0.5");
+    }
+});
+</script>
 {% endblock %}

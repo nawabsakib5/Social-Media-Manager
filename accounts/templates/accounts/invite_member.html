@@ -3,115 +3,205 @@
 
 {% block content %}
 <style>
+    /* ── 3D Glassmorphism Invite Card ── */
     .invite-card {
-        background: #ffffff;
-        border: 1px solid #e2e8f0;
-        border-radius: 20px;
-        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
-        padding: 32px;
-        max-width: 600px;
+        background: rgba(255, 255, 255, 0.85);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(226, 232, 240, 0.8);
+        border-radius: 28px;
+        box-shadow: 0 20px 50px rgba(15, 23, 42, 0.08);
+        padding: 40px;
+        max-width: 620px;
         margin: 0 auto;
+        transform-style: preserve-3d;
+        transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+        opacity: 0;
+        transform: translateY(30px) translateZ(-50px);
     }
 
+    .invite-card:hover {
+        transform: translateY(-5px) translateZ(15px);
+        box-shadow: 0 30px 60px rgba(15, 23, 42, 0.12);
+        border-color: rgba(13, 148, 136, 0.3);
+    }
+
+    /* ── 3D Channel Select Items ── */
     .channel-item {
+        background: rgba(248, 250, 252, 0.9);
+        border: 1.5px solid #e2e8f0;
+        border-radius: 14px;
+        padding: 14px 18px;
+        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        width: 100%;
+    }
+
+    .channel-item:hover {
+        border-color: var(--accent, #0d9488);
+        background: rgba(240, 253, 250, 0.9);
+        transform: translateY(-2px) translateZ(5px);
+        box-shadow: 0 8px 20px rgba(13, 148, 136, 0.1);
+    }
+
+    .form-check-input {
+        width: 1.3em; 
+        height: 1.3em;
+        margin-top: 0;
+        cursor: pointer;
+        border: 1.5px solid #cbd5e1;
+        transition: all 0.2s ease;
+    }
+
+    .form-check-input:checked {
+        background-color: var(--accent, #0d9488);
+        border-color: var(--accent, #0d9488);
+    }
+
+    .form-control {
         background: #f8fafc;
         border: 1.5px solid #e2e8f0;
         border-radius: 12px;
         padding: 12px 16px;
-        transition: all 0.2s ease;
-    }
-
-    .channel-item:hover {
-        border-color: var(--primary-brand);
-        background: #f5f3ff;
-    }
-
-    .form-check-input {
-        width: 1.2em; height: 1.2em;
-        margin-top: 0;
-        cursor: pointer;
-    }
-
-    .btn-invite {
-        background: var(--primary-gradient);
-        color: white;
-        border: none;
-        padding: 14px;
-        border-radius: 10px;
-        font-weight: 700;
-        width: 100%;
+        font-size: 14px;
+        font-weight: 500;
         transition: all 0.3s ease;
     }
 
+    .form-control:focus {
+        background: #fff;
+        border-color: var(--accent, #0d9488);
+        box-shadow: 0 0 0 4px rgba(13, 148, 136, 0.12);
+    }
+
+    /* ── Info & Button Elements ── */
+    .info-box {
+        background: rgba(240, 249, 255, 0.8);
+        border: 1px solid rgba(186, 230, 253, 0.8);
+        border-left: 4px solid var(--accent, #0d9488) !important;
+        backdrop-filter: blur(10px);
+        border-radius: 14px;
+        padding: 16px;
+        font-size: 13.5px;
+        color: #0369a1;
+        box-shadow: 0 4px 15px rgba(3, 105, 161, 0.03);
+    }
+
+    .btn-invite {
+        background: var(--accent-gradient, linear-gradient(135deg, #0d9488 0%, #14b8a6 100%));
+        color: white;
+        border: none;
+        padding: 14px;
+        border-radius: 12px;
+        font-weight: 700;
+        font-size: 15px;
+        width: 100%;
+        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        box-shadow: 0 8px 25px var(--accent-glow, rgba(13, 148, 136, 0.3));
+    }
+
     .btn-invite:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 10px 15px -3px rgba(79, 70, 229, 0.3);
+        transform: translateY(-2px) translateZ(10px);
+        box-shadow: 0 12px 30px rgba(13, 148, 136, 0.4);
+        color: white;
+    }
+
+    .header-anim {
+        opacity: 0;
+        transform: translateY(-20px);
     }
 </style>
 
-<div class="container-fluid px-0">
+<div class="container-fluid px-0" style="perspective: 1500px;">
     <!-- Header -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-4 header-anim" id="pageHeader">
         <div>
-            <h4 class="fw-bold mb-1">Invite Member</h4>
-            <p class="text-muted small">Grant access to specific team channels.</p>
+            <h4 class="fw-bold mb-1" style="font-weight: 800; letter-spacing: -0.5px; color: #0f172a;">Invite Member</h4>
+            <p class="text-muted small" style="font-size: 14px;">Grant secure access to specific team channels.</p>
         </div>
-        <a href="{% url 'accounts:user_list' %}" class="btn btn-light btn-sm px-3 rounded-pill fw-semibold">
-            <i class="fa-solid fa-arrow-left me-2"></i>Back to List
+        <a href="{% url 'accounts:user_list' %}" class="btn btn-light btn-sm px-3 rounded-pill fw-semibold shadow-sm" style="border: 1px solid #e2e8f0; transition: all 0.3s ease;">
+            <i class="fa-solid fa-arrow-left me-2" style="color: var(--accent, #0d9488);"></i>Back to List
         </a>
     </div>
 
-    <!-- Invite Form -->
-    <div class="invite-card">
+    <!-- Invite Form Card -->
+    <div class="invite-card" id="inviteCard">
         <form method="POST" class="needs-validation" novalidate>
             {% csrf_token %}
             
             <div class="row g-4">
                 <div class="col-md-6">
-                    <label class="form-label text-xs fw-bold text-uppercase text-muted" style="font-size: 11px;">Email Address</label>
+                    <label class="form-label text-xs fw-bold text-uppercase text-muted" style="font-size: 11px; letter-spacing: 0.8px;">Email Address</label>
                     <input type="email" name="email" class="form-control" placeholder="colleague@example.com" required>
                 </div>
 
                 <div class="col-md-6">
-                    <label class="form-label text-xs fw-bold text-uppercase text-muted" style="font-size: 11px;">Username (Optional)</label>
+                    <label class="form-label text-xs fw-bold text-uppercase text-muted" style="font-size: 11px; letter-spacing: 0.8px;">Username (Optional)</label>
                     <input type="text" name="username" class="form-control" placeholder="username">
                 </div>
 
                 <div class="col-12">
-                    <label class="form-label text-xs fw-bold text-uppercase text-muted mb-3" style="font-size: 11px;">Assign Social Channels</label>
-                    <div class="row g-2">
+                    <label class="form-label text-xs fw-bold text-uppercase text-muted mb-3" style="font-size: 11px; letter-spacing: 0.8px;">Assign Social Channels</label>
+                    <div class="row g-3">
                         {% for sa in connected_accounts %}
                         <div class="col-sm-6">
-                            <label class="channel-item d-flex align-items-center cursor-pointer">
+                            <label class="channel-item">
                                 <input class="form-check-input me-3" type="checkbox" name="permitted_accounts" value="{{ sa.id }}" checked>
-                                <div class="d-flex align-items-center">
-                                    <i class="fa-brands fa-{{ sa.platform }} me-2" style="font-size: 16px; 
+                                <div class="d-flex align-items-center overflow-hidden">
+                                    <i class="fa-brands fa-{{ sa.platform }} me-2" style="font-size: 18px; 
                                         color: {% if sa.platform == 'facebook' %}#1877f2{% elif sa.platform == 'instagram' %}#e1306c{% elif sa.platform == 'twitter' %}#1da1f2{% elif sa.platform == 'youtube' %}#ff0000{% elif sa.platform == 'linkedin' %}#0077b5{% else %}#64748b{% endif %};">
                                     </i>
-                                    <span class="small fw-semibold text-dark">{{ sa.account_name|truncatechars:18 }}</span>
+                                    <span class="small fw-semibold text-dark text-truncate">{{ sa.account_name|truncatechars:18 }}</span>
                                 </div>
                             </label>
                         </div>
                         {% empty %}
-                        <div class="text-muted p-3 text-center border-dashed rounded">No accounts available.</div>
+                        <div class="col-12">
+                            <div class="text-muted p-4 text-center border rounded-3 bg-light font-monospace small">No accounts available.</div>
+                        </div>
                         {% endfor %}
                     </div>
                 </div>
 
                 <div class="col-12">
-                    <div class="bg-light p-3 rounded-3 border-start border-primary border-4 text-muted small">
-                        <i class="fa-solid fa-circle-info text-primary me-2"></i>
+                    <div class="info-box">
+                        <i class="fa-solid fa-circle-info me-2" style="color: var(--accent, #0d9488);"></i>
                         Invited members will only see the channels assigned above in their dashboard.
                     </div>
                 </div>
 
-                <div class="col-12">
+                <div class="col-12 pt-2">
                     <button type="submit" class="btn-invite">
-                        Send Invitation <i class="fa-solid fa-paper-plane ms-2"></i>
+                        Send Secure Invitation <i class="fa-solid fa-paper-plane ms-2"></i>
                     </button>
                 </div>
             </div>
         </form>
     </div>
 </div>
+
+<!-- GSAP Animation Script -->
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    if (typeof gsap !== 'undefined') {
+        const tl = gsap.timeline();
+
+        tl.to("#pageHeader", {
+            opacity: 1,
+            y: 0,
+            duration: 0.6,
+            ease: "power2.out"
+        })
+        .to("#inviteCard", {
+            opacity: 1,
+            y: 0,
+            z: 0,
+            duration: 0.8,
+            ease: "power3.out"
+        }, "-=0.3");
+    }
+});
+</script>
 {% endblock %}
