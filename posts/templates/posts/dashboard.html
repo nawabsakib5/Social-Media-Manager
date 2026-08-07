@@ -165,7 +165,7 @@
     </div>
 </div>
 
-<!-- Script with 10 Seconds Polling Interval for All Dashboard Stats -->
+<!-- Script with 10 Seconds Polling Interval & View Toggles -->
 <script>
     let allSystemUsers = [
         {% for u in all_users %}
@@ -256,6 +256,7 @@
                 filteredPosts = allPosts.filter(p => p.status === 'failed');
             } else {
                 titleEl.textContent = 'Real-Time Total Campaigns List';
+                filteredPosts = allPosts;
             }
 
             tableHeaderHTML = `
@@ -323,7 +324,7 @@
         .catch(error => console.error('Error fetching live dashboard updates:', error));
     }
 
-    // প্রতি ১০ সেকেন্ডে ড্যাশবোর্ডের সব কাউন্টার অটো-সিঙ্ক হবে
+    // প্রতি ১০ সেকেন্ডে ড্যাশবোর্ডের সব ডেটা অটো-সিঙ্ক হবে
     setInterval(pollDashboardStats, 10000);
 </script>
 {% endblock %}
