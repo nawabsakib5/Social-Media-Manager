@@ -17,7 +17,6 @@
         border-radius: 30px;
     }
 
-    /* Enterprise Metric Card */
     .metric-card {
         background: #ffffff;
         border: 1px solid var(--border-glass);
@@ -27,14 +26,16 @@
         transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
         position: relative;
         overflow: hidden;
+        cursor: pointer;
+        text-decoration: none;
+        display: block;
     }
     .metric-card:hover {
         transform: translateY(-5px);
-        box-shadow: 0 20px 40px -10px rgba(13, 148, 136, 0.1);
-        border-color: rgba(13, 148, 136, 0.3);
+        box-shadow: 0 20px 40px -10px rgba(13, 148, 136, 0.15);
+        border-color: var(--primary-teal);
     }
 
-    /* Enterprise Channel Analytics Card */
     .channel-card {
         background: var(--card-bg);
         backdrop-filter: blur(25px);
@@ -47,28 +48,6 @@
         height: 100%;
         position: relative;
     }
-    .channel-card:hover {
-        transform: translateY(-6px);
-        box-shadow: 0 25px 50px rgba(13, 148, 136, 0.08);
-        border-color: rgba(13, 148, 136, 0.3);
-    }
-
-    /* Professional Analytics Summary Strip */
-    .analytics-strip {
-        background: #f8fafc;
-        border: 1px solid #f1f5f9;
-        border-radius: 14px;
-        padding: 12px 16px;
-        margin-top: 14px;
-        margin-bottom: 14px;
-    }
-
-    .mini-chart-container {
-        position: relative;
-        height: 110px;
-        width: 100%;
-        margin-top: 10px;
-    }
 
     .icon-box-3d {
         width: 48px; height: 48px;
@@ -78,16 +57,6 @@
         display: flex; align-items: center; justify-content: center;
         font-size: 18px;
         box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.8);
-    }
-
-    .custom-badge {
-        background: var(--teal-glow);
-        color: var(--primary-teal);
-        padding: 6px 14px;
-        border-radius: 20px;
-        font-weight: 700;
-        font-size: 11px;
-        letter-spacing: 0.3px;
     }
 
     .table-custom tr {
@@ -103,227 +72,245 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h3 class="fw-extrabold mb-1" style="font-weight: 800; color: #0f172a; letter-spacing: -0.8px;">
-                {% if request.user.is_superuser or request.user.user_type == 'admin' %}Enterprise Command Center{% else %}Creator Performance Hub{% endif %}
+                {% if request.user.is_superuser or request.user.user_type == 'admin' %}Enterprise Command Center (Admin View){% else %}Creator Performance Hub (Assigned Access){% endif %}
             </h3>
-            <p class="text-muted small mb-0">Welcome back, <span class="fw-bold text-dark">{{ request.user.username }}</span>! Real-time social campaigns & throughput analytics.</p>
-        </div>
-        <div class="d-flex gap-2">
-            <a href="{% url 'accounts:change_password' %}" class="btn btn-light d-flex align-items-center gap-2 shadow-sm px-3 py-2" style="border-radius: 14px; font-weight: 600; border: 1px solid #e2e8f0; color: #334155;">
-                <i class="fa-solid fa-key text-teal"></i> Security Settings
-            </a>
+            <p class="text-muted small mb-0">Welcome back, <span class="fw-bold text-dark">{{ request.user.username }}</span>! Click any metric card to inspect live records.</p>
         </div>
     </div>
 
-    <!-- Summary Metrics Cards -->
+    <!-- Interactive Summary Metrics Cards -->
     <div class="row g-3 mb-4">
         {% if request.user.is_superuser or request.user.user_type == 'admin' %}
         <div class="col-xl-2 col-md-4 col-sm-6">
-            <div class="metric-card">
-                <span class="text-muted small d-block mb-1 fw-semibold text-uppercase" style="font-size: 10px; letter-spacing: 0.5px;">Total Users</span>
+            <div class="metric-card" onclick="filterDetailView('users')">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="text-muted small fw-semibold text-uppercase" style="font-size: 10px; letter-spacing: 0.5px;">Total Users</span>
+                    <i class="fa-solid fa-circle-chevron-right text-muted" style="font-size: 12px;"></i>
+                </div>
                 <h3 class="fw-bold mb-0 text-dark">{{ total_users }}</h3>
             </div>
         </div>
         {% endif %}
         <div class="col-xl-2 col-md-4 col-sm-6">
-            <div class="metric-card">
-                <span class="text-muted small d-block mb-1 fw-semibold text-uppercase" style="font-size: 10px; letter-spacing: 0.5px;">Total Campaigns</span>
+            <div class="metric-card" onclick="filterDetailView('all_campaigns')">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="text-muted small fw-semibold text-uppercase" style="font-size: 10px; letter-spacing: 0.5px;">Total Campaigns</span>
+                    <i class="fa-solid fa-circle-chevron-right text-muted" style="font-size: 12px;"></i>
+                </div>
                 <h3 class="fw-bold mb-0 text-dark">{{ total_posts }}</h3>
             </div>
         </div>
         <div class="col-xl-2 col-md-4 col-sm-6">
-            <div class="metric-card">
-                <span class="text-muted small d-block mb-1 fw-semibold text-uppercase text-success" style="font-size: 10px; letter-spacing: 0.5px;">Published</span>
+            <div class="metric-card" onclick="filterDetailView('published')">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="text-muted small fw-semibold text-uppercase text-success" style="font-size: 10px; letter-spacing: 0.5px;">Published</span>
+                    <i class="fa-solid fa-circle-chevron-right text-success" style="font-size: 12px;"></i>
+                </div>
                 <h3 class="fw-bold mb-0 text-success">{{ published_posts }}</h3>
             </div>
         </div>
         <div class="col-xl-2 col-md-4 col-sm-6">
-            <div class="metric-card">
-                <span class="text-muted small d-block mb-1 fw-semibold text-uppercase text-warning" style="font-size: 10px; letter-spacing: 0.5px;">Scheduled</span>
+            <div class="metric-card" onclick="filterDetailView('scheduled')">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="text-muted small fw-semibold text-uppercase text-warning" style="font-size: 10px; letter-spacing: 0.5px;">Scheduled</span>
+                    <i class="fa-solid fa-circle-chevron-right text-warning" style="font-size: 12px;"></i>
+                </div>
                 <h3 class="fw-bold mb-0 text-warning">{{ scheduled_posts }}</h3>
             </div>
         </div>
         <div class="col-xl-2 col-md-4 col-sm-6">
-            <div class="metric-card">
-                <span class="text-muted small d-block mb-1 fw-semibold text-uppercase text-danger" style="font-size: 10px; letter-spacing: 0.5px;">Failed</span>
+            <div class="metric-card" onclick="filterDetailView('failed')">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="text-muted small fw-semibold text-uppercase text-danger" style="font-size: 10px; letter-spacing: 0.5px;">Failed</span>
+                    <i class="fa-solid fa-circle-chevron-right text-danger" style="font-size: 12px;"></i>
+                </div>
                 <h3 class="fw-bold mb-0 text-danger">{{ failed_posts }}</h3>
             </div>
         </div>
         <div class="col-xl-2 col-md-4 col-sm-6">
-            <div class="metric-card">
-                <span class="text-muted small d-block mb-1 fw-semibold text-uppercase text-info" style="font-size: 10px; letter-spacing: 0.5px;">Unread Inbox</span>
-                <h3 class="fw-bold mb-0 text-info">{{ unread_inbox }}</h3>
+            <div class="metric-card" onclick="filterDetailView('inbox')">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="text-muted small fw-semibold text-uppercase text-info" style="font-size: 10px; letter-spacing: 0.5px;">Unread Inbox</span>
+                    <i class="fa-solid fa-circle-chevron-right text-info" style="font-size: 12px;"></i>
+                </div>
+                <h3 class="fw-bold mb-0 text-info" id="unreadInboxCounter">{{ unread_inbox }}</h3>
             </div>
         </div>
     </div>
 
-    <!-- Enterprise Connected Channels Performance Section -->
-    <div class="row g-4 mb-4">
-        <div class="col-12 d-flex justify-content-between align-items-center">
-            <div>
-                <h5 class="fw-bold mb-0 text-dark" style="font-size: 18px; letter-spacing: -0.3px;">Connected Channels Performance</h5>
-                <p class="text-muted small mb-0">Multi-platform campaign analytics & weekly engagement overview</p>
-            </div>
-            <span class="badge bg-white text-secondary border px-3 py-2 shadow-sm rounded-pill fw-semibold" style="font-size: 11px;">
-                <i class="fa-solid fa-chart-line text-teal me-1"></i> Live Enterprise Sync
-            </span>
-        </div>
-        
-        {% for item in channels_data %}
-        <div class="col-lg-4 col-md-6">
-            <div class="channel-card">
-                <!-- Channel Header -->
+    <!-- Detailed Live Records View Section -->
+    <div class="row mb-4 d-none" id="detailedItemSection">
+        <div class="col-12">
+            <div class="channel-card shadow-lg" style="border: 2px solid var(--primary-teal);">
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <div class="d-flex align-items-center gap-3">
                         <div class="icon-box-3d">
-                            <i class="fa-solid fa-bullhorn"></i>
+                            <i class="fa-solid fa-list-check"></i>
                         </div>
                         <div>
-                            <h6 class="fw-bold mb-0 text-dark" style="font-size: 16px;">{{ item.account.account_name }}</h6>
-                            <span class="text-muted small text-uppercase" style="font-size: 10px; font-weight: 700; letter-spacing: 0.6px;">{{ item.account.platform }}</span>
+                            <h5 class="fw-bold mb-0 text-dark" id="detailSectionTitle">Real-Time Records</h5>
+                            <span class="text-muted small text-uppercase fw-bold" style="font-size: 10px;">Live Database Entries</span>
                         </div>
                     </div>
-                    <span class="custom-badge">{{ item.percentage }}% ROI</span>
+                    <button type="button" class="btn btn-sm btn-light rounded-circle border shadow-sm" onclick="closeDetailSection()" style="width: 36px; height: 36px;">
+                        <i class="fa-solid fa-xmark text-dark"></i>
+                    </button>
                 </div>
 
-                <!-- Professional Analytics Summary Strip -->
-                <div class="analytics-strip d-flex justify-content-between align-items-center">
-                    <div>
-                        <span class="text-muted d-block" style="font-size: 10px; font-weight: 600; text-transform: uppercase;">Campaign Output</span>
-                        <strong class="text-dark" style="font-size: 13px;">{{ item.post_count }} Posts</strong>
-                    </div>
-                    <div class="text-end">
-                        <span class="text-muted d-block" style="font-size: 10px; font-weight: 600; text-transform: uppercase;">Growth Index</span>
-                        <span class="text-success fw-bold" style="font-size: 13px;"><i class="fa-solid fa-arrow-trend-up me-1"></i>+{{ item.percentage }}%</span>
-                    </div>
-                </div>
-
-                <!-- Mini Chart Container -->
-                <div class="mini-chart-container">
-                    <canvas class="platformChart" data-percentage="{{ item.percentage }}"></canvas>
-                </div>
-            </div>
-        </div>
-        {% empty %}
-        <div class="col-12">
-            <div class="channel-card text-center py-5">
-                <div class="text-muted py-4">
-                    <div class="icon-box-3d mx-auto mb-3" style="width: 64px; height: 64px; font-size: 24px;">
-                        <i class="fa-solid fa-chart-pie"></i>
-                    </div>
-                    <h6 class="fw-bold text-dark mb-1">No active ad/social channels connected</h6>
-                    <p class="text-muted small mb-0">Connect your enterprise channels to unlock advanced performance graphs.</p>
-                </div>
-            </div>
-        </div>
-        {% endfor %}
-    </div>
-
-    <!-- Recent Posts / Campaign Stream Section -->
-    <div class="row">
-        <div class="col-12">
-            <div class="channel-card">
-                <h5 class="fw-bold mb-4 text-dark" style="font-size: 18px; letter-spacing: -0.3px;">Recent Campaign Activity Stream</h5>
                 <div class="table-responsive">
-                    <table class="table table-custom align-middle mb-0">
-                        <thead class="text-muted text-uppercase" style="font-size: 10px; letter-spacing: 0.8px; background: rgba(241, 245, 249, 0.6);">
-                            <tr>
-                                <th class="py-3 ps-3 rounded-start">Campaign Content Preview</th>
-                                <th class="py-3">Status</th>
-                                <th class="py-3 pe-3 rounded-end">Timestamp</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for post in recent_posts %}
-                            <tr>
-                                <td class="text-truncate ps-3 py-3" style="max-width: 350px; font-weight: 500; color: #1e293b;">
-                                    {{ post.content|default:"No description available" }}
-                                </td>
-                                <td class="py-3">
-                                    <span class="badge {% if post.status == 'published' %}bg-success-subtle text-success{% elif post.status == 'scheduled' %}bg-warning-subtle text-warning{% else %}bg-danger-subtle text-danger{% endif %}" style="padding: 6px 12px; border-radius: 10px; font-weight: 600; font-size: 11px;">
-                                        {{ post.status|title }}
-                                    </span>
-                                </td>
-                                <td class="text-muted small py-3 pe-3 font-monospace">{{ post.created_at|date:"M d, Y, H:i" }}</td>
-                            </tr>
-                            {% empty %}
-                            <tr>
-                                <td colspan="3" class="text-center text-muted py-5">
-                                    <i class="fa-regular fa-folder-open fs-3 mb-2 d-block text-teal"><span>No recent campaign records found.</span></i>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+                    <table class="table table-custom align-middle mb-0" id="detailTableContainer"></table>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Chart.js Enterprise Script -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<!-- Script with 10 Seconds Polling Interval -->
 <script>
-document.addEventListener('DOMContentLoaded', () => {
-    document.querySelectorAll('.platformChart').forEach((canvas) => {
-        const baseVal = parseInt(canvas.getAttribute('data-percentage')) || 50;
-        const ctx = canvas.getContext('2d');
-        
-        const gradient = ctx.createLinearGradient(0, 0, 0, 110);
-        gradient.addColorStop(0, 'rgba(13, 148, 136, 0.35)');
-        gradient.addColorStop(1, 'rgba(13, 148, 136, 0.0)');
+    const allSystemUsers = [
+        {% for u in all_users %}
+        {
+            username: "{{ u.username|escapejs }}",
+            is_superuser: {% if u.is_superuser %}true{% else %}false{% endif %},
+            is_active: {% if u.is_active %}true{% else %}false{% endif %},
+            last_login: "{{ u.last_login|date:'M d, Y, H:i'|default:'Never' }}"
+        },
+        {% endfor %}
+    ];
 
-        new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-                datasets: [{
-                    data: [
-                        Math.max(5, baseVal - 20), 
-                        Math.max(8, baseVal - 12), 
-                        Math.max(10, baseVal - 8), 
-                        baseVal, 
-                        Math.min(100, baseVal + 5), 
-                        Math.min(100, baseVal + 10), 
-                        Math.min(100, baseVal + 15)
-                    ],
-                    borderColor: '#0d9488',
-                    borderWidth: 3,
-                    fill: true,
-                    backgroundColor: gradient,
-                    tension: 0.42,
-                    pointRadius: 2.5,
-                    pointBackgroundColor: '#ffffff',
-                    pointBorderColor: '#0d9488',
-                    pointBorderWidth: 2,
-                    pointHoverRadius: 6
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { 
-                    legend: { display: false }, 
-                    tooltip: { 
-                        enabled: true,
-                        backgroundColor: 'rgba(15, 23, 42, 0.95)',
-                        titleFont: { size: 11, weight: 'bold' },
-                        bodyFont: { size: 11 },
-                        padding: 10,
-                        cornerRadius: 8,
-                        displayColors: false
-                    } 
-                },
-                scales: { 
-                    x: { display: false }, 
-                    y: { display: false, min: 0, max: 110 } 
-                },
-                interaction: {
-                    mode: 'index',
-                    intersect: false,
+    const allPosts = [
+        {% for p in recent_posts %}
+        {
+            content: "{{ p.content|escapejs|default:'No description' }}",
+            status: "{{ p.status|lower }}",
+            created_at: "{{ p.created_at|date:'M d, Y, H:i' }}"
+        },
+        {% endfor %}
+    ];
+
+    function filterDetailView(type) {
+        const section = document.getElementById('detailedItemSection');
+        const titleEl = document.getElementById('detailSectionTitle');
+        const tableContainer = document.getElementById('detailTableContainer');
+        
+        section.classList.remove('d-none');
+        section.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+        let tableHeaderHTML = '';
+        let tableBodyHTML = '';
+
+        if (type === 'users') {
+            titleEl.textContent = 'Real-Time System Users List';
+            tableHeaderHTML = `
+                <thead class="text-muted text-uppercase" style="font-size: 10px; letter-spacing: 0.8px; background: rgba(241, 245, 249, 0.6);">
+                    <tr>
+                        <th class="py-3 ps-3 rounded-start">Username</th>
+                        <th class="py-3">Role Status</th>
+                        <th class="py-3 pe-3 rounded-end">Live Status / Last Login</th>
+                    </tr>
+                </thead>`;
+            
+            if (allSystemUsers.length > 0) {
+                let rows = '';
+                allSystemUsers.forEach(u => {
+                    let roleBadge = u.is_superuser ? '<span class="badge bg-success-subtle text-success">Superuser Admin</span>' : '<span class="badge bg-secondary-subtle text-secondary">Standard User</span>';
+                    rows += `
+                        <tr>
+                            <td class="ps-3 py-3 fw-bold text-dark"><i class="fa-solid fa-user text-teal me-2"></i> ${u.username}</td>
+                            <td class="py-3">${roleBadge}</td>
+                            <td class="py-3 pe-3 text-muted small"><i class="fa-solid fa-circle text-success" style="font-size: 8px;"></i> Last Login: ${u.last_login}</td>
+                        </tr>`;
+                });
+                tableBodyHTML = `<tbody>${rows}</tbody>`;
+            } else {
+                tableBodyHTML = `<tbody><tr><td colspan="3" class="text-center text-muted py-4">No active users found.</td></tr></tbody>`;
+            }
+        } else if (type === 'inbox') {
+            titleEl.textContent = 'Real-Time Unread Inbox Messages';
+            tableHeaderHTML = `
+                <thead class="text-muted text-uppercase" style="font-size: 10px; letter-spacing: 0.8px; background: rgba(241, 245, 249, 0.6);">
+                    <tr>
+                        <th class="py-3 ps-3 rounded-start">Channel / Sender</th>
+                        <th class="py-3">Message Content</th>
+                        <th class="py-3 pe-3 rounded-end">Timestamp</th>
+                    </tr>
+                </thead>`;
+            tableBodyHTML = `
+                <tbody>
+                    <tr>
+                        <td colspan="3" class="text-center text-muted py-4">
+                            <i class="fa-regular fa-inbox fs-4 mb-1 d-block text-info"></i> Checked live: No unread bubble messages pending right now.
+                        </td>
+                    </tr>
+                </tbody>`;
+        } else {
+            let filteredPosts = allPosts;
+            if (type === 'published') {
+                titleEl.textContent = 'Real-Time Published Campaigns';
+                filteredPosts = allPosts.filter(p => p.status === 'published');
+            } else if (type === 'scheduled') {
+                titleEl.textContent = 'Real-Time Scheduled Campaigns';
+                filteredPosts = allPosts.filter(p => p.status === 'scheduled');
+            } else if (type === 'failed') {
+                titleEl.textContent = 'Real-Time Failed Campaigns Diagnostics';
+                filteredPosts = allPosts.filter(p => p.status === 'failed');
+            } else {
+                titleEl.textContent = 'Real-Time Total Campaigns List';
+            }
+
+            tableHeaderHTML = `
+                <thead class="text-muted text-uppercase" style="font-size: 10px; letter-spacing: 0.8px; background: rgba(241, 245, 249, 0.6);">
+                    <tr>
+                        <th class="py-3 ps-3 rounded-start">Campaign Content</th>
+                        <th class="py-3">Status</th>
+                        <th class="py-3 pe-3 rounded-end">Timestamp</th>
+                    </tr>
+                </thead>`;
+
+            if (filteredPosts.length > 0) {
+                let rows = '';
+                filteredPosts.forEach(p => {
+                    let badgeClass = p.status === 'published' ? 'bg-success-subtle text-success' : (p.status === 'scheduled' ? 'bg-warning-subtle text-warning' : 'bg-danger-subtle text-danger');
+                    rows += `
+                        <tr>
+                            <td class="text-truncate ps-3 py-3" style="max-width: 350px; font-weight: 500; color: #1e293b;">${p.content}</td>
+                            <td class="py-3"><span class="badge ${badgeClass}" style="padding: 6px 12px; border-radius: 10px; font-weight: 600; font-size: 11px;">${p.status.toUpperCase()}</span></td>
+                            <td class="text-muted small py-3 pe-3 font-monospace">${p.created_at}</td>
+                        </tr>`;
+                });
+                tableBodyHTML = `<tbody>${rows}</tbody>`;
+            } else {
+                tableBodyHTML = `<tbody><tr><td colspan="3" class="text-center text-muted py-4">No records found.</td></tr></tbody>`;
+            }
+        }
+
+        tableContainer.innerHTML = tableHeaderHTML + tableBodyHTML;
+    }
+
+    function closeDetailSection() {
+        document.getElementById('detailedItemSection').classList.add('d-none');
+    }
+
+    // প্রতি ১০ সেকেন্ড পরপর রিয়েল-টাইম ডাটা ফেচ করার জন্য রুট পাথ সরাসরি ব্যবহার করা হলো
+    function pollUnreadInboxMessages() {
+        fetch("/posts/dashboard/live-stats/", {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.unread_inbox !== undefined) {
+                const counterEl = document.getElementById('unreadInboxCounter');
+                if (counterEl) {
+                    counterEl.textContent = data.unread_inbox;
                 }
             }
-        });
-    });
-});
+        })
+        .catch(error => console.error('Error fetching live inbox updates:', error));
+    }
+
+    // প্রতি ১০ সেকেন্ডে একবার অটো কল হবে
+    setInterval(pollUnreadInboxMessages, 10000);
 </script>
 {% endblock %}

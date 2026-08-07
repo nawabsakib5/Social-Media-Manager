@@ -7,7 +7,7 @@ from django.contrib.auth import get_user_model
 from django.contrib import messages
 from django.utils import timezone
 from django.db.models import Count, Q
-
+from django.http import JsonResponse
 from .models import Post, PostPlatformStatus
 from .forms import PostForm
 from .tasks import publish_post_task
@@ -357,3 +357,13 @@ def platform_edit(request, post_id, ps_id):
         messages.error(request, f"Error: {str(e)}")
 
     return redirect('post_detail', post_id=post_id)
+
+
+
+
+def dashboard_live_stats(request):
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        # আপনার প্রজেক্টের ইনবক্স মডেলের নাম InboxItem (স্ক্রিনশট অনুযায়ী লাইন ১৬ তে দেখা যাচ্ছে)
+        unread_count = InboxItem.objects.filter(is_read=False).count()
+        return JsonResponse({'unread_inbox': unread_count})
+    return JsonResponse({'error': 'Invalid request'}, status=400)
