@@ -3,76 +3,87 @@
 
 {% block content %}
 <style>
-    /* Modern SaaS Table Styling */
+    /* ── 3D Glassmorphism Table Container ── */
     .table-container {
-        background: #ffffff;
-        border-radius: 20px;
-        border: 1px solid #e2e8f0;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        background: rgba(255, 255, 255, 0.85);
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(226, 232, 240, 0.8);
+        border-radius: 28px;
+        box-shadow: 0 20px 50px rgba(15, 23, 42, 0.08);
         overflow: hidden;
+        opacity: 0;
+        transform: translateY(30px);
     }
 
-    .user-row { transition: all 0.2s ease; }
-    .user-row:hover { background-color: #f8fafc; }
+    .user-row { 
+        transition: all 0.3s ease;
+        border-bottom: 1px solid rgba(241, 245, 249, 0.8);
+    }
+    .user-row:hover { 
+        background-color: rgba(248, 250, 252, 0.8);
+        transform: scale(1.005);
+    }
 
     .avatar-circle {
-        width: 40px; height: 40px;
-        border-radius: 12px; /* Slightly squared for modern look */
-        background: var(--primary-brand);
+        width: 48px; height: 48px;
+        border-radius: 16px;
+        background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%);
         color: white;
         display: flex; align-items: center; justify-content: center;
-        font-weight: 700; font-size: 16px;
+        font-weight: 800; font-size: 18px;
+        box-shadow: 0 8px 16px rgba(13, 148, 136, 0.2);
     }
 
     .badge-modern {
-        padding: 6px 12px;
-        border-radius: 8px;
-        font-weight: 600;
-        font-size: 11px;
+        padding: 6px 14px;
+        border-radius: 10px;
+        font-weight: 700;
+        font-size: 10px;
         text-transform: uppercase;
-        letter-spacing: 0.5px;
+        letter-spacing: 0.8px;
     }
 
     .btn-action {
-        border-radius: 8px;
-        padding: 6px 12px;
-        font-size: 12px;
-        font-weight: 600;
+        width: 38px; height: 38px;
+        display: flex; align-items: center; justify-content: center;
+        border-radius: 12px;
+        transition: all 0.3s ease;
     }
+    .btn-action:hover { background: #fee2e2; color: #ef4444; }
 </style>
 
 <div class="container-fluid px-0">
-    <!-- Header Section -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-5" id="pageHeader" style="opacity: 0;">
         <div>
-            <h4 class="fw-bold mb-1">Team Members</h4>
+            <h4 class="fw-extrabold mb-1" style="color: #0f172a; letter-spacing: -0.5px;">Team Members</h4>
             <p class="text-muted small">Manage access, roles, and permissions for your workspace team.</p>
         </div>
-        <a href="{% url 'accounts:invite_member' %}" class="btn btn-primary d-flex align-items-center gap-2" style="border-radius: 12px; font-weight: 600;">
+        <a href="{% url 'accounts:invite_member' %}" class="btn btn-dark d-flex align-items-center gap-2 shadow-sm" style="border-radius: 14px; font-weight: 600; padding: 10px 20px;">
             <i class="fa-solid fa-user-plus"></i> Invite Member
         </a>
     </div>
 
-    <!-- Table Section -->
-    <div class="table-container">
+    <!-- Table -->
+    <div class="table-container" id="tableCard">
         <div class="table-responsive">
             <table class="table align-middle mb-0">
-                <thead style="background: #f8fafc;">
+                <thead style="background: rgba(248, 250, 252, 0.5);">
                     <tr>
-                        <th class="px-4 py-3 text-muted fw-bold small" style="border-bottom: 2px solid #f1f5f9;">Member</th>
-                        <th class="px-4 py-3 text-muted fw-bold small" style="border-bottom: 2px solid #f1f5f9;">Username</th>
-                        <th class="px-4 py-3 text-muted fw-bold small" style="border-bottom: 2px solid #f1f5f9;">Email Address</th>
-                        <th class="px-4 py-3 text-muted fw-bold small" style="border-bottom: 2px solid #f1f5f9;">Role</th>
-                        <th class="px-4 py-3 text-muted fw-bold small text-end" style="border-bottom: 2px solid #f1f5f9;">Action</th>
+                        <th class="px-4 py-4 text-muted fw-bold small">Member</th>
+                        <th class="px-4 py-4 text-muted fw-bold small">Username</th>
+                        <th class="px-4 py-4 text-muted fw-bold small">Email</th>
+                        <th class="px-4 py-4 text-muted fw-bold small">Role</th>
+                        <th class="px-4 py-4 text-muted fw-bold small text-end">Action</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for u in users %}
                     <tr class="user-row">
-                        <td class="px-4 py-3">
+                        <td class="px-4 py-4">
                             <div class="d-flex align-items-center gap-3">
                                 <div class="avatar-circle">
-                                    {{ u.full_name|default:u.username|slice:":1"|upper }}
+                                    {% if u.full_name %}{{ u.full_name|slice:":1"|upper }}{% else %}{{ u.username|slice:":1"|upper }}{% endif %}
                                 </div>
                                 <div>
                                     <a href="{% url 'accounts:user_detail' u.id %}" class="text-dark fw-bold text-decoration-none d-block">
@@ -84,35 +95,42 @@
                                 </div>
                             </div>
                         </td>
-                        <td class="px-4 py-3 text-muted fw-medium small">@{{ u.username }}</td>
-                        <td class="px-4 py-3 text-dark small">{{ u.email }}</td>
-                        <td class="px-4 py-3">
+                        <td class="px-4 py-4 text-muted fw-medium small">@{{ u.username }}</td>
+                        <td class="px-4 py-4 text-dark small">{{ u.email }}</td>
+                        <td class="px-4 py-4">
                             {% if u.user_type == 'admin' or u.is_superuser %}
                                 <span class="badge-modern bg-danger-subtle text-danger">Admin</span>
                             {% else %}
-                                <span class="badge-modern bg-primary-subtle text-primary">User</span>
+                                <span class="badge-modern bg-teal-subtle text-teal" style="background: rgba(13, 148, 136, 0.1);">User</span>
                             {% endif %}
                         </td>
-                        <td class="px-4 py-3 text-end">
+                        <td class="px-4 py-4 text-end">
                             {% if u != request.user %}
-                                <a href="{% url 'accounts:remove_user' u.id %}" 
-                                   onclick="return confirm('Remove this member?');"
-                                   class="btn btn-outline-danger btn-action border-0">
-                                   <i class="fa-solid fa-trash-can"></i>
+                                <a href="{% url 'accounts:remove_user' u.id %}" onclick="return confirm('Remove this member?');" class="btn btn-outline-danger btn-action border-0 ms-auto">
+                                    <i class="fa-solid fa-trash-can"></i>
                                 </a>
                             {% else %}
-                                <span class="text-muted small italic">Active Session</span>
+                                <span class="text-muted small" style="font-size: 11px;">Active Session</span>
                             {% endif %}
                         </td>
                     </tr>
                     {% empty %}
-                    <tr>
-                        <td colspan="5" class="text-center py-5 text-muted">No members found.</td>
-                    </tr>
+                    <tr><td colspan="5" class="text-center py-5 text-muted">No members found.</td></tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
     </div>
 </div>
+
+<!-- GSAP Animation -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const tl = gsap.timeline();
+    
+    tl.to("#pageHeader", { opacity: 1, y: 0, duration: 0.6, ease: "power2.out" })
+      .to("#tableCard", { opacity: 1, y: 0, duration: 0.8, ease: "power3.out" }, "-=0.3");
+});
+</script>
 {% endblock %}
