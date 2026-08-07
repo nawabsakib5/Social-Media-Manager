@@ -1,81 +1,152 @@
 {% extends "base.html" %}
 {% block title %}Analytics Dashboard{% endblock %}
+
 {% block content %}
-
 <style>
-    /* Premium Design Tokens */
-    :root {
-        --glass: rgba(255, 255, 255, 0.7);
-        --primary-gradient: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+    /* ── 3D Glassmorphism Dashboard Styling ── */
+    .dashboard-wrapper {
+        perspective: 1500px;
     }
 
-    .dashboard-container { animation: fadeIn 0.8s ease-out; }
+    .dashboard-container { 
+        animation: fadeIn 0.8s ease-out; 
+    }
     
-    /* Modern Stats Card */
+    /* Modern 3D Glass Cards */
     .stat-card {
-        background: var(--glass);
-        backdrop-filter: blur(10px);
-        border: 1px solid rgba(255,255,255,0.3);
-        border-radius: 24px;
-        padding: 24px;
-        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        background: rgba(255, 255, 255, 0.85);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(226, 232, 240, 0.8);
+        border-radius: 28px;
+        padding: 26px;
+        transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+        transform-style: preserve-3d;
+        box-shadow: 0 20px 50px rgba(15, 23, 42, 0.06);
+        opacity: 0;
+        transform: translateY(30px) translateZ(-40px);
     }
-    .stat-card:hover { transform: translateY(-10px); box-shadow: 0 20px 40px rgba(0,0,0,0.08); }
+    
+    .stat-card:hover { 
+        transform: translateY(-8px) translateZ(15px); 
+        box-shadow: 0 30px 60px rgba(13, 148, 136, 0.12);
+        border-color: rgba(13, 148, 136, 0.3);
+    }
 
-    /* Channel Bar Styling */
+    .analytics-card {
+        background: rgba(255, 255, 255, 0.85);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(226, 232, 240, 0.8);
+        border-radius: 28px;
+        padding: 32px;
+        box-shadow: 0 20px 50px rgba(15, 23, 42, 0.06);
+        transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+        opacity: 0;
+        transform: translateY(30px) translateZ(-40px);
+        height: 100%;
+    }
+
+    .analytics-card:hover {
+        box-shadow: 0 30px 60px rgba(15, 23, 42, 0.1);
+    }
+
+    /* Progress Glow Bars */
     .progress-bar-glow {
-        box-shadow: 0 0 15px var(--primary-color);
-        transition: width 1.5s ease-in-out;
+        box-shadow: 0 0 20px rgba(13, 148, 136, 0.4);
+        transition: width 1.5s cubic-bezier(0.25, 0.8, 0.25, 1);
+        border-radius: 10px;
     }
 
-    /* Timeline Styling */
+    /* Timeline 3D Polish */
+    .timeline-item {
+        padding-left: 12px;
+        transition: all 0.3s ease;
+    }
+    .timeline-item:hover {
+        transform: translateX(4px);
+    }
     .timeline-item::before {
         content: '';
         position: absolute;
-        left: -32px;
-        top: 0;
-        width: 12px;
-        height: 12px;
+        left: -33px;
+        top: 4px;
+        width: 14px;
+        height: 14px;
         border-radius: 50%;
-        background: var(--primary-color);
+        background: var(--accent, #0d9488);
         border: 3px solid #fff;
-        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+        box-shadow: 0 0 0 4px rgba(13, 148, 136, 0.2);
+    }
+
+    .chart-container {
+        position: relative;
+        height: 260px;
+        width: 100%;
+    }
+
+    .icon-box {
+        width: 48px;
+        height: 48px;
+        background: rgba(13, 148, 136, 0.1);
+        color: var(--accent, #0d9488);
+        border-radius: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+        box-shadow: 0 8px 20px rgba(13, 148, 136, 0.15);
     }
 </style>
 
-<div class="dashboard-container container-fluid px-0">
+<div class="dashboard-wrapper container-fluid px-0">
     
     <!-- Hero Stats Grid -->
-    <div class="row g-4 mb-5">
+    <div class="row g-4 mb-4" id="statsGrid">
         {% for stat in stats_list %}
         <div class="col-6 col-md-2">
             <div class="stat-card shadow-sm">
-                <div class="d-flex justify-content-between mb-3">
-                    <i class="{{ stat.icon }} fs-4 text-primary"></i>
-                    <span class="badge bg-light text-primary">{{ stat.trend }}</span>
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div class="icon-box">
+                        <i class="{{ stat.icon }}"></i>
+                    </div>
+                    <span class="badge rounded-pill px-2.5 py-1" style="background: rgba(13, 148, 136, 0.1); color: var(--accent, #0d9488); font-weight: 700; font-size: 11px;">{{ stat.trend }}</span>
                 </div>
-                <h3 class="fw-bold mb-0 count-up" data-target="{{ stat.value }}">0</h3>
-                <p class="text-muted small mb-0">{{ stat.label }}</p>
+                <h3 class="fw-extrabold mb-1 count-up" data-target="{{ stat.value }}" style="font-weight: 800; color: #0f172a; letter-spacing: -0.5px;">0</h3>
+                <p class="text-muted small mb-0 fw-semibold" style="font-size: 13px;">{{ stat.label }}</p>
             </div>
         </div>
         {% endfor %}
     </div>
 
     <div class="row g-4">
-        <!-- Performance Section -->
+        <!-- Performance Section with Graph / Visual Analytics -->
         <div class="col-lg-8">
-            <div class="card border-0 shadow-sm p-4 rounded-4 h-100">
+            <div class="analytics-card" id="analyticsCard1">
                 <div class="d-flex justify-content-between align-items-center mb-4">
-                    <h5 class="fw-bold"><i class="fa-solid fa-rocket me-2 text-primary"></i>Channel Growth</h5>
-                </div>
-                {% for item in channels_data %}
-                <div class="mb-4">
-                    <div class="d-flex justify-content-between mb-2">
-                        <span class="fw-medium">{{ item.account.account_name }}</span>
-                        <span class="text-primary fw-bold">{{ item.percentage }}%</span>
+                    <div>
+                        <h5 class="fw-extrabold mb-1" style="font-weight: 800; color: #0f172a;"><i class="fa-solid fa-chart-line me-2" style="color: var(--accent, #0d9488);"></i>Social Performance Analytics</h5>
+                        <p class="text-muted small mb-0">Real-time engagement trends and channel growth metrics.</p>
                     </div>
-                    <div class="progress" style="height: 8px; border-radius: 10px;">
-                        <div class="progress-bar progress-bar-glow" style="width: 0%; background: var(--primary-gradient);" data-width="{{ item.percentage }}%"></div>
+                </div>
+
+                <!-- Interactive Line Chart Canvas -->
+                <div class="chart-container mb-4">
+                    <canvas id="performanceChart"></canvas>
+                </div>
+
+                <hr class="text-muted opacity-25 my-4">
+
+                <!-- Channel Progress Bars -->
+                <h6 class="fw-bold text-dark mb-3" style="font-size: 15px;">Channel Distribution</h6>
+                {% for item in channels_data %}
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between mb-1.5">
+                        <span class="fw-bold text-dark small">{{ item.account.account_name }}</span>
+                        <span class="fw-extrabold small" style="color: var(--accent, #0d9488);">{{ item.percentage }}%</span>
+                    </div>
+                    <div class="progress" style="height: 10px; border-radius: 12px; background: rgba(226, 232, 240, 0.6);">
+                        <div class="progress-bar progress-bar-glow" style="width: 0%; background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%);" data-width="{{ item.percentage }}%"></div>
                     </div>
                 </div>
                 {% endfor %}
@@ -84,14 +155,19 @@
 
         <!-- Activity Feed -->
         <div class="col-lg-4">
-            <div class="card border-0 shadow-sm p-4 rounded-4 h-100">
-                <h5 class="fw-bold mb-4">Latest Activity</h5>
-                <div class="timeline ps-4" style="border-left: 2px solid #e2e8f0;">
+            <div class="analytics-card" id="analyticsCard2">
+                <div class="d-flex align-items-center justify-content-between mb-4">
+                    <h5 class="fw-extrabold mb-0" style="font-weight: 800; color: #0f172a;"><i class="fa-solid fa-bolt me-2" style="color: var(--accent, #0d9488);"></i>Latest Activity</h5>
+                    <span class="badge bg-light text-muted border px-2 py-1" style="font-size: 10px; font-weight: 700;">LIVE FEED</span>
+                </div>
+                <div class="timeline ps-4" style="border-left: 2px dashed rgba(203, 213, 225, 0.8);">
                     {% for post in recent_posts %}
                     <div class="timeline-item position-relative mb-4">
-                        <div class="fw-semibold text-dark">{{ post.status|title }}</div>
-                        <div class="text-muted small">{{ post.created_at|timesince }} ago</div>
+                        <div class="fw-bold text-dark small" style="font-size: 14px;">{{ post.status|title }}</div>
+                        <div class="text-muted mt-0.5" style="font-size: 11px; font-weight: 600;">{{ post.created_at|timesince }} ago</div>
                     </div>
+                    {% empty %}
+                    <div class="text-muted py-5 text-center small font-monospace">No recent activity recorded.</div>
                     {% endfor %}
                 </div>
             </div>
@@ -99,26 +175,116 @@
     </div>
 </div>
 
+<!-- Chart.js & GSAP Animation Scripts -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
 <script>
-    // Dynamic Counter Animation
+document.addEventListener('DOMContentLoaded', () => {
+    // 1. Initialize Chart.js Performance Graph
+    const ctx = document.getElementById('performanceChart').getContext('2d');
+    const performanceChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+            datasets: [{
+                label: 'Engagement Score',
+                data: [65, 82, 78, 95, 110, 135, 150],
+                borderColor: '#0d9488',
+                backgroundColor: function(context) {
+                    const chart = context.chart;
+                    const {ctx, chartArea} = chart;
+                    if (!chartArea) return null;
+                    const gradient = ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
+                    gradient.addColorStop(0, 'rgba(13, 148, 136, 0.0)');
+                    gradient.addColorStop(1, 'rgba(13, 148, 136, 0.25)');
+                    return gradient;
+                },
+                borderWidth: 3,
+                fill: true,
+                tension: 0.4,
+                pointBackgroundColor: '#0d9488',
+                pointBorderColor: '#fff',
+                pointBorderWidth: 2,
+                pointRadius: 4,
+                pointHoverRadius: 6
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                    titleFont: { weight: 'bold', size: 13 },
+                    bodyFont: { size: 12 },
+                    padding: 12,
+                    cornerRadius: 12,
+                    displayColors: false
+                }
+            },
+            scales: {
+                x: {
+                    grid: { display: false },
+                    ticks: { color: '#64748b', font: { weight: '600', size: 11 } }
+                },
+                y: {
+                    grid: { color: 'rgba(241, 245, 249, 0.8)' },
+                    ticks: { color: '#64748b', font: { weight: '600', size: 11 } },
+                    border: { dash: [4, 4] }
+                }
+            }
+        }
+    });
+
+    // 2. Dynamic Counter Animation
     document.querySelectorAll('.count-up').forEach(el => {
-        let target = parseInt(el.getAttribute('data-target'));
+        let target = parseInt(el.getAttribute('data-target')) || 0;
         let count = 0;
-        let speed = target / 50;
+        let speed = target / 40 || 1;
         let update = () => {
             count += speed;
-            el.innerText = Math.floor(count);
-            if(count < target) requestAnimationFrame(update);
-            else el.innerText = target;
+            if(count < target) {
+                el.innerText = Math.floor(count);
+                requestAnimationFrame(update);
+            } else {
+                el.innerText = target;
+            }
         };
         update();
     });
 
-    // Animate Progress Bars
+    // 3. Animate Progress Bars width
     document.querySelectorAll('.progress-bar-glow').forEach(el => {
         setTimeout(() => {
             el.style.width = el.getAttribute('data-width');
-        }, 300);
+        }, 400);
     });
+
+    // 4. GSAP Entry Animation
+    if (typeof gsap !== 'undefined') {
+        const tl = gsap.timeline();
+        tl.to("#statsGrid", {
+            opacity: 1,
+            y: 0,
+            duration: 0.6,
+            ease: "power2.out"
+        })
+        .to("#analyticsCard1", {
+            opacity: 1,
+            y: 0,
+            z: 0,
+            duration: 0.7,
+            ease: "power3.out"
+        }, "-=0.3")
+        .to("#analyticsCard2", {
+            opacity: 1,
+            y: 0,
+            z: 0,
+            duration: 0.8,
+            ease: "power3.out"
+        }, "-=0.5");
+    }
+});
 </script>
 {% endblock %}
