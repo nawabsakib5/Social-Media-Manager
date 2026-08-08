@@ -47,6 +47,14 @@ def dashboard(request):
         })
 
     recent_posts = posts_query.order_by('-created_at')[:5]
+    all_posts_data = list(posts_query.order_by('-created_at').values(
+        'id', 'content', 'status', 'created_at', 'scheduled_time'
+    ))
+
+    # datetime serialize করা
+    for p in all_posts_data:
+        p['created_at'] = p['created_at'].strftime('%b %d, %Y, %H:%M') if p['created_at'] else ''
+        p['scheduled_time'] = p['scheduled_time'].strftime('%b %d, %Y, %H:%M') if p['scheduled_time'] else ''
 
     unread_inbox = 0
     try:
@@ -65,6 +73,7 @@ def dashboard(request):
         'unread_inbox': unread_inbox,
         'connected_accounts': accounts,
         'all_users': User.objects.all().order_by('-last_login'),
+        'all_posts_data': all_posts_data,
     }
     return render(request, 'posts/dashboard.html', context)
 

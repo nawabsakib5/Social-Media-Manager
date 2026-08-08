@@ -72,7 +72,7 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h3 class="fw-extrabold mb-1" style="font-weight: 800; color: #0f172a; letter-spacing: -0.8px;">
-                {% if request.user.is_superuser or request.user.user_type == 'admin' %}Command Center (Admin View){% else %}Creator Performance Hub (Assigned Access){% endif %}
+                {% if request.user.is_superuser or request.user.user_type == 'admin' %}Command Center {% else %}Creator Performance Hub (Assigned Access){% endif %}
             </h3>
             <p class="text-muted small mb-0">Welcome back, <span class="fw-bold text-dark">{{ request.user.username }}</span>! Click any metric card to inspect live records.</p>
         </div>
@@ -181,9 +181,11 @@
     let allPosts = [
         {% for p in recent_posts %}
         {
-            content: "{{ p.content|escapejs|default:'No description' }}",
+            id: "{{ p.id }}",
+            content: "{{ p.content|escapejs|default:'Media only post' }}",
             status: "{{ p.status|lower }}",
-            created_at: "{{ p.created_at|date:'M d, Y, H:i' }}"
+            created_at: "{{ p.created_at|date:'M d, Y, H:i' }}",
+            scheduled_time: "{{ p.scheduled_time|date:'M d, Y, H:i'|default:'' }}"
         },
         {% endfor %}
     ];
@@ -273,10 +275,18 @@
                 filteredPosts.forEach(p => {
                     let badgeClass = p.status === 'published' ? 'bg-success-subtle text-success' : (p.status === 'scheduled' ? 'bg-warning-subtle text-warning' : 'bg-danger-subtle text-danger');
                     rows += `
-                        <tr>
-                            <td class="text-truncate ps-3 py-3" style="max-width: 350px; font-weight: 500; color: #1e293b;">${p.content}</td>
-                            <td class="py-3"><span class="badge ${badgeClass}" style="padding: 6px 12px; border-radius: 10px; font-weight: 600; font-size: 11px;">${p.status.toUpperCase()}</span></td>
-                            <td class="text-muted small py-3 pe-3 font-monospace">${p.created_at}</td>
+                        <tr style="cursor:pointer;" onclick="window.location.href='/posts/${p.id}/'">
+                            <td class="text-truncate ps-3 py-3" style="max-width: 350px; font-weight: 500; color: #1e293b;">
+                                ${p.content}
+                            </td>
+                            <td class="py-3">
+                                <span class="badge ${badgeClass}" style="padding: 6px 12px; border-radius: 10px; font-weight: 600; font-size: 11px;">
+                                    ${p.status.toUpperCase()}
+                                </span>
+                            </td>
+                            <td class="text-muted small py-3 pe-3 font-monospace">
+                                ${p.scheduled_time || p.created_at}
+                            </td>
                         </tr>`;
                 });
                 tableBodyHTML = `<tbody>${rows}</tbody>`;
@@ -295,50 +305,49 @@
     const liveStatsUrl = "{% url 'dashboard_live_stats' %}";
 
     function pollDashboardStats() {
-    fetch(liveStatsUrl, {
-        headers: { 'X-Requested-With': 'XMLHttpRequest' }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (document.getElementById('totalUsersCounter')) {
-            document.getElementById('totalUsersCounter').textContent = data.total_users;
-        }
-        if (document.getElementById('totalPostsCounter')) {
-            document.getElementById('totalPostsCounter').textContent = data.total_posts;
-        }
-        if (document.getElementById('publishedPostsCounter')) {
-            document.getElementById('publishedPostsCounter').textContent = data.published_posts;
-        }
-        if (document.getElementById('scheduledPostsCounter')) {
-            document.getElementById('scheduledPostsCounter').textContent = data.scheduled_posts;
-        }
-        if (document.getElementById('failedPostsCounter')) {
-            document.getElementById('failedPostsCounter').textContent = data.failed_posts;
-        }
-        if (document.getElementById('unreadInboxCounter')) {
-            document.getElementById('unreadInboxCounter').textContent = data.unread_inbox;
-        }
-
-        // Realtime user list আপডেট
-        if (data.users_data) {
-            allSystemUsers = data.users_data.map(u => ({
-                username: u.username,
-                is_superuser: u.is_superuser,
-                is_active: u.is_active,
-                last_login: u.last_login,
-                user_type: u.user_type
-            }));
-
-            // যদি user section এখন open থাকে তাহলে সাথে সাথে update করো
-            const title = document.getElementById('detailSectionTitle');
-            if (title && title.textContent === 'Real-Time System Users List') {
-                filterDetailView('users');
+        fetch(liveStatsUrl, {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (document.getElementById('totalUsersCounter')) {
+                document.getElementById('totalUsersCounter').textContent = data.total_users;
             }
-        }
-    })
-    .catch(error => console.error('Error fetching live dashboard updates:', error));
-}
-    // প্রতি ১০ সেকেন্ডে ড্যাশবোর্ডের সব ডেটা অটো-সিঙ্ক হবে
+            if (document.getElementById('totalPostsCounter')) {
+                document.getElementById('totalPostsCounter').textContent = data.total_posts;
+            }
+            if (document.getElementById('publishedPostsCounter')) {
+                document.getElementById('publishedPostsCounter').textContent = data.published_posts;
+            }
+            if (document.getElementById('scheduledPostsCounter')) {
+                document.getElementById('scheduledPostsCounter').textContent = data.scheduled_posts;
+            }
+            if (document.getElementById('failedPostsCounter')) {
+                document.getElementById('failedPostsCounter').textContent = data.failed_posts;
+            }
+            if (document.getElementById('unreadInboxCounter')) {
+                document.getElementById('unreadInboxCounter').textContent = data.unread_inbox;
+            }
+
+            // Realtime user list update
+            if (data.users_data) {
+                allSystemUsers = data.users_data.map(u => ({
+                    username: u.username,
+                    is_superuser: u.is_superuser,
+                    is_active: u.is_active,
+                    last_login: u.last_login,
+                    user_type: u.user_type
+                }));
+
+                const title = document.getElementById('detailSectionTitle');
+                if (title && title.textContent === 'Real-Time System Users List') {
+                    filterDetailView('users');
+                }
+            }
+        })
+        .catch(error => console.error('Error fetching live dashboard updates:', error));
+    }
+
     setInterval(pollDashboardStats, 10000);
 </script>
 {% endblock %}
