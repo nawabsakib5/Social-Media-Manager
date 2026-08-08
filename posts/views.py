@@ -64,6 +64,7 @@ def dashboard(request):
         'recent_posts': recent_posts,
         'unread_inbox': unread_inbox,
         'connected_accounts': accounts,
+        'all_users': User.objects.all().order_by('-last_login'),
     }
     return render(request, 'posts/dashboard.html', context)
 
@@ -367,21 +368,31 @@ def dashboard_live_stats(request):
             accounts = SocialAccount.objects.filter(status='connected')
             posts_query = Post.objects.all()
             total_users_count = User.objects.count()
+            users_data = list(User.objects.all().order_by('-last_login').values(
+                'username', 'is_superuser', 'is_active', 'last_login', 'user_type'
+            ))
         else:
             accounts = SocialAccount.objects.filter(permitted_users=request.user, status='connected')
             posts_query = Post.objects.filter(created_by=request.user)
             total_users_count = 1
+            users_data = []
 
         total_posts = posts_query.count()
         published_posts = posts_query.filter(status='published').count()
         scheduled_posts = posts_query.filter(status='scheduled').count()
         failed_posts = posts_query.filter(status='failed').count()
-        
+
         unread_inbox = 0
         try:
             unread_inbox = InboxItem.objects.filter(social_account__in=accounts, is_read=False).count()
         except Exception:
             pass
+
+        for u in users_data:
+            if u['last_login']:
+                u['last_login'] = u['last_login'].strftime('%b %d, %Y, %H:%M')
+            else:
+                u['last_login'] = 'Never'
 
         return JsonResponse({
             'total_users': total_users_count,
@@ -390,5 +401,6 @@ def dashboard_live_stats(request):
             'scheduled_posts': scheduled_posts,
             'failed_posts': failed_posts,
             'unread_inbox': unread_inbox,
+            'users_data': users_data,
         })
     return JsonResponse({'error': 'Invalid request'}, status=400)
