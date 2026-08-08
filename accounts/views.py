@@ -20,23 +20,15 @@ def is_admin(user):
 
 def Login(request):
     if request.user.is_authenticated:
-        if request.user.is_superuser or getattr(request.user, 'user_type', None) == 'admin':
-            return redirect('/posts/dashboard/')
-        return redirect('/accounts/users/')  # অথবা সাধারণ ইউজারের ড্যাশবোর্ড পাথ
-        
+        return redirect('/posts/dashboard/')
     if request.method == 'POST':
         username = request.POST.get('username')
         password = request.POST.get('password')
         user = authenticate(request, username=username, password=password)
-        
         if user:
             login(request, user)
-            if user.is_superuser or getattr(user, 'user_type', None) == 'admin':
-                return redirect('/posts/dashboard/')
-            return redirect('/accounts/users/')  # সাধারণ ইউজার রিডিরেক্ট পাথ
-            
+            return redirect('/posts/dashboard/')
         messages.error(request, "Invalid username or password.")
-        
     return render(request, 'registration/login.html')
 
 
