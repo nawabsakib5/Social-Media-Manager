@@ -333,16 +333,18 @@ def send_messenger_reply(request):
 
 @login_required
 def facebook_login(request):
-    """Initiate Facebook OAuth flow with clean and modern scopes for Meta Graph API v22.0"""
     scopes = [
-        'pages_show_list', 
-        'pages_read_engagement',
-        'pages_manage_posts', 
-        'business_management',
-        'instagram_basic', 
-        'instagram_content_publish',
-        'instagram_manage_comments', 
-        'pages_read_user_content',  
+    'pages_show_list', 
+    'pages_read_engagement',
+    'pages_manage_posts', 
+    'pages_manage_engagement',
+    'business_management',
+    'instagram_basic', 
+    'instagram_content_publish',
+    'instagram_manage_comments',
+    'instagram_manage_messages',
+    'pages_read_user_content',
+    'pages_messaging',
     ]
     
     params = {

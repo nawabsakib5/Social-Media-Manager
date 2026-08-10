@@ -178,17 +178,7 @@
         {% endfor %}
     ];
 
-    let allPosts = [
-        {% for p in recent_posts %}
-        {
-            id: "{{ p.id }}",
-            content: "{{ p.content|escapejs|default:'Media only post' }}",
-            status: "{{ p.status|lower }}",
-            created_at: "{{ p.created_at|date:'M d, Y, H:i' }}",
-            scheduled_time: "{{ p.scheduled_time|date:'M d, Y, H:i'|default:'' }}"
-        },
-        {% endfor %}
-    ];
+    let allPosts = {{ all_posts_data|safe }};
 
     function filterDetailView(type) {
         const section = document.getElementById('detailedItemSection');
@@ -277,7 +267,7 @@
                     rows += `
                         <tr style="cursor:pointer;" onclick="window.location.href='/posts/${p.id}/'">
                             <td class="text-truncate ps-3 py-3" style="max-width: 350px; font-weight: 500; color: #1e293b;">
-                                ${p.content}
+                                ${p.content || '<span class="text-muted fst-italic">Media only post</span>'}
                             </td>
                             <td class="py-3">
                                 <span class="badge ${badgeClass}" style="padding: 6px 12px; border-radius: 10px; font-weight: 600; font-size: 11px;">

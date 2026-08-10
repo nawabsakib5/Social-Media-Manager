@@ -32,7 +32,7 @@
         body {
             background-color: var(--body-bg);
             background-image: radial-gradient(circle at 10% 20%, rgba(79, 70, 229, 0.03) 0%, transparent 40%),
-                              radial-gradient(circle at 90% 80%, rgba(13, 148, 136, 0.03) 0%, transparent 40%);
+                            radial-gradient(circle at 90% 80%, rgba(13, 148, 136, 0.03) 0%, transparent 40%);
             color: var(--text-main);
             margin: 0;
             overflow-x: hidden;
@@ -343,8 +343,8 @@
                 <i class="fa-solid fa-chart-pie"></i> Dashboard
             </a>
 
-            <!-- ইউআরএল ঠিক করার জন্য এখানে ড্যাশবোর্ড বা সঠিক পোস্ট নেম দেওয়া হলো -->
-            <a href="{% url 'dashboard' %}" class="nav-item-link {% if request.resolver_match.url_name == 'post_list' or request.resolver_match.url_name == 'posts' %}active{% endif %}">
+            <!-- Posts Link updated with post_list and post_create matching logic -->
+            <a href="{% url 'post_list' %}" class="nav-item-link {% if request.resolver_match.url_name == 'post_list' or request.resolver_match.url_name == 'post_create' %}active{% endif %}">
                 <i class="fa-solid fa-pen-to-square"></i> Posts
             </a>
 
@@ -434,9 +434,7 @@
             </div>
             {% endif %}
 
-            <div>
-                {% block content %}{% endblock %}
-            </div>
+            {% block content %}{% endblock %}
         </div>
     </div>
 </div>
