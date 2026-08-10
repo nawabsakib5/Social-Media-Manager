@@ -331,20 +331,27 @@ def send_messenger_reply(request):
 
 
 
+import secrets
+
 @login_required
 def facebook_login(request):
+    # Random state token generate করে session-এ save করা
+    state = secrets.token_urlsafe(32)
+    request.session['fb_oauth_state'] = state
+    request.session['fb_oauth_user_id'] = request.user.id
+    
     scopes = [
-    'pages_show_list', 
-    'pages_read_engagement',
-    'pages_manage_posts', 
-    'pages_manage_engagement',
-    'business_management',
-    'instagram_basic', 
-    'instagram_content_publish',
-    'instagram_manage_comments',
-    'instagram_manage_messages',
-    'pages_read_user_content',
-    'pages_messaging',
+        'pages_show_list', 
+        'pages_read_engagement',
+        'pages_manage_posts', 
+        'pages_manage_engagement',
+        'business_management',
+        'instagram_basic', 
+        'instagram_content_publish',
+        'instagram_manage_comments',
+        'instagram_manage_messages',
+        'pages_read_user_content',
+        'pages_messaging',
     ]
     
     params = {
@@ -352,17 +359,15 @@ def facebook_login(request):
         'redirect_uri': FB_REDIRECT_URI,
         'scope': ','.join(scopes),
         'response_type': 'code',
-        'state': str(request.user.id),
+        'state': state,
         'auth_type': 'rerequest',
     }
     
     return redirect(f"https://www.facebook.com/v22.0/dialog/oauth?{urlencode(params)}")
 
 
-
 @login_required
 def facebook_callback(request):
-    """Handle Facebook OAuth callback and generate Never-Expiring Page & Instagram tokens"""
     code = request.GET.get('code')
     state = request.GET.get('state')
     error = request.GET.get('error')
@@ -374,13 +379,17 @@ def facebook_callback(request):
         messages.error(request, f"Facebook login failed: {error_msg}")
         return redirect('social_accounts:account_list')
     
-    
-    if state != str(request.user.id):
+    # Session থেকে state verify করা
+    session_state = request.session.get('fb_oauth_state')
+    if not session_state or state != session_state:
         messages.error(request, "Security check failed. Please try again.")
         return redirect('social_accounts:account_list')
     
+    # Session clear করা
+    request.session.pop('fb_oauth_state', None)
+    request.session.pop('fb_oauth_user_id', None)
+    
     try:
-        
         token_res = requests.get(
             "https://graph.facebook.com/v22.0/oauth/access_token",
             params={
@@ -399,7 +408,6 @@ def facebook_callback(request):
         
         short_token = token_res['access_token']
         
-        
         long_res = requests.get(
             "https://graph.facebook.com/v22.0/oauth/access_token",
             params={
@@ -412,7 +420,6 @@ def facebook_callback(request):
         ).json()
         
         long_token = long_res.get('access_token', short_token)
-        
         
         pages_data = requests.get(
             "https://graph.facebook.com/v22.0/me/accounts",
@@ -428,20 +435,15 @@ def facebook_callback(request):
             return redirect('social_accounts:account_list')
         
         if not pages_data['data']:
-            messages.warning(request, "No pages found to connect.")
+            messages.warning(request, "No pages were found to connect.")
             return redirect('social_accounts:account_list')
         
         connected_pages = []
         for page in pages_data['data']:
             page_id = page['id']
             page_name = page['name']
-            
-            page_token = page.get('access_token')
-            
-            if not page_token:
-                page_token = long_token 
+            page_token = page.get('access_token', long_token)
 
-            
             account, created = SocialAccount.objects.update_or_create(
                 platform='facebook',
                 platform_account_id=page_id,
@@ -451,16 +453,13 @@ def facebook_callback(request):
                     'connected_by': request.user,
                 }
             )
-            
             account.access_token = page_token
             account.save()
-            
             
             if not (request.user.is_superuser or getattr(request.user, 'user_type', None) == 'admin'):
                 account.permitted_users.add(request.user)
             
             connected_pages.append(page_name)
-            
             
             instagram_check = requests.get(
                 f"https://graph.facebook.com/v22.0/{page_id}",
@@ -477,7 +476,6 @@ def facebook_callback(request):
                 ig_username = ig_data.get('username', page_name)
                 ig_name = ig_data.get('name', f"{page_name} (Instagram)")
                 
-                
                 ig_account, _ = SocialAccount.objects.update_or_create(
                     platform='instagram',
                     platform_account_id=ig_id,
@@ -488,10 +486,8 @@ def facebook_callback(request):
                         'connected_by': request.user,
                     }
                 )
-                
                 ig_account.access_token = page_token
                 ig_account.save()
-                
                 
                 if not (request.user.is_superuser or getattr(request.user, 'user_type', None) == 'admin'):
                     ig_account.permitted_users.add(request.user)
@@ -511,17 +507,20 @@ def facebook_callback(request):
 
 @login_required
 def disconnect_account(request, account_id):
-    """Disconnect a social account"""
     if request.method != 'POST':
         return redirect('social_accounts:account_list')
     
     try:
-        account = SocialAccount.objects.get(id=account_id, connected_by=request.user)
+        if request.user.is_superuser or getattr(request.user, 'user_type', None) == 'admin':
+            account = SocialAccount.objects.get(id=account_id)
+        else:
+            account = SocialAccount.objects.get(id=account_id, connected_by=request.user)
+        
         account.status = 'disconnected'
         account.save()
         messages.success(request, f"{account.account_name} disconnected successfully.")
     except SocialAccount.DoesNotExist:
-        messages.error(request, "Account not found.")
+        messages.error(request, "Account not found or permission denied.")
     
     return redirect('social_accounts:account_list')
 

@@ -80,12 +80,20 @@ def sync_inbox_data(request):
                     synced_count += _sync_facebook_comments(account, page_token)
                 except Exception as e:
                     print(f"[FB Comments Error] {account.account_name}: {e}")
+                try:
+                    synced_count += _sync_facebook_messages(account, page_token)
+                except Exception as e:
+                    print(f"[FB Messages Error] {account.account_name}: {e}")
 
             elif account.platform == 'instagram':
                 try:
                     synced_count += _sync_instagram_comments(account, page_token)
                 except Exception as e:
                     print(f"[IG Comments Error] {account.account_name}: {e}")
+                try:
+                    synced_count += _sync_instagram_messages(account, page_token)
+                except Exception as e:
+                    print(f"[IG Messages Error] {account.account_name}: {e}")
 
             elif account.platform == 'twitter':
                 try:
@@ -104,6 +112,112 @@ def sync_inbox_data(request):
 
     messages.success(request, f"Successfully synced {synced_count} new items to your inbox!")
     return redirect('inbox_list')
+
+
+def _sync_facebook_messages(account, page_token):
+    """Facebook Page Messenger DMs sync।"""
+    page_id = account.platform_account_id
+    url = f"https://graph.facebook.com/v22.0/{page_id}/conversations"
+    params = {
+        'access_token': page_token,
+        'fields': 'participants,messages{message,from,created_time,id}',
+        'limit': 10,
+    }
+    count = 0
+    response = requests.get(url, params=params, timeout=15).json()
+
+    if 'error' in response:
+        print(f"[FB Messages] {account.account_name}: {response['error'].get('message')}")
+        return 0
+
+    for conversation in response.get('data', []):
+        messages_data = conversation.get('messages', {}).get('data', [])
+        participants = conversation.get('participants', {}).get('data', [])
+        sender = next(
+            (p for p in participants if p.get('id') != page_id),
+            None
+        )
+
+        if not sender:
+            continue
+
+        sender_name = sender.get('name', 'Facebook User')
+        sender_id = sender.get('id', '')
+
+        for msg in messages_data:
+            if msg.get('from', {}).get('id') == page_id:
+                continue
+
+            created_time = parse_datetime(msg.get('created_time'))
+            _, created = InboxItem.objects.update_or_create(
+                item_id=msg['id'],
+                defaults={
+                    'social_account': account,
+                    'type': 'message',
+                    'sender_id': sender_id,
+                    'sender_name': sender_name,
+                    'content': msg.get('message', ''),
+                    'received_at': created_time,
+                }
+            )
+            if created:
+                count += 1
+    return count
+
+
+def _sync_instagram_messages(account, page_token):
+    """Instagram DMs sync।"""
+    ig_id = account.platform_account_id
+    if not ig_id:
+        return 0
+
+    url = f"https://graph.facebook.com/v22.0/{ig_id}/conversations"
+    params = {
+        'access_token': page_token,
+        'fields': 'participants,messages{message,from,created_time,id}',
+        'platform': 'instagram',
+        'limit': 10,
+    }
+    count = 0
+    response = requests.get(url, params=params, timeout=15).json()
+
+    if 'error' in response:
+        print(f"[IG Messages] {account.account_name}: {response['error'].get('message')}")
+        return 0
+
+    for conversation in response.get('data', []):
+        messages_data = conversation.get('messages', {}).get('data', [])
+        participants = conversation.get('participants', {}).get('data', [])
+        sender = next(
+            (p for p in participants if p.get('id') != ig_id),
+            None
+        )
+
+        if not sender:
+            continue
+
+        sender_name = sender.get('name', 'Instagram User')
+        sender_id = sender.get('id', '')
+
+        for msg in messages_data:
+            if msg.get('from', {}).get('id') == ig_id:
+                continue
+
+            created_time = parse_datetime(msg.get('created_time'))
+            _, created = InboxItem.objects.update_or_create(
+                item_id=msg['id'],
+                defaults={
+                    'social_account': account,
+                    'type': 'message',
+                    'sender_id': sender_id,
+                    'sender_name': sender_name,
+                    'content': msg.get('message', ''),
+                    'received_at': created_time,
+                }
+            )
+            if created:
+                count += 1
+    return count
 
 
 def _sync_facebook_comments(account, page_token):
