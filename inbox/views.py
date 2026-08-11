@@ -10,6 +10,7 @@ from integrations.facebook_adapter import FacebookAdapter
 from .models import InboxItem, Reply
 
 
+
 @login_required
 def inbox_list(request):
     selected_platform = request.GET.get('platform', '')
@@ -595,3 +596,46 @@ def mark_read_ajax(request, item_id):
     item.is_read = True
     item.save(update_fields=['is_read'])
     return JsonResponse({'status': 'success'})
+
+
+
+@login_required
+def inbox_live_sync(request):
+    """2 second polling এর জন্য lightweight sync endpoint"""
+    if not request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        return JsonResponse({'error': 'Invalid request'}, status=400)
+
+    if request.user.is_superuser or getattr(request.user, 'user_type', None) == 'admin':
+        connected_accounts = SocialAccount.objects.filter(status='connected')
+    else:
+        connected_accounts = SocialAccount.objects.filter(
+            permitted_users=request.user, status='connected'
+        )
+
+    synced_count = 0
+    adapter = FacebookAdapter()
+
+    for account in connected_accounts:
+        page_token, error = adapter.get_page_token(account)
+        if error:
+            continue
+        try:
+            if account.platform == 'facebook':
+                synced_count += _sync_facebook_messages(account, page_token)
+            elif account.platform == 'instagram':
+                synced_count += _sync_instagram_messages(account, page_token)
+        except Exception as e:
+            print(f"[Live Sync Error] {account.account_name}: {e}")
+
+    if request.user.is_superuser or getattr(request.user, 'user_type', None) == 'admin':
+        unread = InboxItem.objects.filter(is_read=False).count()
+    else:
+        unread = InboxItem.objects.filter(
+            social_account__permitted_users=request.user,
+            is_read=False
+        ).count()
+
+    return JsonResponse({
+        'synced': synced_count,
+        'unread_count': unread,
+    })

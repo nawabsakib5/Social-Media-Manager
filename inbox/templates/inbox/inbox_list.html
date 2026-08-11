@@ -3,10 +3,7 @@
 
 {% block content %}
 <style>
-    /* ── 3D Glassmorphism Inbox Styling ── */
-    .inbox-wrapper {
-        perspective: 1500px;
-    }
+    .inbox-wrapper { perspective: 1500px; }
 
     .inbox-card {
         background: rgba(255, 255, 255, 0.85);
@@ -16,147 +13,146 @@
         border-radius: 28px;
         box-shadow: 0 20px 50px rgba(15, 23, 42, 0.08);
         overflow: hidden;
-        height: 78vh;
+        height: 80vh;
         display: flex;
         flex-direction: column;
-        transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
         opacity: 0;
         transform: translateY(30px) translateZ(-50px);
     }
 
-    .inbox-card:hover {
-        box-shadow: 0 30px 60px rgba(15, 23, 42, 0.12);
-        border-color: rgba(13, 148, 136, 0.3);
-    }
-
     .chat-list-item {
-        padding: 16px 20px;
+        padding: 14px 18px;
         border-bottom: 1px solid rgba(241, 245, 249, 0.8);
-        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        transition: all 0.3s ease;
         text-decoration: none;
         display: flex;
         align-items: center;
-        gap: 14px;
-        position: relative;
+        gap: 12px;
+        cursor: pointer;
     }
 
-    .chat-list-item:hover { 
-        background: rgba(240, 253, 250, 0.7); 
-        transform: translateY(-2px) translateZ(5px);
-    }
+    .chat-list-item:hover { background: rgba(240, 253, 250, 0.7); }
 
-    .chat-list-item.active-chat { 
-        background: rgba(240, 253, 250, 0.95); 
-        border-left: 5px solid var(--accent, #0d9488); 
-        box-shadow: inset 0 2px 8px rgba(13, 148, 136, 0.06);
+    .chat-list-item.active-chat {
+        background: rgba(240, 253, 250, 0.95);
+        border-left: 4px solid #0d9488;
     }
 
     .avatar-bubble {
-        width: 46px;
-        height: 46px;
+        width: 44px;
+        height: 44px;
         background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%);
         color: white;
-        border-radius: 16px;
+        border-radius: 14px;
         display: flex;
         align-items: center;
         justify-content: center;
         font-weight: 800;
-        font-size: 16px;
-        box-shadow: 0 8px 20px rgba(13, 148, 136, 0.25);
+        font-size: 15px;
         flex-shrink: 0;
+        position: relative;
+    }
+
+    .unread-dot {
+        position: absolute;
+        top: -3px;
+        right: -3px;
+        width: 10px;
+        height: 10px;
+        background: #ef4444;
+        border-radius: 50%;
+        border: 2px solid white;
+    }
+
+    .platform-icon {
+        position: absolute;
+        bottom: -3px;
+        right: -3px;
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        border: 2px solid white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 8px;
+        color: white;
     }
 
     .chat-bubble-self {
         background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%);
         color: white;
         border-radius: 20px 20px 4px 20px;
-        padding: 14px 18px;
-        max-width: 75%;
-        box-shadow: 0 10px 25px rgba(13, 148, 136, 0.2);
-        animation: popIn 0.3s cubic-bezier(0.25, 0.8, 0.25, 1) forwards;
+        padding: 12px 16px;
+        max-width: 70%;
+        box-shadow: 0 6px 20px rgba(13, 148, 136, 0.2);
     }
 
     .chat-bubble-other {
-        background: rgba(241, 245, 249, 0.9);
+        background: rgba(241, 245, 249, 0.95);
         color: #1e293b;
         border-radius: 20px 20px 20px 4px;
-        padding: 14px 18px;
-        max-width: 75%;
+        padding: 12px 16px;
+        max-width: 70%;
         border: 1px solid rgba(226, 232, 240, 0.8);
-        box-shadow: 0 4px 15px rgba(15, 23, 42, 0.03);
-        animation: popIn 0.3s cubic-bezier(0.25, 0.8, 0.25, 1) forwards;
     }
 
-    @keyframes popIn {
-        0% { opacity: 0; transform: translateY(10px) scale(0.95); }
-        100% { opacity: 1; transform: translateY(0) scale(1); }
+    .inbox-input {
+        border-radius: 14px;
+        border: 1.5px solid #e2e8f0;
+        padding: 11px 18px;
+        font-size: 14px;
+        transition: all 0.3s ease;
     }
 
-    .inbox-header {
-        padding: 20px 24px;
-        border-bottom: 1px solid rgba(226, 232, 240, 0.8);
-        background: rgba(255, 255, 255, 0.5);
+    .inbox-input:focus {
+        border-color: #0d9488;
+        box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.1);
+        outline: none;
+    }
+
+    .send-btn {
+        width: 44px;
+        height: 44px;
+        background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%);
+        color: white;
+        border: none;
+        border-radius: 14px;
         display: flex;
-        justify-content: space-between;
         align-items: center;
+        justify-content: center;
+        box-shadow: 0 6px 18px rgba(13, 148, 136, 0.3);
+        transition: all 0.3s ease;
+        flex-shrink: 0;
     }
+
+    .send-btn:hover { transform: translateY(-2px); box-shadow: 0 10px 22px rgba(13, 148, 136, 0.4); }
 
     .filter-btn {
-        border-radius: 12px;
+        border-radius: 10px;
         font-weight: 700;
-        font-size: 13px;
-        padding: 8px 16px;
+        font-size: 12px;
+        padding: 7px 14px;
         border: 1px solid #e2e8f0;
         background: white;
         color: #64748b;
         transition: all 0.3s ease;
+        text-decoration: none;
     }
 
     .filter-btn.active, .filter-btn:hover {
-        background: var(--accent, #0d9488);
+        background: #0d9488;
         color: white;
-        border-color: var(--accent, #0d9488);
-        box-shadow: 0 6px 15px rgba(13, 148, 136, 0.25);
+        border-color: #0d9488;
     }
 
-    .inbox-input {
-        border-radius: 16px;
-        border: 1.5px solid #e2e8f0;
-        padding: 12px 20px;
-        font-size: 14px;
-        transition: all 0.3s ease;
-        background: rgba(255, 255, 255, 0.9);
-    }
+    .header-anim { opacity: 0; transform: translateY(-20px); }
 
-    .inbox-input:focus {
-        border-color: var(--accent, #0d9488);
-        box-shadow: 0 0 0 4px rgba(13, 148, 136, 0.12);
-        background: #fff;
-    }
-
-    .send-btn {
-        width: 46px;
-        height: 46px;
-        background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%);
-        color: white;
-        border: none;
-        border-radius: 16px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        box-shadow: 0 8px 20px rgba(13, 148, 136, 0.3);
-        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-        flex-shrink: 0;
-    }
-
-    .send-btn:hover {
-        transform: translateY(-2px) scale(1.05);
-        box-shadow: 0 12px 25px rgba(13, 148, 136, 0.4);
-    }
-
-    .header-anim {
-        opacity: 0;
-        transform: translateY(-20px);
+    .msg-time {
+        font-size: 10px;
+        font-weight: 600;
+        opacity: 0.6;
+        margin-top: 4px;
     }
 </style>
 
@@ -164,96 +160,138 @@
     <!-- Top Bar -->
     <div class="d-flex justify-content-between align-items-center mb-4 header-anim" id="pageHeader">
         <div>
-            <h4 class="fw-extrabold mb-1" style="font-weight: 800; color: #0f172a; letter-spacing: -0.5px;">Social Inbox</h4>
-            <p class="text-muted small" style="font-size: 14px;">Manage all your customer conversations in one high-end workspace.</p>
+            <h4 class="fw-extrabold mb-1" style="font-weight: 800; color: #0f172a; letter-spacing: -0.5px;">
+                Social Inbox
+                {% if unread_count > 0 %}
+                <span class="badge bg-danger ms-2" style="font-size: 12px; border-radius: 10px;">{{ unread_count }}</span>
+                {% endif %}
+            </h4>
+            <p class="text-muted small mb-0">Unified conversations from all your connected platforms.</p>
         </div>
-        <a href="{% url 'sync_inbox' %}" class="btn btn-dark d-flex align-items-center gap-2 shadow-sm" style="border-radius: 14px; font-weight: 700; padding: 10px 22px; transition: all 0.3s ease;">
-            <i class="fa-solid fa-sync" style="color: var(--accent, #0d9488);"></i> Sync Inbox
+        <a href="{% url 'sync_inbox' %}" class="btn btn-dark d-flex align-items-center gap-2" style="border-radius: 12px; font-weight: 700; padding: 10px 20px;">
+            <i class="fa-solid fa-rotate" style="color: #0d9488;"></i> Sync Inbox
         </a>
     </div>
 
     <div class="row g-4">
-        <!-- Sidebar: Conversations -->
+        <!-- Sidebar -->
         <div class="col-lg-4">
-            <div class="inbox-card shadow-sm" id="sidebarCard">
+            <div class="inbox-card" id="sidebarCard">
                 <div class="p-3 border-bottom bg-white bg-opacity-50">
-                    <div class="d-flex gap-2 w-100" role="group">
-                        <a href="?" class="btn filter-btn flex-fill {% if not selected_type %}active{% endif %}">All</a>
-                        <a href="?type=comment" class="btn filter-btn flex-fill {% if selected_type == 'comment' %}active{% endif %}">Comments</a>
-                        <a href="?type=message" class="btn filter-btn flex-fill {% if selected_type == 'message' %}active{% endif %}">DMs</a>
+                    <div class="d-flex gap-2">
+                        <a href="?" class="filter-btn flex-fill text-center {% if not selected_type %}active{% endif %}">All</a>
+                        <a href="?type=comment" class="filter-btn flex-fill text-center {% if selected_type == 'comment' %}active{% endif %}">Comments</a>
+                        <a href="?type=message" class="filter-btn flex-fill text-center {% if selected_type == 'message' %}active{% endif %}">DMs</a>
                     </div>
                 </div>
                 <div class="overflow-auto flex-grow-1">
-                    {% for item in items %}
-                    <a href="?item_id={{ item.id }}&platform={{ selected_platform }}&type={{ selected_type }}" 
-                       class="chat-list-item {% if active_item.id == item.id %}active-chat{% endif %}">
-                        <div class="avatar-bubble">{{ item.sender_name|first|upper }}</div>
+                    {% for conv in conversations %}
+                    {% with is_active=conv.sender_id|stringformat:"s" %}
+                    <a href="?sender_id={{ conv.sender_id }}&account_id={{ conv.social_account__id }}&type={{ selected_type }}&platform={{ selected_platform }}"
+                       class="chat-list-item {% if conv.sender_id|stringformat:'s' == active_sender_id|stringformat:'s' and conv.social_account__id|stringformat:'s' == active_account_id %}active-chat{% endif %}">
+                        <div class="avatar-bubble">
+                            {{ conv.sender_name|first|upper }}
+                            {% if conv.unread_count > 0 %}
+                            <span class="unread-dot"></span>
+                            {% endif %}
+                            <span class="platform-icon" style="background: {% if conv.social_account__platform == 'facebook' %}#1877f2{% elif conv.social_account__platform == 'instagram' %}#e1306c{% else %}#64748b{% endif %};">
+                                <i class="fa-brands fa-{{ conv.social_account__platform }}" style="font-size: 7px;"></i>
+                            </span>
+                        </div>
                         <div class="flex-grow-1 overflow-hidden">
                             <div class="d-flex justify-content-between align-items-center mb-1">
-                                <span class="fw-bold text-dark small text-truncate">{{ item.sender_name }}</span>
-                                <span class="text-muted" style="font-size: 11px; font-weight: 600;">{{ item.received_at|date:"h:i A" }}</span>
+                                <span class="fw-bold text-dark" style="font-size: 13px;">{{ conv.sender_name }}</span>
+                                <span class="text-muted" style="font-size: 10px;">{{ conv.last_message_time|date:"h:i A" }}</span>
                             </div>
-                            <p class="text-muted small mb-0 text-truncate" style="font-size: 13px;">{{ item.content }}</p>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="text-muted text-truncate" style="font-size: 12px;">{{ conv.message_count }} message{{ conv.message_count|pluralize }}</span>
+                                {% if conv.unread_count > 0 %}
+                                <span class="badge bg-danger rounded-pill" style="font-size: 10px;">{{ conv.unread_count }}</span>
+                                {% endif %}
+                            </div>
+                            <div class="mt-1">
+                                <span style="font-size: 10px; color: #64748b;">
+                                    <i class="fa-brands fa-{{ conv.social_account__platform }}" style="font-size: 9px;"></i>
+                                    {{ conv.social_account__account_name }}
+                                </span>
+                            </div>
                         </div>
                     </a>
+                    {% endwith %}
                     {% empty %}
-                    <div class="text-muted p-5 text-center font-monospace small">No conversations found.</div>
+                    <div class="text-muted p-5 text-center small">No conversations found.<br>Click Sync Inbox to fetch messages.</div>
                     {% endfor %}
                 </div>
             </div>
         </div>
 
-        <!-- Main: Chat Thread -->
+        <!-- Chat Thread -->
         <div class="col-lg-8">
-            {% if active_item %}
-            <div class="inbox-card shadow-sm" id="chatCard">
-                <div class="inbox-header">
+            {% if active_conversation %}
+            <div class="inbox-card" id="chatCard">
+                <!-- Chat Header -->
+                <div style="padding: 18px 24px; border-bottom: 1px solid rgba(226, 232, 240, 0.8); background: rgba(255,255,255,0.5);">
                     <div class="d-flex align-items-center gap-3">
-                        <div class="avatar-bubble">{{ active_item.sender_name|first|upper }}</div>
+                        <div class="avatar-bubble">{{ active_conversation.sender_name|first|upper }}</div>
                         <div>
-                            <h6 class="fw-extrabold mb-0" style="font-weight: 800; color: #0f172a;">{{ active_item.sender_name }}</h6>
-                            <span class="badge rounded-pill px-3 py-1 mt-1" style="background: rgba(13, 148, 136, 0.1); color: var(--accent, #0d9488); border: 1px solid rgba(13, 148, 136, 0.2); font-weight: 700; font-size: 10px; letter-spacing: 0.5px;">{{ active_item.get_type_display|upper }}</span>
+                            <h6 class="fw-bold mb-0" style="color: #0f172a;">{{ active_conversation.sender_name }}</h6>
+                            <div class="d-flex align-items-center gap-2 mt-1">
+                                <span style="font-size: 11px; color: #64748b;">
+                                    <i class="fa-brands fa-{{ active_conversation.platform }}"></i>
+                                    {{ active_conversation.account_name }}
+                                </span>
+                                <span class="badge" style="background: rgba(13,148,136,0.1); color: #0d9488; font-size: 10px; border-radius: 8px; padding: 2px 8px;">
+                                    {{ active_conversation.type|upper }}
+                                </span>
+                            </div>
                         </div>
                     </div>
                 </div>
-                
-                <div class="flex-grow-1 overflow-auto p-4" style="background: rgba(248, 250, 252, 0.5);">
-                    <!-- Customer Message -->
-                    <div class="mb-4">
+
+                <!-- Messages Thread -->
+                <div class="flex-grow-1 overflow-auto p-4" style="background: rgba(248, 250, 252, 0.5);" id="chatMessages">
+                    {% for msg in conversation_messages %}
+                    <!-- Incoming message -->
+                    <div class="d-flex mb-3">
                         <div class="chat-bubble-other">
-                            <div style="font-size: 14px; line-height: 1.5;">{{ active_item.content }}</div>
-                            <div class="text-xs opacity-50 mt-1" style="font-size: 10px; font-weight: 600;">{{ active_item.received_at|date:"M d, h:i A" }}</div>
+                            <div style="font-size: 14px; line-height: 1.5;">{{ msg.content }}</div>
+                            <div class="msg-time">{{ msg.received_at|date:"M d, h:i A" }}</div>
                         </div>
                     </div>
-                    <!-- Replies -->
-                    {% for reply in active_item.replies.all %}
-                    <div class="d-flex justify-content-end mb-4">
+                    <!-- Replies for this message -->
+                    {% for reply in msg.replies.all %}
+                    <div class="d-flex justify-content-end mb-3">
                         <div class="chat-bubble-self">
                             <div style="font-size: 14px; line-height: 1.5;">{{ reply.content }}</div>
-                            <div class="text-xs opacity-75 mt-1 text-end" style="font-size: 10px; font-weight: 600;">{{ reply.sent_at|date:"M d, h:i A" }}</div>
+                            <div class="msg-time text-end" style="color: rgba(255,255,255,0.7);">{{ reply.sent_at|date:"M d, h:i A" }}</div>
                         </div>
                     </div>
                     {% endfor %}
+                    {% endfor %}
                 </div>
 
-                <div class="p-3 border-top bg-white bg-opacity-75" style="backdrop-filter: blur(10px);">
-                    <form method="post" action="{% url 'send_inbox_reply' active_item.id %}" class="d-flex gap-2 align-items-center">
+                <!-- Reply Box -->
+                <div class="p-3 border-top bg-white bg-opacity-75">
+                    {% if active_conversation.active_item %}
+                    <form method="post" action="{% url 'send_inbox_reply' active_conversation.active_item.id %}" class="d-flex gap-2 align-items-center">
                         {% csrf_token %}
-                        <input type="text" name="message" class="form-control inbox-input flex-grow-1 shadow-none" placeholder="Reply to {{ active_item.sender_name }}..." required>
+                        <input type="text" name="message" class="form-control inbox-input flex-grow-1 shadow-none"
+                               placeholder="Reply to {{ active_conversation.sender_name }}..." required>
                         <button type="submit" class="send-btn">
                             <i class="fa-solid fa-paper-plane"></i>
                         </button>
                     </form>
+                    {% endif %}
                 </div>
             </div>
             {% else %}
-            <div class="inbox-card shadow-sm d-flex align-items-center justify-content-center text-center" id="chatCard">
+            <div class="inbox-card d-flex align-items-center justify-content-center text-center" id="chatCard">
                 <div class="text-muted p-5">
-                    <div style="width: 70px; height: 70px; background: rgba(13, 148, 136, 0.1); color: var(--accent, #0d9488); border-radius: 22px; display: flex; align-items: center; justify-content: center; font-size: 28px; margin: 0 auto 20px; box-shadow: 0 10px 25px rgba(13, 148, 136, 0.15);">
+                    <div style="width: 70px; height: 70px; background: rgba(13,148,136,0.1); color: #0d9488; border-radius: 22px; display: flex; align-items: center; justify-content: center; font-size: 28px; margin: 0 auto 20px;">
                         <i class="fa-solid fa-inbox"></i>
                     </div>
-                    <h6 class="fw-bold text-dark mb-1" style="font-weight: 800;">No conversation selected</h6>
-                    <p class="text-muted small">Choose a chat from the left sidebar to start messaging.</p>
+                    <h6 class="fw-bold text-dark mb-1">No conversation selected</h6>
+                    <p class="small">Choose a chat from the left sidebar.</p>
                 </div>
             </div>
             {% endif %}
@@ -261,34 +299,97 @@
     </div>
 </div>
 
-<!-- GSAP Animation Script -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-    if (typeof gsap !== 'undefined') {
-        const tl = gsap.timeline();
-
-        tl.to("#pageHeader", {
-            opacity: 1,
-            y: 0,
-            duration: 0.6,
-            ease: "power2.out"
-        })
-        .to("#sidebarCard", {
-            opacity: 1,
-            y: 0,
-            z: 0,
-            duration: 0.7,
-            ease: "power3.out"
-        }, "-=0.3")
-        .to("#chatCard", {
-            opacity: 1,
-            y: 0,
-            z: 0,
-            duration: 0.8,
-            ease: "power3.out"
-        }, "-=0.5");
+    // Chat scroll to bottom
+    const chatMessages = document.getElementById('chatMessages');
+    if (chatMessages) {
+        chatMessages.scrollTop = chatMessages.scrollHeight;
     }
+
+    if (typeof gsap !== 'undefined') {
+        gsap.timeline()
+            .to("#pageHeader", { opacity: 1, y: 0, duration: 0.5, ease: "power2.out" })
+            .to("#sidebarCard", { opacity: 1, y: 0, z: 0, duration: 0.6, ease: "power3.out" }, "-=0.3")
+            .to("#chatCard", { opacity: 1, y: 0, z: 0, duration: 0.7, ease: "power3.out" }, "-=0.4");
+    }
+
+    // WebSocket connection
+    const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsUrl = `${wsProtocol}//${window.location.host}/ws/inbox/`;
+    let inboxSocket = null;
+
+    function connectWebSocket() {
+        inboxSocket = new WebSocket(wsUrl);
+
+        inboxSocket.onopen = function() {
+            console.log('[Inbox WS] Connected');
+        };
+
+        inboxSocket.onmessage = function(e) {
+            const data = JSON.parse(e.data);
+            
+            if (data.type === 'sync_update') {
+                // Unread badge update
+                const badge = document.querySelector('.badge.bg-danger');
+                if (badge && data.unread_count > 0) {
+                    badge.textContent = data.unread_count;
+                    badge.style.display = '';
+                }
+
+                // নতুন message আসলে reload
+                if (data.reload) {
+                    window.location.reload();
+                }
+            }
+        };
+
+        inboxSocket.onclose = function() {
+            console.log('[Inbox WS] Disconnected, reconnecting in 3s...');
+            setTimeout(connectWebSocket, 3000);
+        };
+
+        inboxSocket.onerror = function(err) {
+            console.error('[Inbox WS] Error:', err);
+        };
+    }
+
+    connectWebSocket();
+
+    // 2 second auto refresh for new messages only
+    let lastMessageCount = {{ conversation_messages|length|default:0 }};
+    const currentSenderId = "{{ active_sender_id }}";
+    const currentAccountId = "{{ active_account_id }}";
+
+    function checkNewMessages() {
+        fetch("{% url 'inbox_live_sync' %}", {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.synced > 0) {
+                // নতুন message আসলে current URL preserve করে reload
+                const url = new URL(window.location.href);
+                window.location.href = url.toString();
+            }
+            // Unread badge update
+            if (data.unread_count > 0) {
+                const title = document.querySelector('h4');
+                if (title && !title.querySelector('.badge')) {
+                    const badge = document.createElement('span');
+                    badge.className = 'badge bg-danger ms-2';
+                    badge.style.fontSize = '12px';
+                    badge.style.borderRadius = '10px';
+                    badge.textContent = data.unread_count;
+                    title.appendChild(badge);
+                }
+            }
+        })
+        .catch(err => console.error('Sync error:', err));
+    }
+
+    setInterval(checkNewMessages, 2000);
 });
 </script>
 {% endblock %}

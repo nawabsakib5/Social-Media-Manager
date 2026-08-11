@@ -10,6 +10,8 @@ DEBUG = config('DEBUG', cast=bool)
 ALLOWED_HOSTS = ['localhost', '127.0.0.1', '.onrender.com', '*']
 
 INSTALLED_APPS = [
+    'daphne',
+    'channels',
     'django_admin_collapse_apps',
     'django.contrib.admin',
     'django.contrib.auth',
@@ -37,6 +39,16 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = 'config.urls'
+
+
+ASGI_APPLICATION = 'config.asgi.application'
+
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels.layers.InMemoryChannelLayer',
+    },
+}
+
 
 TEMPLATES = [
     {
