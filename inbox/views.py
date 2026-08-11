@@ -14,7 +14,8 @@ from .models import InboxItem, Reply
 def inbox_list(request):
     selected_platform = request.GET.get('platform', '')
     selected_type = request.GET.get('type', '')
-    active_item_id = request.GET.get('item_id', '')
+    active_sender_id = request.GET.get('sender_id', '')
+    active_account_id = request.GET.get('account_id', '')
 
     if request.user.is_superuser or getattr(request.user, 'user_type', None) == 'admin':
         items = InboxItem.objects.all()
@@ -26,29 +27,81 @@ def inbox_list(request):
     if selected_type:
         items = items.filter(type=selected_type)
 
+    # sender_id + social_account দিয়ে unique conversations বানানো
+    from django.db.models import Max, Count, Q
+    conversations_qs = items.values(
+        'sender_id', 'sender_name', 'social_account__id',
+        'social_account__platform', 'social_account__account_name', 'type'
+    ).annotate(
+        last_message_time=Max('received_at'),
+        message_count=Count('id'),
+        unread_count=Count('id', filter=Q(is_read=False)),
+    ).order_by('-last_message_time')
+
+    # Active conversation
+    active_conversation = None
+    conversation_messages = []
+    conversation_replies = []
+
+    if active_sender_id and active_account_id:
+        active_conversation = {
+            'sender_id': active_sender_id,
+            'account_id': active_account_id,
+        }
+        # এই conversation-এর সব messages
+        conversation_messages = items.filter(
+            sender_id=active_sender_id,
+            social_account__id=active_account_id,
+        ).order_by('received_at')
+
+        # সব messages read mark করা
+        conversation_messages.filter(is_read=False).update(is_read=True)
+
+        # Active item (reply-এর জন্য latest message নেওয়া)
+        active_item = conversation_messages.last()
+
+        # Sender info
+        if conversation_messages.exists():
+            first_msg = conversation_messages.first()
+            active_conversation['sender_name'] = first_msg.sender_name
+            active_conversation['platform'] = first_msg.social_account.platform
+            active_conversation['account_name'] = first_msg.social_account.account_name
+            active_conversation['type'] = first_msg.type
+            active_conversation['active_item'] = active_item
+    elif conversations_qs.exists():
+        # Default: প্রথম conversation select করা
+        first_conv = conversations_qs.first()
+        active_sender_id = first_conv['sender_id']
+        active_account_id = first_conv['social_account__id']
+        active_conversation = {
+            'sender_id': active_sender_id,
+            'account_id': active_account_id,
+        }
+        conversation_messages = items.filter(
+            sender_id=active_sender_id,
+            social_account__id=active_account_id,
+        ).order_by('received_at')
+        conversation_messages.filter(is_read=False).update(is_read=True)
+        active_item = conversation_messages.last()
+        if conversation_messages.exists():
+            first_msg = conversation_messages.first()
+            active_conversation['sender_name'] = first_msg.sender_name
+            active_conversation['platform'] = first_msg.social_account.platform
+            active_conversation['account_name'] = first_msg.social_account.account_name
+            active_conversation['type'] = first_msg.type
+            active_conversation['active_item'] = active_item
+
     unread_count = items.filter(is_read=False).count()
 
-    active_item = None
-    if active_item_id:
-        try:
-            active_item = items.get(id=active_item_id)
-            if not active_item.is_read:
-                active_item.is_read = True
-                active_item.save(update_fields=['is_read'])
-        except InboxItem.DoesNotExist:
-            pass
-    elif items.exists():
-        active_item = items.first()
-        if active_item and not active_item.is_read:
-            active_item.is_read = True
-            active_item.save(update_fields=['is_read'])
-
     context = {
-        'items': items.order_by('-received_at'),
+        'conversations': conversations_qs,
+        'active_conversation': active_conversation,
+        'conversation_messages': conversation_messages,
+        'active_sender_id': active_sender_id,
+        'active_account_id': str(active_account_id),
         'selected_platform': selected_platform,
         'selected_type': selected_type,
         'unread_count': unread_count,
-        'active_item': active_item,
     }
     return render(request, 'inbox/inbox_list.html', context)
 
@@ -395,9 +448,18 @@ def send_inbox_reply(request, item_id):
         messages.error(request, "Reply content cannot be empty!")
         return redirect('inbox_list')
 
-    # Page token নেওয়া হচ্ছে (encrypted token decrypt করে)
-    token = item.social_account.access_token
+    platform = item.social_account.platform
     page_id = item.social_account.platform_account_id
+
+    # Facebook/Instagram এর জন্য page token নেওয়া
+    if platform in ['facebook', 'instagram']:
+        adapter = FacebookAdapter()
+        token, error = adapter.get_page_token(item.social_account)
+        if error:
+            messages.error(request, f"Access token error: {error}")
+            return redirect('inbox_list')
+    else:
+        token = item.social_account.access_token
 
     if not token:
         messages.error(request, "Access token not found. Please reconnect account.")
@@ -407,12 +469,10 @@ def send_inbox_reply(request, item_id):
     error_msg = ""
 
     try:
-        platform = item.social_account.platform
         base_url = "https://graph.facebook.com/v22.0"
 
         if platform == 'facebook':
             if item.type == 'comment':
-                # Comment-এ reply
                 res = requests.post(
                     f"{base_url}/{item.item_id}/comments",
                     data={
@@ -426,7 +486,6 @@ def send_inbox_reply(request, item_id):
                     error_msg = res.get('error', {}).get('message', 'Unknown error')
 
             elif item.type == 'message':
-                # Messenger reply — /{page_id}/messages endpoint
                 res = requests.post(
                     f"{base_url}/{page_id}/messages",
                     params={'access_token': token},
@@ -442,18 +501,33 @@ def send_inbox_reply(request, item_id):
                     error_msg = res.get('error', {}).get('message', 'Messenger reply failed')
 
         elif platform == 'instagram':
-            # Instagram comment reply
-            res = requests.post(
-                f"{base_url}/{item.item_id}/replies",
-                data={
-                    'message': reply_content,
-                    'access_token': token,
-                },
-                timeout=15
-            ).json()
-            success = 'id' in res
-            if not success:
-                error_msg = res.get('error', {}).get('message', 'Instagram reply failed')
+            if item.type == 'comment':
+                res = requests.post(
+                    f"{base_url}/{item.item_id}/replies",
+                    data={
+                        'message': reply_content,
+                        'access_token': token,
+                    },
+                    timeout=15
+                ).json()
+                success = 'id' in res
+                if not success:
+                    error_msg = res.get('error', {}).get('message', 'Instagram reply failed')
+
+            elif item.type == 'message':
+                res = requests.post(
+                    f"{base_url}/me/messages",
+                    params={'access_token': token},
+                    json={
+                        'recipient': {'id': item.sender_id},
+                        'message': {'text': reply_content},
+                        'messaging_type': 'RESPONSE',
+                    },
+                    timeout=15
+                ).json()
+                success = 'message_id' in res or 'recipient_id' in res
+                if not success:
+                    error_msg = res.get('error', {}).get('message', 'Instagram DM reply failed')
 
         elif platform == 'twitter':
             res = requests.post(
