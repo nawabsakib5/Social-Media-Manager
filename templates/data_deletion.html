@@ -1,86 +1,205 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Data Deletion - SocialManager</title>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        body { font-family: 'Segoe UI', sans-serif; color: #333; background: #f8fafc; }
-        .hero { background: linear-gradient(135deg, #4f46e5, #6366f1); color: white; padding: 60px 0; }
-        .content { max-width: 800px; margin: 0 auto; padding: 40px 20px; }
-        h2 { color: #4f46e5; margin-top: 30px; }
-        .steps { background: white; border-radius: 16px; padding: 30px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
-        .step { display: flex; gap: 16px; margin-bottom: 20px; }
-        .step-num { width: 36px; height: 36px; background: #4f46e5; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0; }
-    </style>
-</head>
-<body>
+{% extends 'core/base.html' %}
+{% load static %}
 
-<div class="hero text-center">
-    <h1 class="fw-bold">Data Deletion Instructions</h1>
-    <p class="opacity-75">SocialManager Enterprise</p>
-</div>
+{% block title %}Data Deletion | Cotton Web{% endblock %}
 
-<div class="content">
-    <p>If you want to delete your data from SocialManager, you have two options:</p>
+{% block content %}
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
 
-    <h2>Option 1: Delete via Platform</h2>
-    <div class="steps">
-        <div class="step">
-            <div class="step-num">1</div>
-            <div>Log in to your SocialManager account</div>
+<style>
+* { box-sizing: border-box; }
+.dd-page { font-family: 'Inter', sans-serif; background: #f8f7f4; min-height: 100vh; padding: 40px 20px 80px; }
+.dd-wrap { max-width: 800px; margin: 0 auto; }
+
+/* Hero Section */
+.dd-hero {
+    background: #1a1a2e;
+    color: #fff;
+    border-radius: 24px;
+    padding: 48px 32px;
+    text-align: center;
+    margin-bottom: 32px;
+    position: relative;
+    overflow: hidden;
+    border: 1.5px solid #e8e5e0;
+    box-shadow: 0 20px 40px rgba(26,26,46,.08);
+}
+.dd-hero h1 { font-family: 'Syne', sans-serif; font-size: 32px; font-weight: 800; margin-bottom: 10px; }
+.dd-hero p { font-size: 14px; color: #a0aec0; font-weight: 500; letter-spacing: .04em; text-transform: uppercase; }
+
+/* Content Cards */
+.dd-section-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 20px;
+    font-weight: 700;
+    color: #1a1a2e;
+    margin: 36px 0 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.dd-lead { font-size: 14px; color: #555; line-height: 1.6; margin-bottom: 20px; }
+
+.dd-card {
+    background: #fff;
+    border-radius: 20px;
+    border: 1.5px solid #e8e5e0;
+    padding: 28px;
+    box-shadow: 0 10px 30px rgba(0,0,0,.03);
+    margin-bottom: 24px;
+}
+
+.dd-steps { display: flex; flex-direction: column; gap: 16px; }
+.dd-step { display: flex; gap: 16px; align-items: flex-start; }
+.dd-step-num {
+    width: 32px; height: 32px;
+    background: #c84b31; color: #fff;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 700; flex-shrink: 0;
+    box-shadow: 0 4px 12px rgba(200,75,49,.25);
+}
+.dd-step-text { font-size: 13px; color: #4a5568; line-height: 1.5; padding-top: 5px; }
+.dd-step-text strong { color: #1a1a2e; }
+
+/* List Styles */
+.dd-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+@media(max-width: 640px) { .dd-list { grid-template-columns: 1fr; } }
+
+.dd-list li {
+    background: #f8f7f4;
+    border: 1.5px solid #e8e5e0;
+    border-radius: 12px;
+    padding: 14px 16px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #1a1a2e;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.dd-list li::before {
+    content: "✓";
+    color: #c84b31;
+    font-weight: 800;
+}
+
+/* Info Box & Contact */
+.dd-info-box {
+    background: #fff8e1;
+    border: 1.5px solid #fe-e0b2;
+    border-radius: 16px;
+    padding: 20px;
+    font-size: 13px;
+    color: #92400e;
+    line-height: 1.6;
+}
+.dd-info-box strong { color: #78350f; }
+
+.dd-contact-link {
+    color: #c84b31;
+    text-decoration: none;
+    font-weight: 700;
+    transition: color .2s;
+}
+.dd-contact-link:hover { color: #1a1a2e; text-decoration: underline; }
+
+.op0 { opacity: 0; transform: translateY(20px); }
+</style>
+
+<div class="dd-page">
+<div class="dd-wrap">
+
+  <!-- Hero Section -->
+  <div class="dd-hero op0" id="ddHero">
+    <h1>Data Deletion Instructions</h1>
+    <p>SocialManager Enterprise</p>
+  </div>
+
+  <div class="dd-lead op0" id="ddLead">
+    If you want to delete your data from SocialManager, you have two options below:
+  </div>
+
+  <!-- Option 1 -->
+  <div class="dd-section-title op0">Option 1: Delete via Platform</div>
+  <div class="dd-card op0">
+    <div class="dd-steps">
+        <div class="dd-step">
+            <div class="dd-step-num">1</div>
+            <div class="dd-step-text">Log in to your <strong>SocialManager</strong> account</div>
         </div>
-        <div class="step">
-            <div class="step-num">2</div>
-            <div>Go to <strong>Accounts</strong> page</div>
+        <div class="dd-step">
+            <div class="dd-step-num">2</div>
+            <div class="dd-step-text">Go to the <strong>Accounts</strong> page</div>
         </div>
-        <div class="step">
-            <div class="step-num">3</div>
-            <div>Disconnect all connected social media accounts</div>
+        <div class="dd-step">
+            <div class="dd-step-num">3</div>
+            <div class="dd-step-text">Disconnect all connected social media accounts</div>
         </div>
-        <div class="step">
-            <div class="step-num">4</div>
-            <div>Contact us at <strong>info.cadobd@gmail.com</strong> to request full account deletion</div>
+        <div class="dd-step">
+            <div class="dd-step-num">4</div>
+            <div class="dd-step-text">Contact us at <a href="mailto:info.cadobd@gmail.com" class="dd-contact-link">info.cadobd@gmail.com</a> to request full account deletion</div>
         </div>
     </div>
+  </div>
 
-    <h2>Option 2: Facebook Data Deletion</h2>
-    <p>If you connected SocialManager via Facebook Login and want to delete your Facebook data:</p>
-    <div class="steps">
-        <div class="step">
-            <div class="step-num">1</div>
-            <div>Go to <strong>Facebook Settings</strong> → <strong>Apps and Websites</strong></div>
+  <!-- Option 2 -->
+  <div class="dd-section-title op0">Option 2: Facebook Data Deletion</div>
+  <div class="dd-lead op0" style="margin-bottom: 16px;">If you connected SocialManager via Facebook Login and want to delete your Facebook data:</div>
+  <div class="dd-card op0">
+    <div class="dd-steps">
+        <div class="dd-step">
+            <div class="dd-step-num">1</div>
+            <div class="dd-step-text">Go to <strong>Facebook Settings</strong> → <strong>Apps and Websites</strong></div>
         </div>
-        <div class="step">
-            <div class="step-num">2</div>
-            <div>Find <strong>SocialManager</strong> in the list</div>
+        <div class="dd-step">
+            <div class="dd-step-num">2</div>
+            <div class="dd-step-text">Find <strong>SocialManager</strong> in the list</div>
         </div>
-        <div class="step">
-            <div class="step-num">3</div>
-            <div>Click <strong>Remove</strong> → Check "Delete all posts, videos and events..."</div>
+        <div class="dd-step">
+            <div class="dd-step-num">3</div>
+            <div class="dd-step-text">Click <strong>Remove</strong> → Check "Delete all posts, videos and events..."</div>
         </div>
-        <div class="step">
-            <div class="step-num">4</div>
-            <div>Click <strong>Remove</strong> to confirm</div>
+        <div class="dd-step">
+            <div class="dd-step-num">4</div>
+            <div class="dd-step-text">Click <strong>Remove</strong> to confirm</div>
         </div>
     </div>
+  </div>
 
-    <h2>What Gets Deleted</h2>
-    <ul>
-        <li>Your account and profile information</li>
-        <li>All connected social media account tokens</li>
-        <li>Inbox messages and conversation history</li>
-        <li>Published posts and scheduling data</li>
-        <li>All analytics and reporting data</li>
-    </ul>
+  <!-- What Gets Deleted -->
+  <div class="dd-section-title op0">What Gets Deleted</div>
+  <ul class="dd-list op0" style="margin-bottom: 24px;">
+      <li>Your account and profile information</li>
+      <li>All connected social media account tokens</li>
+      <li>Inbox messages and conversation history</li>
+      <li>Published posts and scheduling data</li>
+      <li>All analytics and reporting data</li>
+  </ul>
 
-    <h2>Processing Time</h2>
-    <p>Data deletion requests are processed within <strong>30 days</strong>. You will receive a confirmation email once completed.</p>
+  <!-- Processing Time -->
+  <div class="dd-section-title op0">Processing Time & Support</div>
+  <div class="dd-info-box op0">
+      Data deletion requests are processed within <strong>30 days</strong>. You will receive a confirmation email once completed.<br>
+      For any data deletion inquiries, reach out directly to: <a href="mailto:info.cadobd@gmail.com" class="dd-contact-link">info.cadobd@gmail.com</a>
+  </div>
 
-    <h2>Contact</h2>
-    <p>For data deletion requests: <strong>info.cadobd@gmail.com</strong></p>
+</div>
 </div>
 
-</body>
-</html>
+<script>
+// GSAP Smooth Entrance Animation
+gsap.to('#ddHero', { opacity: 1, y: 0, duration: .6, ease: 'power3.out', delay: .1 });
+gsap.utils.toArray('.op0').forEach((el, i) => {
+  gsap.to(el, { opacity: 1, y: 0, duration: .6, delay: .15 + (i * 0.05), ease: 'power3.out' });
+});
+</script>
+{% endblock %}
