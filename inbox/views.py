@@ -1,14 +1,17 @@
 import requests
+import json
+import hashlib
+import hmac
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
+from django.views.decorators.csrf import csrf_exempt
 from social_accounts.models import SocialAccount
 from integrations.facebook_adapter import FacebookAdapter
 from .models import InboxItem, Reply
-
 
 
 @login_required
@@ -28,7 +31,6 @@ def inbox_list(request):
     if selected_type:
         items = items.filter(type=selected_type)
 
-    # sender_id + social_account দিয়ে unique conversations বানানো
     from django.db.models import Max, Count, Q
     conversations_qs = items.values(
         'sender_id', 'sender_name', 'social_account__id',
@@ -37,31 +39,24 @@ def inbox_list(request):
         last_message_time=Max('received_at'),
         message_count=Count('id'),
         unread_count=Count('id', filter=Q(is_read=False)),
-    ).order_by('-last_message_time')
+    ).order_by('-unread_count', '-last_message_time')
 
-    # Active conversation
     active_conversation = None
     conversation_messages = []
-    conversation_replies = []
 
     if active_sender_id and active_account_id:
         active_conversation = {
             'sender_id': active_sender_id,
             'account_id': active_account_id,
         }
-        # এই conversation-এর সব messages
         conversation_messages = items.filter(
             sender_id=active_sender_id,
             social_account__id=active_account_id,
         ).order_by('received_at')
 
-        # সব messages read mark করা
         conversation_messages.filter(is_read=False).update(is_read=True)
-
-        # Active item (reply-এর জন্য latest message নেওয়া)
         active_item = conversation_messages.last()
 
-        # Sender info
         if conversation_messages.exists():
             first_msg = conversation_messages.first()
             active_conversation['sender_name'] = first_msg.sender_name
@@ -70,7 +65,6 @@ def inbox_list(request):
             active_conversation['type'] = first_msg.type
             active_conversation['active_item'] = active_item
     elif conversations_qs.exists():
-        # Default: প্রথম conversation select করা
         first_conv = conversations_qs.first()
         active_sender_id = first_conv['sender_id']
         active_account_id = first_conv['social_account__id']
@@ -138,7 +132,6 @@ def sync_inbox_data(request):
                     synced_count += _sync_facebook_messages(account, page_token)
                 except Exception as e:
                     print(f"[FB Messages Error] {account.account_name}: {e}")
-
             elif account.platform == 'instagram':
                 try:
                     synced_count += _sync_instagram_comments(account, page_token)
@@ -148,24 +141,174 @@ def sync_inbox_data(request):
                     synced_count += _sync_instagram_messages(account, page_token)
                 except Exception as e:
                     print(f"[IG Messages Error] {account.account_name}: {e}")
-
             elif account.platform == 'twitter':
                 try:
                     synced_count += _sync_twitter_mentions(account, page_token)
                 except Exception as e:
                     print(f"[Twitter Error] {account.account_name}: {e}")
-
             elif account.platform == 'linkedin':
                 try:
                     synced_count += _sync_linkedin_comments(account, page_token)
                 except Exception as e:
                     print(f"[LinkedIn Error] {account.account_name}: {e}")
-
         except Exception as e:
             print(f"[General Sync Error] {account.account_name}: {e}")
 
     messages.success(request, f"Successfully synced {synced_count} new items to your inbox!")
     return redirect('inbox_list')
+
+
+@login_required
+def inbox_live_sync(request):
+    """2 second polling এর জন্য lightweight sync endpoint"""
+    if not request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        return JsonResponse({'error': 'Invalid request'}, status=400)
+
+    if request.user.is_superuser or getattr(request.user, 'user_type', None) == 'admin':
+        connected_accounts = SocialAccount.objects.filter(status='connected')
+    else:
+        connected_accounts = SocialAccount.objects.filter(
+            permitted_users=request.user, status='connected'
+        )
+
+    synced_count = 0
+    adapter = FacebookAdapter()
+
+    for account in connected_accounts:
+        page_token, error = adapter.get_page_token(account)
+        if error:
+            continue
+        try:
+            if account.platform == 'facebook':
+                synced_count += _sync_facebook_messages(account, page_token)
+            elif account.platform == 'instagram':
+                synced_count += _sync_instagram_messages(account, page_token)
+        except Exception as e:
+            print(f"[Live Sync Error] {account.account_name}: {e}")
+
+    if request.user.is_superuser or getattr(request.user, 'user_type', None) == 'admin':
+        unread = InboxItem.objects.filter(is_read=False).count()
+    else:
+        unread = InboxItem.objects.filter(
+            social_account__permitted_users=request.user,
+            is_read=False
+        ).count()
+
+    return JsonResponse({
+        'synced': synced_count,
+        'unread_count': unread,
+    })
+
+
+@csrf_exempt
+def facebook_webhook(request):
+    """Facebook Webhook — messages ও comments real-time receive করা"""
+    if request.method == 'GET':
+        verify_token = 'my_secret_webhook_token_2024'
+        mode = request.GET.get('hub.mode')
+        token = request.GET.get('hub.verify_token')
+        challenge = request.GET.get('hub.challenge')
+
+        if mode == 'subscribe' and token == verify_token:
+            return HttpResponse(challenge, content_type='text/plain')
+        return HttpResponse('Forbidden', status=403)
+
+    elif request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            print(f"[Webhook] Received: {data}")
+
+            for entry in data.get('entry', []):
+                for messaging in entry.get('messaging', []):
+                    if 'message' in messaging:
+                        _process_webhook_message(messaging)
+
+                for change in entry.get('changes', []):
+                    if change.get('field') == 'feed':
+                        _process_webhook_comment(change.get('value', {}))
+        except Exception as e:
+            print(f"[Webhook POST Error] {e}")
+
+        return HttpResponse('OK')
+
+    return HttpResponse('Method not allowed', status=405)
+
+
+def _process_webhook_message(messaging):
+    """Webhook থেকে আসা Messenger message process করা"""
+    try:
+        sender_id = messaging['sender']['id']
+        message = messaging.get('message', {})
+        text = message.get('text', '')
+        page_id = messaging['recipient']['id']
+
+        if not text:
+            return
+
+        account = SocialAccount.objects.filter(
+            platform='facebook',
+            platform_account_id=page_id,
+            status='connected'
+        ).first()
+
+        if not account:
+            return
+
+        msg_id = message.get('mid', f"wb_{sender_id}_{timezone.now().timestamp()}")
+
+        InboxItem.objects.update_or_create(
+            item_id=msg_id,
+            defaults={
+                'social_account': account,
+                'type': 'message',
+                'sender_id': sender_id,
+                'sender_name': f"User {sender_id[:8]}",
+                'content': text,
+                'received_at': timezone.now(),
+                'is_read': False,
+            }
+        )
+        print(f"[Webhook] Message saved from {sender_id}")
+    except Exception as e:
+        print(f"[Webhook Message Error] {e}")
+
+
+def _process_webhook_comment(value):
+    """Webhook থেকে আসা comment process করা"""
+    try:
+        if value.get('item') != 'comment':
+            return
+
+        page_id = value.get('page_id', '')
+        sender_name = value.get('from', {}).get('name', 'Facebook User')
+        sender_id = value.get('from', {}).get('id', '')
+        comment_id = value.get('comment_id', '')
+        message = value.get('message', '')
+
+        account = SocialAccount.objects.filter(
+            platform='facebook',
+            platform_account_id=page_id,
+            status='connected'
+        ).first()
+
+        if not account or not comment_id:
+            return
+
+        InboxItem.objects.update_or_create(
+            item_id=comment_id,
+            defaults={
+                'social_account': account,
+                'type': 'comment',
+                'sender_id': sender_id,
+                'sender_name': sender_name,
+                'content': message,
+                'received_at': timezone.now(),
+                'is_read': False,
+            }
+        )
+        print(f"[Webhook] Comment saved from {sender_name}")
+    except Exception as e:
+        print(f"[Webhook Comment Error] {e}")
 
 
 def _sync_facebook_messages(account, page_token):
@@ -191,7 +334,6 @@ def _sync_facebook_messages(account, page_token):
             (p for p in participants if p.get('id') != page_id),
             None
         )
-
         if not sender:
             continue
 
@@ -201,7 +343,6 @@ def _sync_facebook_messages(account, page_token):
         for msg in messages_data:
             if msg.get('from', {}).get('id') == page_id:
                 continue
-
             created_time = parse_datetime(msg.get('created_time'))
             _, created = InboxItem.objects.update_or_create(
                 item_id=msg['id'],
@@ -246,7 +387,6 @@ def _sync_instagram_messages(account, page_token):
             (p for p in participants if p.get('id') != ig_id),
             None
         )
-
         if not sender:
             continue
 
@@ -256,7 +396,6 @@ def _sync_instagram_messages(account, page_token):
         for msg in messages_data:
             if msg.get('from', {}).get('id') == ig_id:
                 continue
-
             created_time = parse_datetime(msg.get('created_time'))
             _, created = InboxItem.objects.update_or_create(
                 item_id=msg['id'],
@@ -275,7 +414,7 @@ def _sync_instagram_messages(account, page_token):
 
 
 def _sync_facebook_comments(account, page_token):
-    """Facebook Page published posts থেকে comments sync করা হচ্ছে।"""
+    """Facebook Page published posts থেকে comments sync।"""
     page_id = account.platform_account_id
     url = f"https://graph.facebook.com/v22.0/{page_id}/published_posts"
     params = {
@@ -292,10 +431,8 @@ def _sync_facebook_comments(account, page_token):
 
     for post in response.get('data', []):
         for comment in post.get('comments', {}).get('data', []):
-            # Page নিজের comment skip
             if comment.get('from', {}).get('id') == page_id:
                 continue
-
             created_time = parse_datetime(comment.get('created_time'))
             _, created = InboxItem.objects.update_or_create(
                 item_id=comment['id'],
@@ -314,11 +451,7 @@ def _sync_facebook_comments(account, page_token):
 
 
 def _sync_instagram_comments(account, page_token):
-    """
-    Instagram account এর media comments sync।
-    account.platform_account_id = Instagram Business Account ID (IG ID)।
-    Facebook Page ID দিয়ে আর lookup করতে হবে না।
-    """
+    """Instagram media comments sync।"""
     ig_id = account.platform_account_id
     if not ig_id:
         return 0
@@ -413,7 +546,6 @@ def _sync_linkedin_comments(account, token):
             commenter_urn = comment.get('actor', '')
             if f"urn:li:person:{author_id}" in commenter_urn:
                 continue
-
             _, created = InboxItem.objects.update_or_create(
                 item_id=comment['id'],
                 defaults={
@@ -452,7 +584,6 @@ def send_inbox_reply(request, item_id):
     platform = item.social_account.platform
     page_id = item.social_account.platform_account_id
 
-    # Facebook/Instagram এর জন্য page token নেওয়া
     if platform in ['facebook', 'instagram']:
         adapter = FacebookAdapter()
         token, error = adapter.get_page_token(item.social_account)
@@ -476,10 +607,7 @@ def send_inbox_reply(request, item_id):
             if item.type == 'comment':
                 res = requests.post(
                     f"{base_url}/{item.item_id}/comments",
-                    data={
-                        'message': reply_content,
-                        'access_token': token,
-                    },
+                    data={'message': reply_content, 'access_token': token},
                     timeout=15
                 ).json()
                 success = 'id' in res
@@ -505,10 +633,7 @@ def send_inbox_reply(request, item_id):
             if item.type == 'comment':
                 res = requests.post(
                     f"{base_url}/{item.item_id}/replies",
-                    data={
-                        'message': reply_content,
-                        'access_token': token,
-                    },
+                    data={'message': reply_content, 'access_token': token},
                     timeout=15
                 ).json()
                 success = 'id' in res
@@ -533,14 +658,8 @@ def send_inbox_reply(request, item_id):
         elif platform == 'twitter':
             res = requests.post(
                 "https://api.twitter.com/2/tweets",
-                headers={
-                    "Authorization": f"Bearer {token}",
-                    "Content-Type": "application/json",
-                },
-                json={
-                    "text": reply_content,
-                    "reply": {"in_reply_to_tweet_id": item.item_id}
-                },
+                headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
+                json={"text": reply_content, "reply": {"in_reply_to_tweet_id": item.item_id}},
                 timeout=15
             )
             success = res.status_code == 201
@@ -555,10 +674,7 @@ def send_inbox_reply(request, item_id):
                     "Content-Type": "application/json",
                     "X-Restli-Protocol-Version": "2.0.0"
                 },
-                json={
-                    "actor": f"urn:li:person:{page_id}",
-                    "message": {"text": reply_content}
-                },
+                json={"actor": f"urn:li:person:{page_id}", "message": {"text": reply_content}},
                 timeout=15
             )
             success = res.status_code in [200, 201]
@@ -566,11 +682,7 @@ def send_inbox_reply(request, item_id):
                 error_msg = res.json().get('message', 'LinkedIn Reply Error')
 
         if success:
-            Reply.objects.create(
-                inbox_item=item,
-                content=reply_content,
-                sent_by=request.user
-            )
+            Reply.objects.create(inbox_item=item, content=reply_content, sent_by=request.user)
             item.is_replied = True
             item.is_read = True
             item.save(update_fields=['is_replied', 'is_read'])
@@ -596,46 +708,3 @@ def mark_read_ajax(request, item_id):
     item.is_read = True
     item.save(update_fields=['is_read'])
     return JsonResponse({'status': 'success'})
-
-
-
-@login_required
-def inbox_live_sync(request):
-    """2 second polling এর জন্য lightweight sync endpoint"""
-    if not request.headers.get('x-requested-with') == 'XMLHttpRequest':
-        return JsonResponse({'error': 'Invalid request'}, status=400)
-
-    if request.user.is_superuser or getattr(request.user, 'user_type', None) == 'admin':
-        connected_accounts = SocialAccount.objects.filter(status='connected')
-    else:
-        connected_accounts = SocialAccount.objects.filter(
-            permitted_users=request.user, status='connected'
-        )
-
-    synced_count = 0
-    adapter = FacebookAdapter()
-
-    for account in connected_accounts:
-        page_token, error = adapter.get_page_token(account)
-        if error:
-            continue
-        try:
-            if account.platform == 'facebook':
-                synced_count += _sync_facebook_messages(account, page_token)
-            elif account.platform == 'instagram':
-                synced_count += _sync_instagram_messages(account, page_token)
-        except Exception as e:
-            print(f"[Live Sync Error] {account.account_name}: {e}")
-
-    if request.user.is_superuser or getattr(request.user, 'user_type', None) == 'admin':
-        unread = InboxItem.objects.filter(is_read=False).count()
-    else:
-        unread = InboxItem.objects.filter(
-            social_account__permitted_users=request.user,
-            is_read=False
-        ).count()
-
-    return JsonResponse({
-        'synced': synced_count,
-        'unread_count': unread,
-    })

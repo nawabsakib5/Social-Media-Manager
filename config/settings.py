@@ -7,7 +7,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = config('SECRET_KEY')
 DEBUG = config('DEBUG', cast=bool)
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', '.onrender.com', '*']
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'relock-mutation-halved.ngrok-free.dev']
+CSRF_TRUSTED_ORIGINS = ['https://relock-mutation-halved.ngrok-free.dev']
 
 INSTALLED_APPS = [
     'daphne',

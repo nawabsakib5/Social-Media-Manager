@@ -5,6 +5,7 @@ urlpatterns = [
     path('', views.inbox_list, name='inbox_list'),
     path('sync/', views.sync_inbox_data, name='sync_inbox'),
     path('live-sync/', views.inbox_live_sync, name='inbox_live_sync'),
+    path('webhook/', views.facebook_webhook, name='facebook_webhook'),
     path('<int:item_id>/reply/', views.send_inbox_reply, name='send_inbox_reply'),
     path('<int:item_id>/mark-read/', views.mark_read_ajax, name='mark_read_ajax'),
 ]
