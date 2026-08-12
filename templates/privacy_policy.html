@@ -3,32 +3,67 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Privacy Policy - SocialManager</title>
+    <title>Privacy Policy | SocialManager</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; color: #333; background: #f8fafc; }
-        .hero { background: linear-gradient(135deg, #4f46e5, #6366f1); color: white; padding: 60px 0; }
-        .content { max-width: 800px; margin: 0 auto; padding: 40px 20px; }
-        h2 { color: #4f46e5; margin-top: 30px; }
-        .last-updated { color: #64748b; font-size: 14px; }
+        * { box-sizing: border-box; }
+        .pp-page { font-family: 'Inter', sans-serif; background: #f8f7f4; min-height: 100vh; padding: 40px 20px 80px; }
+        .pp-wrap { max-width: 840px; margin: 0 auto; }
+        .pp-hero {
+            background: #1a1a2e; color: #fff; border-radius: 24px; padding: 48px 32px;
+            text-align: center; margin-bottom: 24px; border: 1.5px solid #e8e5e0;
+            box-shadow: 0 20px 40px rgba(26,26,46,.08);
+        }
+        .pp-hero h1 { font-family: 'Syne', sans-serif; font-size: 32px; font-weight: 800; margin-bottom: 10px; }
+        .pp-hero p { font-size: 14px; color: #a0aec0; font-weight: 500; letter-spacing: .04em; text-transform: uppercase; }
+        .pp-date-badge {
+            display: inline-block; background: #fff; border: 1.5px solid #e8e5e0;
+            padding: 6px 16px; border-radius: 50px; font-size: 12px; font-weight: 600; color: #64748b; margin-bottom: 32px;
+        }
+        .pp-card {
+            background: #fff; border-radius: 20px; border: 1.5px solid #e8e5e0;
+            padding: 32px; box-shadow: 0 10px 30px rgba(0,0,0,.03); margin-bottom: 24px;
+        }
+        .pp-card h2 {
+            font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 700; color: #1a1a2e;
+            margin-top: 28px; margin-bottom: 12px;
+        }
+        .pp-card h2:first-of-type { margin-top: 0; }
+        .pp-card p { font-size: 13px; color: #4a5568; line-height: 1.7; margin-bottom: 16px; }
+        .pp-list { list-style: none; padding: 0; margin: 0 0 16px 0; display: flex; flex-direction: column; gap: 10px; }
+        .pp-list li {
+            background: #f8f7f4; border: 1.5px solid #e8e5e0; border-radius: 12px;
+            padding: 12px 16px; font-size: 12px; font-weight: 500; color: #1a1a2e; display: flex; align-items: center; gap: 10px;
+        }
+        .pp-list li strong { color: #1a1a2e; font-weight: 700; }
+        .pp-list li::before { content: "•"; color: #c84b31; font-weight: 800; font-size: 16px; }
+        .pp-link { color: #c84b31; text-decoration: none; font-weight: 700; }
+        .pp-link:hover { color: #1a1a2e; text-decoration: underline; }
+        .op0 { opacity: 0; transform: translateY(20px); }
     </style>
 </head>
 <body>
 
-<div class="hero text-center">
-    <h1 class="fw-bold">Privacy Policy</h1>
-    <p class="opacity-75">SocialManager Enterprise</p>
-</div>
+<div class="pp-page">
+<div class="pp-wrap">
+  <div class="pp-hero op0" id="ppHero">
+    <h1>Privacy Policy</h1>
+    <p>SocialManager Enterprise</p>
+  </div>
 
-<div class="content">
-    <p class="last-updated">Last updated: August 13, 2026</p>
+  <div class="text-center op0" id="ppDateWrap">
+    <div class="pp-date-badge">Last updated: August 13, 2026</div>
+  </div>
 
+  <div class="pp-card op0" id="ppContent">
     <h2>1. Introduction</h2>
     <p>SocialManager ("we", "our", or "us") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, and safeguard your information when you use our social media management platform.</p>
 
     <h2>2. Information We Collect</h2>
     <p>We collect the following types of information:</p>
-    <ul>
+    <ul class="pp-list">
         <li><strong>Account Information:</strong> Name, email address, and login credentials</li>
         <li><strong>Social Media Data:</strong> Posts, comments, messages, and engagement metrics from connected social media accounts</li>
         <li><strong>Usage Data:</strong> How you interact with our platform</li>
@@ -36,7 +71,7 @@
     </ul>
 
     <h2>3. How We Use Your Information</h2>
-    <ul>
+    <ul class="pp-list">
         <li>To provide and improve our social media management services</li>
         <li>To display and manage your social media content</li>
         <li>To send and receive messages on your behalf through connected accounts</li>
@@ -46,7 +81,7 @@
 
     <h2>4. Meta Platform Data</h2>
     <p>When you connect your Facebook or Instagram account, we access:</p>
-    <ul>
+    <ul class="pp-list">
         <li>Facebook Pages you manage</li>
         <li>Instagram Business accounts linked to your Pages</li>
         <li>Messages and comments on your Pages</li>
@@ -55,44 +90,24 @@
     <p>We only access data necessary to provide our services. We do not sell your Meta platform data to third parties.</p>
 
     <h2>5. Data Storage and Security</h2>
-    <p>Your data is stored securely using industry-standard encryption. Access tokens are encrypted using Fernet symmetric encryption. We implement appropriate technical and organizational measures to protect your information.</p>
+    <p>Your data is stored securely using industry-standard encryption. Access tokens are encrypted using Fernet symmetric encryption.</p>
 
     <h2>6. Data Sharing</h2>
-    <p>We do not sell, trade, or share your personal information with third parties except:</p>
-    <ul>
-        <li>With your explicit consent</li>
-        <li>To comply with legal obligations</li>
-        <li>With service providers who assist in our operations (e.g., Cloudinary for media storage)</li>
-    </ul>
+    <p>We do not sell, trade, or share your personal information with third parties except with your explicit consent, legal obligations, or trusted service providers.</p>
 
-    <h2>7. Data Retention</h2>
-    <p>We retain your data for as long as your account is active. You may request deletion of your data at any time by contacting us or using our data deletion feature.</p>
-
-    <h2>8. Your Rights</h2>
-    <ul>
-        <li>Access your personal data</li>
-        <li>Correct inaccurate data</li>
-        <li>Request deletion of your data</li>
-        <li>Disconnect social media accounts at any time</li>
-        <li>Export your data</li>
-    </ul>
-
-    <h2>9. Cookies</h2>
-    <p>We use essential cookies for authentication and session management. We do not use tracking or advertising cookies.</p>
-
-    <h2>10. Children's Privacy</h2>
-    <p>Our services are not directed to children under 13. We do not knowingly collect personal information from children.</p>
-
-    <h2>11. Changes to This Policy</h2>
-    <p>We may update this Privacy Policy periodically. We will notify you of significant changes via email or through our platform.</p>
-
-    <h2>12. Contact Us</h2>
+    <h2>7. Contact Us</h2>
     <p>If you have questions about this Privacy Policy, please contact us at:</p>
-    <ul>
-        <li>Email: info.cadobd@gmail.com</li>
-        <li>Website: https://social-media-manager-jmbp.onrender.com</li>
+    <ul class="pp-list">
+        <li><strong>Email:</strong> <a href="mailto:info.cadobd@gmail.com" class="pp-link">info.cadobd@gmail.com</a></li>
     </ul>
+  </div>
+</div>
 </div>
 
+<script>
+gsap.to('#ppHero', { opacity: 1, y: 0, duration: .6, ease: 'power3.out', delay: .1 });
+gsap.to('#ppDateWrap', { opacity: 1, y: 0, duration: .6, ease: 'power3.out', delay: .15 });
+gsap.to('#ppContent', { opacity: 1, y: 0, duration: .7, ease: 'power3.out', delay: .2 });
+</script>
 </body>
 </html>
