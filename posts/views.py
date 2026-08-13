@@ -392,8 +392,24 @@ def dashboard_live_stats(request):
         failed_posts = posts_query.filter(status='failed').count()
 
         unread_inbox = 0
+        unread_inbox_data = []
         try:
-            unread_inbox = InboxItem.objects.filter(social_account__in=accounts, is_read=False).count()
+            unread_items = InboxItem.objects.filter(
+                social_account__in=accounts,
+                is_read=False
+            ).order_by('-received_at')[:20]
+            
+            unread_inbox = unread_items.count()
+            
+            unread_inbox_data = list(unread_items.values(
+                'id', 'sender_name', 'content', 'type',
+                'received_at', 'social_account__platform',
+                'social_account__account_name'
+            ))
+            
+            for item in unread_inbox_data:
+                if item['received_at']:
+                    item['received_at'] = item['received_at'].strftime('%b %d, %Y, %H:%M')
         except Exception:
             pass
 
@@ -411,5 +427,6 @@ def dashboard_live_stats(request):
             'failed_posts': failed_posts,
             'unread_inbox': unread_inbox,
             'users_data': users_data,
+            'unread_inbox_data': unread_inbox_data,
         })
     return JsonResponse({'error': 'Invalid request'}, status=400)

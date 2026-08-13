@@ -167,6 +167,8 @@
 
 <!-- Script with 10 Seconds Polling Interval & View Toggles -->
 <script>
+    let lastStatsData = null;
+
     let allSystemUsers = [
         {% for u in all_users %}
         {
@@ -222,19 +224,39 @@
             tableHeaderHTML = `
                 <thead class="text-muted text-uppercase" style="font-size: 10px; letter-spacing: 0.8px; background: rgba(241, 245, 249, 0.6);">
                     <tr>
-                        <th class="py-3 ps-3 rounded-start">Channel / Sender</th>
-                        <th class="py-3">Message Content</th>
-                        <th class="py-3 pe-3 rounded-end">Timestamp</th>
+                        <th class="py-3 ps-3 rounded-start">Sender</th>
+                        <th class="py-3">Message</th>
+                        <th class="py-3">Platform</th>
+                        <th class="py-3 pe-3 rounded-end">Time</th>
                     </tr>
                 </thead>`;
-            tableBodyHTML = `
-                <tbody>
-                    <tr>
-                        <td colspan="3" class="text-center text-muted py-4">
-                            <i class="fa-regular fa-inbox fs-4 mb-1 d-block text-info"></i> Checked live: No unread bubble messages pending right now.
-                        </td>
-                    </tr>
-                </tbody>`;
+
+            const inboxData = lastStatsData ? lastStatsData.unread_inbox_data : [];
+            
+            if (inboxData && inboxData.length > 0) {
+                let rows = '';
+                inboxData.forEach(item => {
+                    const platform = item['social_account__platform'] || '';
+                    const account = item['social_account__account_name'] || '';
+                    const platformColor = platform === 'facebook' ? '#1877f2' : platform === 'instagram' ? '#e1306c' : '#64748b';
+                    rows += `
+                        <tr style="cursor:pointer;" onclick="window.location.href='/inbox/'">
+                            <td class="ps-3 py-3 fw-bold text-dark">
+                                <i class="fa-solid fa-user text-teal me-2"></i>${item.sender_name}
+                            </td>
+                            <td class="py-3 text-truncate" style="max-width: 250px;">${item.content || ''}</td>
+                            <td class="py-3">
+                                <span style="color: ${platformColor};">
+                                    <i class="fa-brands fa-${platform} me-1"></i>${account}
+                                </span>
+                            </td>
+                            <td class="py-3 pe-3 text-muted small font-monospace">${item.received_at}</td>
+                        </tr>`;
+                });
+                tableBodyHTML = `<tbody>${rows}</tbody>`;
+            } else {
+                tableBodyHTML = `<tbody><tr><td colspan="4" class="text-center text-muted py-4">No unread messages.</td></tr></tbody>`;
+            }
         } else {
             let filteredPosts = allPosts;
             if (type === 'published') {
@@ -273,11 +295,11 @@
                                 <span class="badge ${badgeClass}" style="padding: 6px 12px; border-radius: 10px; font-weight: 600; font-size: 11px;">
                                     ${p.status.toUpperCase()}
                                 </span>
-                          </td>
+                             </td>
                             <td class="text-muted small py-3 pe-3 font-monospace">
                                 ${p.scheduled_time || p.created_at}
-                          </td>
-                      </tr>`;
+                            </td>
+                         </tr>`;
                 });
                 tableBodyHTML = `<tbody>${rows}</tbody>`;
             } else {
@@ -300,6 +322,8 @@
         })
         .then(response => response.json())
         .then(data => {
+            lastStatsData = data; // Save incoming data globally for inbox/metrics tracking
+
             if (document.getElementById('totalUsersCounter')) {
                 document.getElementById('totalUsersCounter').textContent = data.total_users;
             }
