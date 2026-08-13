@@ -32,7 +32,7 @@
         body {
             background-color: var(--body-bg);
             background-image: radial-gradient(circle at 10% 20%, rgba(79, 70, 229, 0.03) 0%, transparent 40%),
-                            radial-gradient(circle at 90% 80%, rgba(13, 148, 136, 0.03) 0%, transparent 40%);
+                              radial-gradient(circle at 90% 80%, rgba(13, 148, 136, 0.03) 0%, transparent 40%);
             color: var(--text-main);
             margin: 0;
             overflow-x: hidden;
@@ -348,6 +348,7 @@
                 <i class="fa-solid fa-pen-to-square"></i> Posts
             </a>
 
+            <!-- Inbox Link with unread counter badge -->
             <a href="{% url 'inbox_list' %}" class="nav-item-link {% if request.resolver_match.url_name == 'inbox_list' %}active{% endif %}">
                 <i class="fa-solid fa-inbox"></i> Inbox
                 {% if unread_inbox_count > 0 %}
