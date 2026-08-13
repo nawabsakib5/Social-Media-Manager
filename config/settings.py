@@ -4,12 +4,23 @@ import os
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# ── Core ──
 SECRET_KEY = config('SECRET_KEY')
-DEBUG = config('DEBUG', cast=bool)
+DEBUG = config('DEBUG', default=False, cast=bool)
+ENVIRONMENT = config('ENVIRONMENT', default='production')
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'relock-mutation-halved.ngrok-free.dev']
-CSRF_TRUSTED_ORIGINS = ['https://relock-mutation-halved.ngrok-free.dev']
+# ── Hosts ──
+ALLOWED_HOSTS = config(
+    'ALLOWED_HOSTS',
+    default='localhost,127.0.0.1'
+).split(',')
 
+CSRF_TRUSTED_ORIGINS = config(
+    'CSRF_TRUSTED_ORIGINS',
+    default='http://localhost:8000'
+).split(',')
+
+# ── Apps ──
 INSTALLED_APPS = [
     'daphne',
     'channels',
@@ -28,6 +39,7 @@ INSTALLED_APPS = [
     'inbox',
 ]
 
+# ── Middleware ──
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
@@ -40,17 +52,29 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = 'config.urls'
-
-
 ASGI_APPLICATION = 'config.asgi.application'
+WSGI_APPLICATION = 'config.wsgi.application'
 
-CHANNEL_LAYERS = {
-    'default': {
-        'BACKEND': 'channels.layers.InMemoryChannelLayer',
-    },
-}
+# ── Channel Layers ──
+REDIS_URL = config('REDIS_URL', default='redis://127.0.0.1:6379/0')
 
+if ENVIRONMENT == 'production':
+    CHANNEL_LAYERS = {
+        'default': {
+            'BACKEND': 'channels_redis.core.RedisChannelLayer',
+            'CONFIG': {
+                'hosts': [REDIS_URL],
+            },
+        },
+    }
+else:
+    CHANNEL_LAYERS = {
+        'default': {
+            'BACKEND': 'channels.layers.InMemoryChannelLayer',
+        },
+    }
 
+# ── Templates ──
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
@@ -67,8 +91,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'config.wsgi.application'
-
+# ── Database ──
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
@@ -77,28 +100,31 @@ DATABASES = {
         'PASSWORD': config('DB_PASSWORD'),
         'HOST': config('DB_HOST'),
         'PORT': config('DB_PORT'),
+        'CONN_MAX_AGE': 60,
+        'OPTIONS': {
+            'connect_timeout': 10,
+            'sslmode': config('DB_SSLMODE', default='prefer'),
+        },
     }
 }
 
+# ── Password Validation ──
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
-    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator', 'OPTIONS': {'min_length': 8}},
     {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
     {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
 
+# ── Internationalization ──
 LANGUAGE_CODE = 'en-us'
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Asia/Dhaka'
 USE_I18N = True
 USE_TZ = True
 
+# ── Static & Media ──
 STATIC_URL = 'static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-
-
-LOGIN_REDIRECT_URL = '/posts/dashboard/'
-
-
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
@@ -125,19 +151,44 @@ STORAGES = {
     },
 }
 
-SITE_URL = config('SITE_URL', default='http://localhost:8000')
-
 # ── Auth ──
 AUTH_USER_MODEL = 'accounts.CustomUserModel'
 LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'dashboard'
 LOGOUT_REDIRECT_URL = 'login'
 
+# ── Security Headers (Production Only) ──
+if ENVIRONMENT == 'production':
+    SECURE_SSL_REDIRECT = True
+    SECURE_HSTS_SECONDS = 31536000
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    SESSION_COOKIE_SECURE = True
+    SESSION_COOKIE_HTTPONLY = True
+    SESSION_COOKIE_SAMESITE = 'Lax'
+    CSRF_COOKIE_SECURE = True
+    CSRF_COOKIE_HTTPONLY = True
+    CSRF_COOKIE_SAMESITE = 'Lax'
+    X_FRAME_OPTIONS = 'DENY'
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    SECURE_BROWSER_XSS_FILTER = True
+    SECURE_REFERRER_POLICY = 'strict-origin-when-cross-origin'
+else:
+    SESSION_COOKIE_SECURE = False
+    CSRF_COOKIE_SECURE = False
+
+# ── Session ──
+SESSION_ENGINE = 'django.contrib.sessions.backends.db'
+SESSION_COOKIE_AGE = 86400  # 24 hours
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False
+
+# ── Encryption ──
 FIELD_ENCRYPTION_KEY = config('FIELD_ENCRYPTION_KEY')
 
 # ── Celery ──
-CELERY_BROKER_URL = config('REDIS_URL', default='redis://127.0.0.1:6379/0')
-CELERY_RESULT_BACKEND = config('REDIS_URL', default='redis://127.0.0.1:6379/0')
+CELERY_BROKER_URL = REDIS_URL
+CELERY_RESULT_BACKEND = REDIS_URL
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_TIMEZONE = TIME_ZONE
@@ -156,16 +207,17 @@ CELERY_BEAT_SCHEDULE = {
         'schedule': 60.0,
     },
 }
+# Production-এ False, local-এ True
+CELERY_TASK_ALWAYS_EAGER = config('CELERY_TASK_ALWAYS_EAGER', default=False, cast=bool)
+CELERY_TASK_EAGER_PROPAGATES = config('CELERY_TASK_ALWAYS_EAGER', default=False, cast=bool)
 
-# ── Facebook / Meta ──
+# ── Social APIs ──
 FACEBOOK_APP_ID = config('FACEBOOK_APP_ID', default='')
 FACEBOOK_APP_SECRET = config('FACEBOOK_APP_SECRET', default='')
-FACEBOOK_REDIRECT_URI = config('FACEBOOK_REDIRECT_URI', default='http://localhost:8000/posts/accounts/callback/')
-
+FACEBOOK_REDIRECT_URI = config('FACEBOOK_REDIRECT_URI', default='')
 LINKEDIN_CLIENT_ID = config('LINKEDIN_CLIENT_ID', default='')
 LINKEDIN_CLIENT_SECRET = config('LINKEDIN_CLIENT_SECRET', default='')
-LINKEDIN_REDIRECT_URI = config('LINKEDIN_REDIRECT_URI', default='http://localhost:8000/posts/accounts/linkedin/callback/')
-
+LINKEDIN_REDIRECT_URI = config('LINKEDIN_REDIRECT_URI', default='')
 TWITTER_CLIENT_ID = config('TWITTER_CLIENT_ID', default='')
 TWITTER_CLIENT_SECRET = config('TWITTER_CLIENT_SECRET', default='')
 
@@ -178,10 +230,42 @@ EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
 EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
+# ── Site ──
+SITE_URL = config('SITE_URL', default='http://localhost:8000')
 WHATSAPP_RECIPIENT_NUMBER = config('WHATSAPP_RECIPIENT_NUMBER', default='')
 
+# ── Logging ──
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose',
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': 'WARNING',
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console'],
+            'level': config('DJANGO_LOG_LEVEL', default='WARNING'),
+            'propagate': False,
+        },
+        'django.security': {
+            'handlers': ['console'],
+            'level': 'ERROR',
+            'propagate': False,
+        },
+    },
+}
 
-#------------ Render Test-------------------
-CELERY_TASK_ALWAYS_EAGER = True
-CELERY_TASK_EAGER_PROPAGATES = True
-CELERY_TASK_ALWAYS_EAGER = config('CELERY_TASK_ALWAYS_EAGER', default=False, cast=bool)
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
