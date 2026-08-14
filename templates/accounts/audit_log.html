@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+{% block title %}Audit Log{% endblock %}
+
+{% block content %}
+<style>
+    .audit-card {
+        background: rgba(255, 255, 255, 0.85);
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(226, 232, 240, 0.8);
+        border-radius: 28px;
+        box-shadow: 0 20px 50px rgba(15, 23, 42, 0.08);
+        overflow: hidden;
+    }
+
+    .audit-row {
+        transition: background 0.2s ease;
+        border-bottom: 1px solid rgba(241, 245, 249, 0.8);
+    }
+
+    .audit-row:hover {
+        background: rgba(248, 250, 252, 0.9);
+    }
+
+    .action-badge {
+        padding: 4px 10px;
+        border-radius: 8px;
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .filter-card {
+        background: white;
+        border: 1px solid rgba(226, 232, 240, 0.8);
+        border-radius: 16px;
+        padding: 20px;
+        margin-bottom: 24px;
+    }
+
+    .header-anim {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+</style>
+
+<div class="container-fluid px-0">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4 header-anim" id="pageHeader">
+        <div>
+            <h4 class="fw-bold mb-1" style="font-weight: 800; letter-spacing: -0.5px; color: #0f172a;">
+                <i class="fa-solid fa-shield-halved me-2" style="color: #4f46e5;"></i>Audit Log
+            </h4>
+            <p class="text-muted small">Track all user actions and system events in real-time.</p>
+        </div>
+        <a href="{% url 'accounts:user_list' %}" class="btn btn-light rounded-pill px-4 fw-semibold shadow-sm" style="border: 1px solid #e2e8f0;">
+            <i class="fa-solid fa-arrow-left me-2" style="color: #4f46e5;"></i>Back to Team
+        </a>
+    </div>
+
+    <!-- Filters -->
+    <div class="filter-card">
+        <form method="GET" class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label text-muted fw-bold" style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.8px;">Filter by Action</label>
+                <select name="action" class="form-select form-select-sm" style="border-radius: 10px;">
+                    <option value="">All Actions</option>
+                    {% for value, label in action_choices %}
+                    <option value="{{ value }}" {% if action_filter == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label text-muted fw-bold" style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.8px;">Filter by User</label>
+                <input type="text" name="user" value="{{ user_filter }}" class="form-control form-control-sm" placeholder="Username..." style="border-radius: 10px;">
+            </div>
+            <div class="col-md-4 d-flex gap-2">
+                <button type="submit" class="btn btn-dark btn-sm fw-bold px-4" style="border-radius: 10px;">
+                    <i class="fa-solid fa-filter me-1"></i> Filter
+                </button>
+                <a href="{% url 'accounts:audit_log' %}" class="btn btn-light btn-sm fw-bold px-4" style="border-radius: 10px; border: 1px solid #e2e8f0;">
+                    <i class="fa-solid fa-xmark me-1"></i> Clear
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Table -->
+    <div class="audit-card" id="auditCard">
+        <div class="table-responsive">
+            <table class="table align-middle mb-0">
+                <thead style="background: rgba(248, 250, 252, 0.8);">
+                    <tr>
+                        <th class="px-4 py-3 text-muted fw-bold small">Time</th>
+                        <th class="px-4 py-3 text-muted fw-bold small">User</th>
+                        <th class="px-4 py-3 text-muted fw-bold small">Action</th>
+                        <th class="px-4 py-3 text-muted fw-bold small">Target</th>
+                        <th class="px-4 py-3 text-muted fw-bold small">Detail</th>
+                        <th class="px-4 py-3 text-muted fw-bold small">IP Address</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for log in logs %}
+                    <tr class="audit-row">
+                        <td class="px-4 py-3 font-monospace text-muted" style="font-size: 12px; white-space: nowrap;">
+                            {{ log.timestamp|date:"M d, Y" }}<br>
+                            <span style="font-size: 11px;">{{ log.timestamp|date:"H:i:s" }}</span>
+                        </td>
+                        <td class="px-4 py-3">
+                            {% if log.user %}
+                            <div class="d-flex align-items-center gap-2">
+                                <div style="width:28px; height:28px; border-radius:8px; background:linear-gradient(135deg,#4f46e5,#6366f1); color:white; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700;">
+                                    {{ log.user.username|first|upper }}
+                                </div>
+                                <span class="fw-semibold text-dark small">{{ log.user.username }}</span>
+                            </div>
+                            {% else %}
+                            <span class="text-muted small fst-italic">System</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-4 py-3">
+                            {% if log.action == 'login' %}
+                                <span class="action-badge bg-success-subtle text-success">{{ log.get_action_display }}</span>
+                            {% elif log.action == 'logout' %}
+                                <span class="action-badge bg-secondary-subtle text-secondary">{{ log.get_action_display }}</span>
+                            {% elif log.action == 'login_failed' or log.action == 'account_locked' %}
+                                <span class="action-badge bg-danger-subtle text-danger">{{ log.get_action_display }}</span>
+                            {% elif log.action == 'post_created' or log.action == 'post_published' %}
+                                <span class="action-badge bg-primary-subtle text-primary">{{ log.get_action_display }}</span>
+                            {% elif log.action == 'post_deleted' or log.action == 'user_deleted' %}
+                                <span class="action-badge bg-danger-subtle text-danger">{{ log.get_action_display }}</span>
+                            {% elif log.action == 'user_created' or log.action == 'invitation_accepted' %}
+                                <span class="action-badge bg-success-subtle text-success">{{ log.get_action_display }}</span>
+                            {% elif log.action == 'account_connected' %}
+                                <span class="action-badge bg-info-subtle text-info">{{ log.get_action_display }}</span>
+                            {% elif log.action == 'account_disconnected' %}
+                                <span class="action-badge bg-warning-subtle text-warning">{{ log.get_action_display }}</span>
+                            {% else %}
+                                <span class="action-badge bg-light text-muted">{{ log.get_action_display }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-4 py-3 text-dark small fw-medium">{{ log.target|default:"-" }}</td>
+                        <td class="px-4 py-3 text-muted small text-truncate" style="max-width: 200px;">{{ log.detail|default:"-" }}</td>
+                        <td class="px-4 py-3 font-monospace text-muted" style="font-size: 11px;">{{ log.ip_address|default:"-" }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center py-5 text-muted">
+                            <i class="fa-solid fa-shield-halved d-block mb-2" style="font-size: 32px; color: #cbd5e1;"></i>
+                            No audit logs found.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    if (typeof gsap !== 'undefined') {
+        gsap.to("#pageHeader", { opacity: 1, y: 0, duration: 0.6, ease: "power2.out" });
+        gsap.to("#auditCard", { opacity: 1, y: 0, duration: 0.8, ease: "power3.out", delay: 0.2 });
+    }
+});
+</script>
+{% endblock %}

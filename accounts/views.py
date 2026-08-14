@@ -47,7 +47,6 @@ def Login(request):
                 user_obj.failed_login_attempts = 0
                 user_obj.locked_until = None
                 user_obj.save(update_fields=['failed_login_attempts', 'locked_until'])
-                request.session.cycle_key()
                 login(request, user)
                 return redirect('/posts/dashboard/')
             else:
@@ -346,3 +345,31 @@ def change_user_role(request, user_id):
             messages.success(request, f"Role updated to '{new_role}' for {user_obj.username}.")
 
     return redirect('accounts:user_detail', user_id=user_obj.id)
+
+
+@login_required
+@user_passes_test(is_admin, login_url='/posts/')
+def audit_log(request):
+    from .models import AuditLog
+    
+    action_filter = request.GET.get('action', '')
+    user_filter   = request.GET.get('user', '')
+    
+    logs = AuditLog.objects.select_related('user').all()
+    
+    if action_filter:
+        logs = logs.filter(action=action_filter)
+    if user_filter:
+        logs = logs.filter(user__username__icontains=user_filter)
+    
+    logs = logs[:200]
+    
+    from .models import AuditLog as AL
+    action_choices = AL.ACTION_CHOICES
+    
+    return render(request, 'accounts/audit_log.html', {
+        'logs': logs,
+        'action_choices': action_choices,
+        'action_filter': action_filter,
+        'user_filter': user_filter,
+    })
