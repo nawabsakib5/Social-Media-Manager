@@ -12,4 +12,7 @@ urlpatterns = [
     path('users/invite/accept/<str:token>/', views.accept_invitation, name='accept_invitation'),
     path('users/<int:user_id>/', views.user_detail, name='user_detail'),
     path('connect/', views.connect_social_account, name='connect_social_account'),
+    path('users/<int:user_id>/change-password/', views.admin_change_password, name='admin_change_password'),
+    path('users/<int:user_id>/toggle-status/', views.toggle_user_status, name='toggle_user_status'),
+    path('users/<int:user_id>/change-role/', views.change_user_role, name='change_user_role'),
 ]

@@ -157,7 +157,19 @@ LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'dashboard'
 LOGOUT_REDIRECT_URL = 'login'
 
-# ── Security Headers (Production Only) ──
+# ── Cache (Rate Limiting + Session) ──
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'ratelimit-cache',
+    }
+}
+
+# ── Rate Limiting ──
+RATELIMIT_ENABLE = True
+RATELIMIT_USE_CACHE = 'default'
+
+# ── Security Headers ──
 if ENVIRONMENT == 'production':
     SECURE_SSL_REDIRECT = True
     SECURE_HSTS_SECONDS = 31536000
@@ -172,16 +184,20 @@ if ENVIRONMENT == 'production':
     CSRF_COOKIE_SAMESITE = 'Lax'
     X_FRAME_OPTIONS = 'DENY'
     SECURE_CONTENT_TYPE_NOSNIFF = True
-    SECURE_BROWSER_XSS_FILTER = True
     SECURE_REFERRER_POLICY = 'strict-origin-when-cross-origin'
+    SECURE_CROSS_ORIGIN_OPENER_POLICY = 'same-origin'
+    SESSION_COOKIE_AGE = 43200        # Production: 12 hours
+    SESSION_SAVE_EVERY_REQUEST = True  # Activity-based timeout reset
 else:
     SESSION_COOKIE_SECURE = False
     CSRF_COOKIE_SECURE = False
+    SESSION_COOKIE_AGE = 86400         # Development: 24 hours
+    SESSION_SAVE_EVERY_REQUEST = False
 
 # ── Session ──
 SESSION_ENGINE = 'django.contrib.sessions.backends.db'
-SESSION_COOKIE_AGE = 86400  # 24 hours
 SESSION_EXPIRE_AT_BROWSER_CLOSE = False
+SESSION_COOKIE_HTTPONLY = True        # Always httponly, dev+prod উভয়তে
 
 # ── Encryption ──
 FIELD_ENCRYPTION_KEY = config('FIELD_ENCRYPTION_KEY')
@@ -207,7 +223,6 @@ CELERY_BEAT_SCHEDULE = {
         'schedule': 60.0,
     },
 }
-# Production-এ False, local-এ True
 CELERY_TASK_ALWAYS_EAGER = config('CELERY_TASK_ALWAYS_EAGER', default=False, cast=bool)
 CELERY_TASK_EAGER_PROPAGATES = config('CELERY_TASK_ALWAYS_EAGER', default=False, cast=bool)
 

@@ -24,18 +24,23 @@ def is_admin(user):
 
 @login_required
 def dashboard(request):
-    if request.user.is_superuser or getattr(request.user, 'user_type', None) == 'admin':
+    is_admin = request.user.is_superuser or getattr(request.user, 'user_type', None) == 'admin'
+
+    if is_admin:
         accounts = SocialAccount.objects.filter(status='connected')
         posts_query = Post.objects.all()
+        total_users_count = User.objects.count()
+        all_users = User.objects.all().order_by('-last_login')
     else:
         accounts = SocialAccount.objects.filter(permitted_users=request.user, status='connected')
         posts_query = Post.objects.filter(created_by=request.user)
+        total_users_count = 1
+        all_users = []
 
     total_posts = posts_query.count()
     published_posts = posts_query.filter(status='published').count()
     scheduled_posts = posts_query.filter(status='scheduled').count()
     failed_posts = posts_query.filter(status='failed').count()
-    total_users_count = User.objects.count()
 
     channels_data = []
     for acc in accounts:
@@ -51,14 +56,15 @@ def dashboard(request):
         'id', 'content', 'status', 'created_at', 'scheduled_time'
     ))
 
-    # datetime serialize করা
     for p in all_posts_data:
         p['created_at'] = p['created_at'].strftime('%b %d, %Y, %H:%M') if p['created_at'] else ''
         p['scheduled_time'] = p['scheduled_time'].strftime('%b %d, %Y, %H:%M') if p['scheduled_time'] else ''
 
     unread_inbox = 0
     try:
-        unread_inbox = InboxItem.objects.filter(social_account__in=accounts, is_read=False).count()
+        unread_inbox = InboxItem.objects.filter(
+            social_account__in=accounts, is_read=False
+        ).count()
     except Exception:
         pass
 
@@ -72,7 +78,7 @@ def dashboard(request):
         'recent_posts': recent_posts,
         'unread_inbox': unread_inbox,
         'connected_accounts': accounts,
-        'all_users': User.objects.all().order_by('-last_login'),
+        'all_users': all_users,
         'all_posts_data': all_posts_data,
     }
     return render(request, 'posts/dashboard.html', context)
@@ -397,16 +403,16 @@ def dashboard_live_stats(request):
             unread_items = InboxItem.objects.filter(
                 social_account__in=accounts,
                 is_read=False
-            ).order_by('-received_at')[:20]
-            
+            ).order_by('-received_at')
+
             unread_inbox = unread_items.count()
-            
+
             unread_inbox_data = list(unread_items.values(
                 'id', 'sender_name', 'content', 'type',
                 'received_at', 'social_account__platform',
                 'social_account__account_name'
-            ))
-            
+            )[:20])
+
             for item in unread_inbox_data:
                 if item['received_at']:
                     item['received_at'] = item['received_at'].strftime('%b %d, %Y, %H:%M')

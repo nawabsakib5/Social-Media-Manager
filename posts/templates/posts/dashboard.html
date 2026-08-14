@@ -168,6 +168,7 @@
 <!-- Script with 10 Seconds Polling Interval & View Toggles -->
 <script>
     let lastStatsData = null;
+    let currentDetailView = null;
 
     let allSystemUsers = [
         {% for u in all_users %}
@@ -183,6 +184,7 @@
     let allPosts = {{ all_posts_data|safe }};
 
     function filterDetailView(type) {
+        currentDetailView = type;
         const section = document.getElementById('detailedItemSection');
         const titleEl = document.getElementById('detailSectionTitle');
         const tableContainer = document.getElementById('detailTableContainer');
@@ -312,6 +314,7 @@
 
     function closeDetailSection() {
         document.getElementById('detailedItemSection').classList.add('d-none');
+        currentDetailView = null;
     }
 
     const liveStatsUrl = "{% url 'dashboard_live_stats' %}";
@@ -322,7 +325,7 @@
         })
         .then(response => response.json())
         .then(data => {
-            lastStatsData = data; // Save incoming data globally for inbox/metrics tracking
+            lastStatsData = data;
 
             if (document.getElementById('totalUsersCounter')) {
                 document.getElementById('totalUsersCounter').textContent = data.total_users;
@@ -343,7 +346,6 @@
                 document.getElementById('unreadInboxCounter').textContent = data.unread_inbox;
             }
 
-            // Realtime user list update
             if (data.users_data) {
                 allSystemUsers = data.users_data.map(u => ({
                     username: u.username,
@@ -352,22 +354,21 @@
                     last_login: u.last_login,
                     user_type: u.user_type
                 }));
-
-                const title = document.getElementById('detailSectionTitle');
-                if (title && title.textContent === 'Real-Time System Users List') {
-                    filterDetailView('users');
-                }
             }
 
-            // Refresh inbox details if currently open
-            const title = document.getElementById('detailSectionTitle');
-            if (title && title.textContent === 'Real-Time Unread Inbox Messages') {
-                filterDetailView('inbox');
+            // Update notification bell with live stats payload
+            if (typeof updateNotificationBell === 'function') {
+                updateNotificationBell(data);
             }
-      })
-      .catch(error => console.error('Error fetching live dashboard updates:', error));
+
+            if (currentDetailView) {
+                filterDetailView(currentDetailView);
+            }
+        })
+        .catch(error => console.error('Error fetching live dashboard updates:', error));
     }
 
     setInterval(pollDashboardStats, 10000);
+    pollDashboardStats();
 </script>
 {% endblock %}

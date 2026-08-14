@@ -176,7 +176,7 @@
             </div>
         </div>
 
-        <!-- Right: Permissions -->
+        <!-- Right: Permissions & Admin Controls -->
         <div class="col-lg-5">
             <div class="member-card h-100 d-flex flex-column justify-content-between" id="permissionsCard">
                 <div>
@@ -200,10 +200,90 @@
                         </div>
                 </div>
                         <button type="submit" class="btn-save mt-3">Save Access Permissions <i class="fa-solid fa-floppy-disk ms-2"></i></button>
-                </form>
+                    </form>
             </div>
         </div>
     </div>
+
+    <!-- Admin Actions Section -->
+    {% if request.user.is_superuser or request.user.user_type == 'admin' %}
+    {% if user_obj != request.user %}
+    <div class="member-card mt-4" id="adminActionsCard">
+        <h6 class="section-title">
+            <i class="fa-solid fa-user-gear" style="color: var(--accent, #0d9488);"></i> Admin Controls
+        </h6>
+
+        <div class="row g-3">
+            <!-- Activate / Deactivate -->
+            <div class="col-12">
+                <div class="d-flex align-items-center justify-content-between p-3 rounded-3" style="background: rgba(248,250,252,0.9); border: 1.5px solid #e2e8f0;">
+                    <div>
+                        <div class="fw-bold text-dark small">Account Status</div>
+                        <div class="text-muted" style="font-size: 12px;">
+                            Currently: 
+                            {% if user_obj.is_active %}
+                                <span class="text-success fw-bold">Active</span>
+                            {% else %}
+                                <span class="text-danger fw-bold">Deactivated</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <a href="{% url 'accounts:toggle_user_status' user_obj.id %}"
+                       onclick="return confirm('{% if user_obj.is_active %}Deactivate{% else %}Activate{% endif %} this user?');"
+                       class="btn btn-sm fw-bold {% if user_obj.is_active %}btn-outline-danger{% else %}btn-outline-success{% endif %}"
+                       style="border-radius: 10px; padding: 8px 16px;">
+                        {% if user_obj.is_active %}
+                            <i class="fa-solid fa-ban me-1"></i> Deactivate
+                        {% else %}
+                            <i class="fa-solid fa-check me-1"></i> Activate
+                        {% endif %}
+                    </a>
+                </div>
+            </div>
+
+            <!-- Change Role -->
+            <div class="col-12">
+                <div class="p-3 rounded-3" style="background: rgba(248,250,252,0.9); border: 1.5px solid #e2e8f0;">
+                    <div class="fw-bold text-dark small mb-2">Change Role</div>
+                    <form method="POST" action="{% url 'accounts:change_user_role' user_obj.id %}" class="d-flex gap-2">
+                        {% csrf_token %}
+                        <select name="user_type" class="form-select form-select-sm" style="border-radius: 10px;">
+                            <option value="user" {% if user_obj.user_type == 'user' %}selected{% endif %}>User</option>
+                            <option value="admin" {% if user_obj.user_type == 'admin' %}selected{% endif %}>Admin</option>
+                        </select>
+                        <button type="submit" class="btn btn-sm btn-dark fw-bold" style="border-radius: 10px; white-space: nowrap;">
+                            <i class="fa-solid fa-floppy-disk me-1"></i> Save
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Change Password -->
+            <div class="col-12">
+                <div class="p-3 rounded-3" style="background: rgba(248,250,252,0.9); border: 1.5px solid #e2e8f0;">
+                    <div class="fw-bold text-dark small mb-2">Reset Password</div>
+                    <form method="POST" action="{% url 'accounts:admin_change_password' user_obj.id %}">
+                        {% csrf_token %}
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <input type="password" name="new_password" class="form-control form-control-sm" placeholder="New password" style="border-radius: 10px;" required minlength="8">
+                            </div>
+                            <div class="col-6">
+                                <input type="password" name="confirm_password" class="form-control form-control-sm" placeholder="Confirm password" style="border-radius: 10px;" required minlength="8">
+                            </div>
+                            <div class="col-12">
+                                <button type="submit" class="btn btn-sm btn-outline-dark fw-bold w-100" style="border-radius: 10px;">
+                                    <i class="fa-solid fa-key me-1"></i> Update Password
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    {% endif %}
 </div>
 
 <!-- GSAP Animation Script -->
@@ -239,6 +319,18 @@ document.addEventListener('DOMContentLoaded', () => {
             duration: 0.8,
             ease: "power3.out"
         }, "-=0.5");
+
+        const adminCard = document.querySelector("#adminActionsCard");
+        if (adminCard) {
+            gsap.to(adminCard, {
+                opacity: 1,
+                y: 0,
+                z: 0,
+                duration: 0.8,
+                ease: "power3.out",
+                delay: 0.3
+            });
+        }
     }
 });
 </script>
