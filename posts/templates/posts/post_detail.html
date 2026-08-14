@@ -250,6 +250,10 @@
                 <i class="fa-solid ps-1 fa-pen-to-square me-2 text-primary"></i>Edit Post Details
             </a>
 
+            <a href="{% url 'post_analytics' post.id %}" class="btn btn-light border w-100 mb-2 py-2 rounded-pill shadow-2sm text-secondary fw-semibold">
+                <i class="fa-solid fa-chart-line me-2 text-success"></i>View Analytics
+            </a>
+
             <form method="post" action="{% url 'post_delete' post.id %}" onsubmit="return confirm('Are you sure you want to delete this post completely?')">
                 {% csrf_token %}
                 <button type="submit" class="btn btn-outline-danger w-100 py-2 rounded-pill shadow-2sm fw-semibold">

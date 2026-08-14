@@ -440,29 +440,30 @@ def dashboard_live_stats(request):
 
 @login_required
 def post_analytics(request, post_id):
-    post = get_object_or_404(
-        Post.objects.prefetch_related('platform_statuses__social_account'),
-        id=post_id
-    )
+    post = get_object_or_404(Post, id=post_id)
+
+    platform_statuses = PostPlatformStatus.objects.filter(
+        post=post, status='published'
+    ).select_related('social_account')
 
     analytics_data = []
 
-    for ps in post.platform_statuses.filter(status='published'):
-        account = ps.social_account
-        platform = account.platform
+    for ps in platform_statuses:
+        account          = ps.social_account
+        platform         = account.platform
         platform_post_id = ps.platform_post_id
-        token = account.access_token
+        token            = account.access_token
 
         data = {
-            'platform': platform,
-            'account_name': account.account_name,
+            'platform':         platform,
+            'account_name':     account.account_name,
             'platform_post_id': platform_post_id,
-            'likes': 0,
-            'comments': 0,
-            'shares': 0,
-            'reach': 0,
+            'likes':       0,
+            'comments':    0,
+            'shares':      0,
+            'reach':       0,
             'impressions': 0,
-            'error': None,
+            'error':       None,
         }
 
         if not platform_post_id or not token:
@@ -472,11 +473,12 @@ def post_analytics(request, post_id):
 
         try:
             if platform == 'facebook':
-                # Facebook Post Insights
-                fields = 'likes.summary(true),comments.summary(true),shares'
                 res = requests.get(
                     f'https://graph.facebook.com/v22.0/{platform_post_id}',
-                    params={'fields': fields, 'access_token': token},
+                    params={
+                        'fields': 'likes.summary(true),comments.summary(true),shares',
+                        'access_token': token
+                    },
                     timeout=15
                 ).json()
 
@@ -487,7 +489,6 @@ def post_analytics(request, post_id):
                     data['comments'] = res.get('comments', {}).get('summary', {}).get('total_count', 0)
                     data['shares']   = res.get('shares', {}).get('count', 0)
 
-                # Facebook Insights (reach/impressions) — Page token দরকার
                 ins_res = requests.get(
                     f'https://graph.facebook.com/v22.0/{platform_post_id}/insights',
                     params={
@@ -505,11 +506,12 @@ def post_analytics(request, post_id):
                             data['impressions'] = metric.get('values', [{}])[0].get('value', 0)
 
             elif platform == 'instagram':
-                # Instagram Media Insights
-                fields = 'like_count,comments_count'
                 res = requests.get(
                     f'https://graph.facebook.com/v22.0/{platform_post_id}',
-                    params={'fields': fields, 'access_token': token},
+                    params={
+                        'fields': 'like_count,comments_count',
+                        'access_token': token
+                    },
                     timeout=15
                 ).json()
 
@@ -519,7 +521,6 @@ def post_analytics(request, post_id):
                     data['likes']    = res.get('like_count', 0)
                     data['comments'] = res.get('comments_count', 0)
 
-                # Instagram Insights
                 ins_res = requests.get(
                     f'https://graph.facebook.com/v22.0/{platform_post_id}/insights',
                     params={
@@ -545,6 +546,6 @@ def post_analytics(request, post_id):
         analytics_data.append(data)
 
     return render(request, 'posts/post_analytics.html', {
-        'post': post,
+        'post':           post,
         'analytics_data': analytics_data,
     })
