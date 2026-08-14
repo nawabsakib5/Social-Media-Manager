@@ -436,3 +436,115 @@ def dashboard_live_stats(request):
             'unread_inbox_data': unread_inbox_data,
         })
     return JsonResponse({'error': 'Invalid request'}, status=400)
+
+
+@login_required
+def post_analytics(request, post_id):
+    post = get_object_or_404(
+        Post.objects.prefetch_related('platform_statuses__social_account'),
+        id=post_id
+    )
+
+    analytics_data = []
+
+    for ps in post.platform_statuses.filter(status='published'):
+        account = ps.social_account
+        platform = account.platform
+        platform_post_id = ps.platform_post_id
+        token = account.access_token
+
+        data = {
+            'platform': platform,
+            'account_name': account.account_name,
+            'platform_post_id': platform_post_id,
+            'likes': 0,
+            'comments': 0,
+            'shares': 0,
+            'reach': 0,
+            'impressions': 0,
+            'error': None,
+        }
+
+        if not platform_post_id or not token:
+            data['error'] = 'No post ID or token'
+            analytics_data.append(data)
+            continue
+
+        try:
+            if platform == 'facebook':
+                # Facebook Post Insights
+                fields = 'likes.summary(true),comments.summary(true),shares'
+                res = requests.get(
+                    f'https://graph.facebook.com/v22.0/{platform_post_id}',
+                    params={'fields': fields, 'access_token': token},
+                    timeout=15
+                ).json()
+
+                if 'error' in res:
+                    data['error'] = res['error'].get('message', 'Unknown error')
+                else:
+                    data['likes']    = res.get('likes', {}).get('summary', {}).get('total_count', 0)
+                    data['comments'] = res.get('comments', {}).get('summary', {}).get('total_count', 0)
+                    data['shares']   = res.get('shares', {}).get('count', 0)
+
+                # Facebook Insights (reach/impressions) — Page token দরকার
+                ins_res = requests.get(
+                    f'https://graph.facebook.com/v22.0/{platform_post_id}/insights',
+                    params={
+                        'metric': 'post_impressions,post_reach',
+                        'access_token': token
+                    },
+                    timeout=15
+                ).json()
+
+                if 'data' in ins_res:
+                    for metric in ins_res['data']:
+                        if metric['name'] == 'post_reach':
+                            data['reach'] = metric.get('values', [{}])[0].get('value', 0)
+                        elif metric['name'] == 'post_impressions':
+                            data['impressions'] = metric.get('values', [{}])[0].get('value', 0)
+
+            elif platform == 'instagram':
+                # Instagram Media Insights
+                fields = 'like_count,comments_count'
+                res = requests.get(
+                    f'https://graph.facebook.com/v22.0/{platform_post_id}',
+                    params={'fields': fields, 'access_token': token},
+                    timeout=15
+                ).json()
+
+                if 'error' in res:
+                    data['error'] = res['error'].get('message', 'Unknown error')
+                else:
+                    data['likes']    = res.get('like_count', 0)
+                    data['comments'] = res.get('comments_count', 0)
+
+                # Instagram Insights
+                ins_res = requests.get(
+                    f'https://graph.facebook.com/v22.0/{platform_post_id}/insights',
+                    params={
+                        'metric': 'reach,impressions',
+                        'access_token': token
+                    },
+                    timeout=15
+                ).json()
+
+                if 'data' in ins_res:
+                    for metric in ins_res['data']:
+                        if metric['name'] == 'reach':
+                            data['reach'] = metric.get('values', [{}])[0].get('value', 0)
+                        elif metric['name'] == 'impressions':
+                            data['impressions'] = metric.get('values', [{}])[0].get('value', 0)
+
+            else:
+                data['error'] = f'{platform} analytics not supported yet'
+
+        except Exception as e:
+            data['error'] = str(e)
+
+        analytics_data.append(data)
+
+    return render(request, 'posts/post_analytics.html', {
+        'post': post,
+        'analytics_data': analytics_data,
+    })
