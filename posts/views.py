@@ -310,7 +310,6 @@ def post_publish_now(request, post_id):
 
 @login_required
 def platform_delete(request, post_id, ps_id):
-    """একটি নির্দিষ্ট platform থেকে post delete করা"""
     if request.method != 'POST':
         return redirect('post_detail', post_id=post_id)
 
@@ -344,7 +343,6 @@ def platform_delete(request, post_id, ps_id):
 
 @login_required
 def platform_edit(request, post_id, ps_id):
-    
     if request.method != 'POST':
         return redirect('post_detail', post_id=post_id)
 
@@ -373,8 +371,6 @@ def platform_edit(request, post_id, ps_id):
         messages.error(request, f"Error: {str(e)}")
 
     return redirect('post_detail', post_id=post_id)
-
-
 
 
 def dashboard_live_stats(request):
