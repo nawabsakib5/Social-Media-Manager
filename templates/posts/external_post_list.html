@@ -1,0 +1,184 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}External Posts | CADO Fashion{% endblock %}
+
+{% block content %}
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+
+<style>
+* { box-sizing: border-box; }
+.ep-wrap { font-family: 'Inter', sans-serif; background: #f8f7f4; min-height: 100vh; padding: 32px 16px; }
+.ep-container { max-width: 1200px; margin: 0 auto; }
+
+.ep-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 16px; }
+.ep-title { font-family: 'Syne', sans-serif; font-size: 24px; font-weight: 800; color: #1a1a2e; margin-bottom: 4px; display: flex; align-items: center; gap: 10px; }
+.ep-subtitle { font-size: 13px; color: #666; font-weight: 500; }
+
+.ep-sync-btn { background: #1a1a2e; color: #fff; border: none; border-radius: 12px; padding: 12px 22px; font-size: 13px; font-weight: 700; display: inline-flex; align-items: center; gap: 8px; text-decoration: none; transition: background .2s, transform .2s, box-shadow .2s; box-shadow: 0 4px 14px rgba(26,26,46,.15); }
+.ep-sync-btn:hover { background: #c84b31; color: #fff; transform: translateY(-2px); box-shadow: 0 6px 20px rgba(200,75,49,.25); }
+
+/* Filter bar */
+.filter-bar { background: #fff; border: 1.5px solid #e8e5e0; border-radius: 16px; padding: 20px; margin-bottom: 28px; box-shadow: 0 4px 16px rgba(0,0,0,.02); }
+.filter-label { font-size: 10px; font-weight: 700; color: #888; text-transform: uppercase; letter-spacing: .07em; margin-bottom: 6px; display: block; }
+.filter-select { width: 100%; padding: 10px 14px; background: #f8f7f4; border: 1.5px solid #e8e5e0; border-radius: 11px; font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 500; color: #1a1a2e; outline: none; transition: border-color .2s; }
+.filter-select:focus { border-color: #c84b31; background: #fff; }
+
+.filter-btn { background: #1a1a2e; color: #fff; border: none; border-radius: 11px; padding: 10px 20px; font-size: 13px; font-weight: 700; cursor: pointer; transition: background .2s; display: inline-flex; align-items: center; gap: 6px; }
+.filter-btn:hover { background: #c84b31; }
+.filter-clear { background: #fff; color: #1a1a2e; border: 1.5px solid #e8e5e0; border-radius: 11px; padding: 10px 20px; font-size: 13px; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; transition: all .2s; }
+.filter-clear:hover { border-color: #1a1a2e; color: #1a1a2e; background: #f8f7f4; }
+
+/* Post Card */
+.post-card { background: #fff; border: 1.5px solid #e8e5e0; border-radius: 20px; overflow: hidden; transition: all .3s ease; box-shadow: 0 4px 16px rgba(0,0,0,.02); display: flex; flex-direction: column; height: 100%; }
+.post-card:hover { transform: translateY(-4px); box-shadow: 0 12px 30px rgba(0,0,0,.06); border-color: #c84b31; }
+.post-image { width: 100%; height: 200px; object-fit: cover; background: #f8f7f4; border-bottom: 1.5px solid #e8e5e0; }
+
+.metric-pill { background: #f8f7f4; border: 1px solid #e8e5e0; border-radius: 20px; padding: 5px 12px; font-size: 11px; font-weight: 700; color: #475569; display: inline-flex; align-items: center; gap: 5px; }
+
+.op0 { opacity: 0; transform: translateY(14px); }
+</style>
+
+<div class="ep-wrap">
+<div class="ep-container">
+
+    <!-- Header -->
+    <div class="ep-header">
+        <div>
+            <h4 class="ep-title">
+                <i class="fa-solid fa-sync" style="color: #c84b31;"></i> All Platform Posts
+            </h4>
+            <p class="ep-subtitle">Meta Business Suite সহ সব জায়গা থেকে করা posts এখানে দেখাবে।</p>
+        </div>
+        <a href="{% url 'sync_external_posts' %}" class="ep-sync-btn">
+            <i class="fa-solid fa-rotate"></i> Sync Now
+        </a>
+    </div>
+
+    <!-- Filters -->
+    <div class="filter-bar op0">
+        <form method="GET" class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label class="filter-label">Platform</label>
+                <select name="platform" class="filter-select">
+                    <option value="">All Platforms</option>
+                    <option value="facebook" {% if platform_filter == 'facebook' %}selected{% endif %}>Facebook</option>
+                    <option value="instagram" {% if platform_filter == 'instagram' %}selected{% endif %}>Instagram</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="filter-label">Account</label>
+                <select name="account" class="filter-select">
+                    <option value="">All Accounts</option>
+                    {% for acc in accounts %}
+                    <option value="{{ acc.id }}" {% if account_filter == acc.id|stringformat:"s" %}selected{% endif %}>
+                        {{ acc.account_name }} ({{ acc.platform }})
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-4 d-flex gap-2">
+                <button type="submit" class="filter-btn">
+                    <i class="fa-solid fa-filter"></i> Filter
+                </button>
+                <a href="{% url 'external_post_list' %}" class="filter-clear">
+                    <i class="fa-solid fa-xmark"></i> Clear
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Posts Grid -->
+    {% if posts %}
+    <div class="row g-4">
+        {% for post in posts %}
+        <div class="col-xl-3 col-lg-4 col-md-6 op0">
+            <div class="post-card">
+                <!-- Media -->
+                {% if post.media_url %}
+                    {% if post.media_type == 'VIDEO' %}
+                    <video src="{{ post.media_url }}" class="post-image" controls></video>
+                    {% else %}
+                    <img src="{{ post.media_url }}" class="post-image" alt="Post media">
+                    {% endif %}
+                {% else %}
+                <div class="post-image d-flex align-items-center justify-content-center" style="background: #f1f5f9;">
+                    <i class="fa-solid fa-file-lines" style="font-size: 40px; color: #cbd5e1;"></i>
+                </div>
+                {% endif %}
+
+                <!-- Content Body -->
+                <div class="p-3 d-flex flex-column justify-content-between flex-grow-1">
+                    <div>
+                        <!-- Platform badge -->
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <span style="font-size: 12px; font-weight: 700; color: {% if post.platform == 'facebook' %}#1877f2{% else %}#e1306c{% endif %};">
+                                <i class="fa-brands fa-{{ post.platform }} me-1"></i>
+                                {{ post.social_account.account_name|default:post.platform|title }}
+                            </span>
+                            {% if post.permalink_url %}
+                            <a href="{{ post.permalink_url }}" target="_blank" class="text-muted" style="font-size: 12px; transition: color .2s;" onmouseover="this.style.color='#c84b31'" onmouseout="this.style.color='#6c757d'">
+                                <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                            </a>
+                            {% endif %}
+                        </div>
+
+                        <!-- Caption -->
+                        <p class="text-dark small mb-3" style="line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;">
+                            {{ post.content|default:"No caption provided." }}
+                        </p>
+                    </div>
+
+                    <div>
+                        <!-- Metrics -->
+                        <div class="d-flex flex-wrap gap-2 mb-3">
+                            <span class="metric-pill">
+                                <i class="fa-solid fa-heart text-danger"></i> {{ post.likes|default:0 }}
+                            </span>
+                            <span class="metric-pill">
+                                <i class="fa-solid fa-comment" style="color: #c84b31;"></i> {{ post.comments|default:0 }}
+                            </span>
+                            {% if post.shares %}
+                            <span class="metric-pill">
+                                <i class="fa-solid fa-share text-success"></i> {{ post.shares }}
+                            </span>
+                            {% endif %}
+                            {% if post.reach %}
+                            <span class="metric-pill">
+                                <i class="fa-solid fa-eye text-primary"></i> {{ post.reach }}
+                            </span>
+                            {% endif %}
+                        </div>
+
+                        <!-- Date -->
+                        <div class="text-muted" style="font-size: 11px; font-weight: 500;">
+                            <i class="fa-regular fa-clock me-1"></i>
+                            {{ post.posted_at|date:"M d, Y · H:i"|default:"Unknown date" }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="text-center py-5 op0" style="background: #fff; border: 1.5px solid #e8e5e0; border-radius: 20px; padding: 48px 20px;">
+        <i class="fa-solid fa-rotate d-block mb-3" style="font-size: 48px; color: #cbd5e1;"></i>
+        <h5 style="font-family:'Syne',sans-serif; font-weight:700; color:#1a1a2e; margin-bottom:6px;">No posts synced yet</h5>
+        <p class="text-muted small mb-4">Click "Sync Now" to fetch the latest posts from your connected accounts.</p>
+        <a href="{% url 'sync_external_posts' %}" class="ep-sync-btn" style="display: inline-flex;">
+            <i class="fa-solid fa-rotate"></i> Sync Now
+        </a>
+    </div>
+    {% endif %}
+
+</div>
+</div>
+
+<script>
+gsap.utils.toArray('.op0').forEach((el, i) => {
+    gsap.to(el, { opacity: 1, y: 0, duration: .6, delay: i * .06, ease: 'power3.out' });
+});
+</script>
+{% endblock %}
