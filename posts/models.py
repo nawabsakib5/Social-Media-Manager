@@ -42,7 +42,6 @@ class Post(models.Model):
 
 
 class PostMedia(models.Model):
-    """একটা Post-এ একাধিক image/video support করার জন্য"""
     MEDIA_TYPE_CHOICES = [
         ('image', 'Image'),
         ('video', 'Video'),
@@ -80,3 +79,40 @@ class PostPlatformStatus(models.Model):
 
     def __str__(self):
         return f"{self.post} → {self.social_account} ({self.status})"
+
+
+class ExternalPost(models.Model):
+    """Meta Business Suite বা অন্য জায়গা থেকে করা posts sync করার জন্য"""
+    PLATFORM_CHOICES = [
+        ('facebook',  'Facebook'),
+        ('instagram', 'Instagram'),
+    ]
+
+    social_account   = models.ForeignKey(
+        SocialAccount,
+        on_delete=models.CASCADE,
+        related_name='external_posts'
+    )
+    platform         = models.CharField(max_length=20, choices=PLATFORM_CHOICES)
+    external_post_id = models.CharField(max_length=255)
+    content          = models.TextField(blank=True, null=True)
+    media_url        = models.URLField(max_length=500, blank=True, null=True)
+    media_type       = models.CharField(max_length=20, blank=True, null=True)
+    permalink_url    = models.URLField(max_length=500, blank=True, null=True)
+
+    # Analytics
+    likes            = models.IntegerField(default=0)
+    comments         = models.IntegerField(default=0)
+    shares           = models.IntegerField(default=0)
+    reach            = models.IntegerField(default=0)
+    impressions      = models.IntegerField(default=0)
+
+    posted_at        = models.DateTimeField(null=True, blank=True)
+    synced_at        = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ('social_account', 'external_post_id')
+        ordering = ['-posted_at']
+
+    def __str__(self):
+        return f"{self.platform} post {self.external_post_id} ({self.social_account.account_name})"

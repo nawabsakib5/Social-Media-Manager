@@ -13,6 +13,12 @@ from .forms import PostForm
 from .tasks import publish_post_task
 from social_accounts.models import SocialAccount
 from inbox.models import InboxItem
+from .models import ExternalPost
+from django.utils.dateparse import parse_datetime
+
+
+
+
 
 User = get_user_model() 
 MAX_USERS = 50
@@ -544,4 +550,128 @@ def post_analytics(request, post_id):
     return render(request, 'posts/post_analytics.html', {
         'post':           post,
         'analytics_data': analytics_data,
+    })
+
+
+
+
+@login_required
+def sync_external_posts(request):
+    """Meta থেকে সব posts sync করো"""
+    from integrations.facebook_adapter import FacebookAdapter
+
+    if request.user.is_superuser or getattr(request.user, 'user_type', None) == 'admin':
+        accounts = SocialAccount.objects.filter(status='connected', platform__in=['facebook', 'instagram'])
+    else:
+        accounts = SocialAccount.objects.filter(
+            permitted_users=request.user,
+            status='connected',
+            platform__in=['facebook', 'instagram']
+        )
+
+    total_synced = 0
+    errors = []
+
+    for account in accounts:
+        try:
+            adapter = FacebookAdapter()
+            page_token, error = adapter.get_page_token(account)
+
+            if error:
+                errors.append(f"{account.account_name}: {error}")
+                continue
+
+            if account.platform == 'facebook':
+                page_id = account.platform_account_id
+                res = requests.get(
+                    f'https://graph.facebook.com/v22.0/{page_id}/published_posts',
+                    params={
+                        'access_token': page_token,
+                        'fields': 'id,message,full_picture,created_time,permalink_url,'
+                                  'likes.summary(true),comments.summary(true),shares',
+                        'limit': 50
+                    },
+                    timeout=15
+                ).json()
+
+                for p in res.get('data', []):
+                    ext_post, _ = ExternalPost.objects.update_or_create(
+                        social_account=account,
+                        external_post_id=p['id'],
+                        defaults={
+                            'platform': 'facebook',
+                            'content': p.get('message', ''),
+                            'media_url': p.get('full_picture', ''),
+                            'permalink_url': p.get('permalink_url', ''),
+                            'likes': p.get('likes', {}).get('summary', {}).get('total_count', 0),
+                            'comments': p.get('comments', {}).get('summary', {}).get('total_count', 0),
+                            'shares': p.get('shares', {}).get('count', 0),
+                            'posted_at': parse_datetime(p['created_time']) if p.get('created_time') else None,
+                        }
+                    )
+                    total_synced += 1
+
+            elif account.platform == 'instagram':
+                page_id = account.platform_account_id
+                ig_res = requests.get(
+                    f'https://graph.facebook.com/v22.0/{page_id}/media',
+                    params={
+                        'access_token': page_token,
+                        'fields': 'id,caption,media_type,media_url,thumbnail_url,timestamp,like_count,comments_count,permalink',
+                        'limit': 50
+                    },
+                    timeout=15
+                ).json()
+
+                for p in ig_res.get('data', []):
+                    ExternalPost.objects.update_or_create(
+                        social_account=account,
+                        external_post_id=p['id'],
+                        defaults={
+                            'platform': 'instagram',
+                            'content': p.get('caption', ''),
+                            'media_url': p.get('media_url') or p.get('thumbnail_url', ''),
+                            'media_type': p.get('media_type', ''),
+                            'permalink_url': p.get('permalink', ''),
+                            'likes': p.get('like_count', 0),
+                            'comments': p.get('comments_count', 0),
+                            'posted_at': parse_datetime(p['timestamp']) if p.get('timestamp') else None,
+                        }
+                    )
+                    total_synced += 1
+
+        except Exception as e:
+            errors.append(f"{account.account_name}: {str(e)}")
+
+    if errors:
+        messages.warning(request, f"Synced {total_synced} posts. Errors: {'; '.join(errors)}")
+    else:
+        messages.success(request, f"Successfully synced {total_synced} posts from Meta.")
+
+    return redirect('external_post_list')
+
+
+@login_required
+def external_post_list(request):
+    """Sync হওয়া সব external posts দেখাও"""
+    if request.user.is_superuser or getattr(request.user, 'user_type', None) == 'admin':
+        accounts = SocialAccount.objects.filter(status='connected')
+    else:
+        accounts = SocialAccount.objects.filter(permitted_users=request.user, status='connected')
+
+    platform_filter = request.GET.get('platform', '')
+    account_filter  = request.GET.get('account', '')
+
+    posts = ExternalPost.objects.filter(social_account__in=accounts)
+
+    if platform_filter:
+        posts = posts.filter(platform=platform_filter)
+    if account_filter:
+        posts = posts.filter(social_account_id=account_filter)
+
+    return render(request, 'posts/external_post_list.html', {
+        'posts': posts[:100],
+        'accounts': accounts,
+        'platform_filter': platform_filter,
+        'account_filter': account_filter,
     })

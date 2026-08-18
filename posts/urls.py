@@ -14,4 +14,6 @@ urlpatterns = [
     path('<int:post_id>/platform/<int:ps_id>/edit/', views.platform_edit, name='platform_edit'),
     path('<int:post_id>/analytics/', views.post_analytics, name='post_analytics'),
     path('accounts/', include('social_accounts.urls')),
+    path('external/', views.external_post_list, name='external_post_list'),
+    path('external/sync/', views.sync_external_posts, name='sync_external_posts'),
 ]
