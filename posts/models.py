@@ -96,9 +96,9 @@ class ExternalPost(models.Model):
     platform         = models.CharField(max_length=20, choices=PLATFORM_CHOICES)
     external_post_id = models.CharField(max_length=255)
     content          = models.TextField(blank=True, null=True)
-    media_url        = models.URLField(max_length=500, blank=True, null=True)
+    media_url        = models.TextField(blank=True, null=True)   # ✅ TextField
     media_type       = models.CharField(max_length=20, blank=True, null=True)
-    permalink_url    = models.URLField(max_length=500, blank=True, null=True)
+    permalink_url    = models.TextField(blank=True, null=True)   # ✅ TextField
 
     # Analytics
     likes            = models.IntegerField(default=0)
