@@ -186,18 +186,18 @@ if ENVIRONMENT == 'production':
     SECURE_CONTENT_TYPE_NOSNIFF = True
     SECURE_REFERRER_POLICY = 'strict-origin-when-cross-origin'
     SECURE_CROSS_ORIGIN_OPENER_POLICY = 'same-origin'
-    SESSION_COOKIE_AGE = 43200        # Production: 12 hours
-    SESSION_SAVE_EVERY_REQUEST = True  # Activity-based timeout reset
+    SESSION_COOKIE_AGE = 43200
+    SESSION_SAVE_EVERY_REQUEST = True
 else:
     SESSION_COOKIE_SECURE = False
     CSRF_COOKIE_SECURE = False
-    SESSION_COOKIE_AGE = 86400         # Development: 24 hours
+    SESSION_COOKIE_AGE = 86400
     SESSION_SAVE_EVERY_REQUEST = False
 
 # ── Session ──
 SESSION_ENGINE = 'django.contrib.sessions.backends.db'
 SESSION_EXPIRE_AT_BROWSER_CLOSE = False
-SESSION_COOKIE_HTTPONLY = True        # Always httponly, dev+prod উভয়তে
+SESSION_COOKIE_HTTPONLY = True
 
 # ── Encryption ──
 FIELD_ENCRYPTION_KEY = config('FIELD_ENCRYPTION_KEY')
@@ -221,6 +221,10 @@ CELERY_BEAT_SCHEDULE = {
     'check-scheduled-posts-every-minute': {
         'task': 'posts.tasks.check_and_publish_scheduled_posts',
         'schedule': 60.0,
+    },
+    'sync-external-posts-every-3-minutes': {  # ✅ 3 মিনিট পর পর auto-sync
+        'task': 'posts.tasks.sync_external_posts_task',
+        'schedule': 180.0,
     },
 }
 CELERY_TASK_ALWAYS_EAGER = config('CELERY_TASK_ALWAYS_EAGER', default=False, cast=bool)
