@@ -6,53 +6,148 @@ from .base import BaseSocialAdapter
 class LinkedinAdapter(BaseSocialAdapter):
     platform = 'linkedin'
 
+    BASE_HEADERS = {
+        'X-Restli-Protocol-Version': '2.0.0',
+        'LinkedIn-Version': '202501',
+    }
+
     def __init__(self, social_account=None):
         super().__init__(social_account)
 
     def get_page_token(self, social_account):
-        """Get LinkedIn access token (OIDC format)"""
-        stored_token = (
-            social_account.access_token
-            if hasattr(social_account, 'access_token')
-            else None
-        )
+        stored_token = social_account.access_token if hasattr(social_account, 'access_token') else None
         if stored_token:
             return stored_token, None
         return None, 'No access token available. Please reconnect the account.'
 
+    def _get_headers(self, token, content_type='application/json'):
+        return {
+            'Authorization': f'Bearer {token}',
+            'Content-Type': content_type,
+            **self.BASE_HEADERS,
+        }
+
+    def _upload_image(self, token, author_urn, image_url):
+        headers = self._get_headers(token)
+
+        register_payload = {
+            "initializeUploadRequest": {
+                "owner": author_urn
+            }
+        }
+        reg_res = requests.post(
+            'https://api.linkedin.com/rest/images?action=initializeUpload',
+            headers=headers,
+            json=register_payload,
+            timeout=15
+        )
+
+        if reg_res.status_code not in [200, 201]:
+            return None, f"Image register failed: {reg_res.text[:200]}"
+
+        reg_data = reg_res.json().get('value', {})
+        upload_url = reg_data.get('uploadUrl')
+        image_urn = reg_data.get('image')
+
+        if not upload_url or not image_urn:
+            return None, "Could not get upload URL from LinkedIn"
+
+        img_response = requests.get(image_url, timeout=30)
+        if img_response.status_code != 200:
+            return None, f"Could not download image"
+
+        upload_res = requests.put(
+            upload_url,
+            data=img_response.content,
+            headers={'Authorization': f'Bearer {token}'},
+            timeout=60
+        )
+
+        if upload_res.status_code not in [200, 201, 204]:
+            return None, f"Image upload failed: {upload_res.status_code}"
+
+        return image_urn, None
+
+    def _upload_video(self, token, author_urn, video_url):
+        headers = self._get_headers(token)
+
+        register_payload = {
+            "initializeUploadRequest": {
+                "owner": author_urn,
+                "fileSizeBytes": 0,
+                "uploadCaptions": False,
+                "uploadThumbnail": False
+            }
+        }
+        reg_res = requests.post(
+            'https://api.linkedin.com/rest/videos?action=initializeUpload',
+            headers=headers,
+            json=register_payload,
+            timeout=15
+        )
+
+        if reg_res.status_code not in [200, 201]:
+            return None, f"Video register failed: {reg_res.text[:200]}"
+
+        reg_data = reg_res.json().get('value', {})
+        upload_instructions = reg_data.get('uploadInstructions', [])
+        video_urn = reg_data.get('video')
+
+        if not upload_instructions or not video_urn:
+            return None, "Could not get video upload URL"
+
+        upload_url = upload_instructions[0].get('uploadUrl')
+
+        vid_response = requests.get(video_url, timeout=60)
+        if vid_response.status_code != 200:
+            return None, "Could not download video"
+
+        upload_res = requests.put(
+            upload_url,
+            data=vid_response.content,
+            headers={'Authorization': f'Bearer {token}'},
+            timeout=120
+        )
+
+        if upload_res.status_code not in [200, 201, 204]:
+            return None, f"Video upload failed: {upload_res.status_code}"
+
+        etag = upload_res.headers.get('ETag', '')
+        finalize_payload = {
+            "finalizeUploadRequest": {
+                "video": video_urn,
+                "uploadToken": "",
+                "uploadedPartIds": [etag] if etag else []
+            }
+        }
+        requests.post(
+            'https://api.linkedin.com/rest/videos?action=finalizeUpload',
+            headers=headers,
+            json=finalize_payload,
+            timeout=15
+        )
+
+        return video_urn, None
+
     def publish_post(self, post, platform_status):
-        """Publish a post (share) to a user's LinkedIn profile feed using API v2"""
         social_account = platform_status.social_account
         token, error = self.get_page_token(social_account)
-
         if error:
             return False, error
 
-        author_id = (
-            social_account.platform_account_id
-        )  # লিঙ্কডইনের ইউনিক মেম্বার URN আইডি
+        author_id = social_account.platform_account_id
         if not author_id:
-            return (
-                False,
-                'LinkedIn Member ID (URN) not found. Please reconnect account.',
-            )
+            return False, 'LinkedIn Member ID not found. Please reconnect.'
 
-        url = 'https://api.linkedin.com/v2/posts'
-        headers = {
-            'Authorization': f'Bearer {token}',
-            'Content-Type': 'application/json',
-            'X-Restli-Protocol-Version': '2.0.0',
-        }
+        author_urn = f'urn:li:person:{author_id}'
+        post_content = getattr(post, 'content', '') or ''
+        headers = self._get_headers(token)
 
-        # জ্যাঙ্গো মডেল অনুযায়ী post.content রিসিভ করা হচ্ছে
-        post_content = getattr(post, 'content', '') or getattr(
-            post, 'text_content', ''
-        )
+        media_items = list(post.media_items.all()) if hasattr(post, 'media_items') else []
 
-        # লিঙ্কডইনের অফিশিয়াল এপিআই ২.০ রিকোয়েস্ট পে-লোড
         payload = {
-            'author': f'urn:li:person:{author_id}',
-            'commentary': post_content or '',
+            'author': author_urn,
+            'commentary': post_content,
             'visibility': 'PUBLIC',
             'distribution': {
                 'feedDistribution': 'MAIN_FEED',
@@ -61,14 +156,36 @@ class LinkedinAdapter(BaseSocialAdapter):
             'lifecycleState': 'PUBLISHED',
         }
 
-        try:
-            res = requests.post(url, headers=headers, json=payload, timeout=20)
+        if media_items:
+            first_media = media_items[0]
+            media_url = first_media.url
+            media_type = first_media.media_type
 
-            # লিঙ্কডইন সফলভাবে পোস্ট তৈরি করলে ২০১ (Created) বা ২০০ রিটার্ন করে
+            if media_type == 'video':
+                asset_urn, upload_error = self._upload_video(token, author_urn, media_url)
+                if upload_error:
+                    print(f"[LinkedIn] Video upload failed: {upload_error}, posting text only")
+                else:
+                    payload['content'] = {'media': {'id': asset_urn}}
+            else:
+                asset_urn, upload_error = self._upload_image(token, author_urn, media_url)
+                if upload_error:
+                    print(f"[LinkedIn] Image upload failed: {upload_error}, posting text only")
+                else:
+                    payload['content'] = {'media': {'id': asset_urn}}
+
+        try:
+            res = requests.post(
+                'https://api.linkedin.com/v2/posts',
+                headers=headers,
+                json=payload,
+                timeout=30
+            )
+
             if res.status_code in [200, 201]:
-                # LinkedIn 201-এ empty body দিতে পারে, তাই header থেকে ID নাও
-                post_id = res.headers.get('x-restli-id', '') or res.headers.get(
-                    'X-RestLi-Id', ''
+                post_id = (
+                    res.headers.get('x-restli-id', '')
+                    or res.headers.get('X-RestLi-Id', '')
                 )
                 if not post_id and res.text:
                     try:
@@ -77,12 +194,10 @@ class LinkedinAdapter(BaseSocialAdapter):
                         post_id = 'linkedin_post'
                 return True, post_id or 'linkedin_post'
 
-            # Error response parsing
             error_msg = ''
             if res.text:
                 try:
-                    error_data = res.json()
-                    error_msg = error_data.get('message', res.text)
+                    error_msg = res.json().get('message', res.text)
                 except Exception:
                     error_msg = res.text
             else:
@@ -96,22 +211,21 @@ class LinkedinAdapter(BaseSocialAdapter):
             return False, str(e)
 
     def delete_post(self, post, platform_status):
-        """Delete post from LinkedIn"""
         social_account = platform_status.social_account
         token, error = self.get_page_token(social_account)
         if error:
             return False, error
 
         post_id = platform_status.platform_post_id
-        url = f'https://api.linkedin.com/v2/posts/{post_id}'
-        headers = {
-            'Authorization': f'Bearer {token}',
-            'X-Restli-Protocol-Version': '2.0.0',
-        }
+        headers = self._get_headers(token)
 
         try:
-            res = requests.delete(url, headers=headers, timeout=15)
-            if res.status_code == 204:  # লিঙ্কডইন নো-কন্টেন্ট কোড
+            res = requests.delete(
+                f'https://api.linkedin.com/v2/posts/{post_id}',
+                headers=headers,
+                timeout=15
+            )
+            if res.status_code == 204:
                 return True, None
 
             error_msg = 'LinkedIn delete failed'
@@ -120,7 +234,6 @@ class LinkedinAdapter(BaseSocialAdapter):
                     error_msg = res.json().get('message', res.text)
                 except Exception:
                     error_msg = res.text
-
             return False, error_msg
         except requests.RequestException as e:
             return False, f'Network error: {str(e)}'
@@ -128,8 +241,4 @@ class LinkedinAdapter(BaseSocialAdapter):
             return False, str(e)
 
     def update_post(self, post, platform_status, new_text):
-        """LinkedIn API does not support caption updates for standard member posts"""
-        return (
-            False,
-            'LinkedIn API restriction: Member shares cannot be updated via third-party APIs. Please edit manually on LinkedIn.',
-        )
+        return False, 'LinkedIn does not support post editing via API. Please edit manually.'
