@@ -94,11 +94,32 @@ class LinkedinAdapter(BaseSocialAdapter):
 
         try:
             if media_items:
-                first_media = media_items[0]
-                asset_urn, upload_error = self._upload_image(token, author_urn, first_media.url)
+                uploaded_assets = []
+                for media in media_items:
+                    if media.media_type == 'video':
+                        print(f"[LinkedIn] Video not supported yet, skipping")
+                        continue
+                    asset_urn, upload_error = self._upload_image(token, author_urn, media.url)
+                    if upload_error:
+                        print(f"[LinkedIn] Image upload failed: {upload_error}")
+                    else:
+                        uploaded_assets.append({"status": "READY", "media": asset_urn})
 
-                if upload_error or not asset_urn:
-                    print(f"[LinkedIn] Media upload failed: {upload_error}, posting text only")
+                if uploaded_assets:
+                    ugc_payload = {
+                        "author": author_urn,
+                        "lifecycleState": "PUBLISHED",
+                        "specificContent": {
+                            "com.linkedin.ugc.ShareContent": {
+                                "shareCommentary": {"text": post_content},
+                                "shareMediaCategory": "IMAGE",
+                                "media": uploaded_assets,
+                            }
+                        },
+                        "visibility": {"com.linkedin.ugc.MemberNetworkVisibility": "PUBLIC"},
+                    }
+                    res = requests.post('https://api.linkedin.com/v2/ugcPosts', headers=headers, json=ugc_payload, timeout=30)
+                else:
                     payload = {
                         'author': author_urn,
                         'commentary': post_content,
@@ -107,20 +128,6 @@ class LinkedinAdapter(BaseSocialAdapter):
                         'lifecycleState': 'PUBLISHED',
                     }
                     res = requests.post('https://api.linkedin.com/v2/posts', headers=headers, json=payload, timeout=30)
-                else:
-                    ugc_payload = {
-                        "author": author_urn,
-                        "lifecycleState": "PUBLISHED",
-                        "specificContent": {
-                            "com.linkedin.ugc.ShareContent": {
-                                "shareCommentary": {"text": post_content},
-                                "shareMediaCategory": "IMAGE",
-                                "media": [{"status": "READY", "media": asset_urn}],
-                            }
-                        },
-                        "visibility": {"com.linkedin.ugc.MemberNetworkVisibility": "PUBLIC"},
-                    }
-                    res = requests.post('https://api.linkedin.com/v2/ugcPosts', headers=headers, json=ugc_payload, timeout=30)
             else:
                 payload = {
                     'author': author_urn,
