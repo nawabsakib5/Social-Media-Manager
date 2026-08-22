@@ -553,9 +553,11 @@ def post_analytics(request, post_id):
                             data['impressions'] = metric.get('values', [{}])[0].get('value', 0)
 
             elif platform == 'linkedin':
-                # LinkedIn basic stats — ugcPosts socialActions
+                from urllib.parse import quote
+                encoded_id = quote(platform_post_id, safe='')
+
                 li_res = requests.get(
-                    f'https://api.linkedin.com/v2/socialActions/{platform_post_id}',
+                    f'https://api.linkedin.com/v2/socialActions/{encoded_id}',
                     headers={
                         'Authorization': f'Bearer {token}',
                         'X-Restli-Protocol-Version': '2.0.0',
@@ -563,7 +565,7 @@ def post_analytics(request, post_id):
                     timeout=15
                 ).json()
 
-                if 'status' in li_res and li_res['status'] != 200:
+                if 'status' in li_res and li_res.get('status') != 200:
                     data['error'] = li_res.get('message', 'LinkedIn analytics error')
                 else:
                     data['likes']    = li_res.get('likesSummary', {}).get('totalLikes', 0)

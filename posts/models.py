@@ -86,8 +86,15 @@ class ExternalPost(models.Model):
     PLATFORM_CHOICES = [
         ('facebook',  'Facebook'),
         ('instagram', 'Instagram'),
+        ('linkedin',  'LinkedIn'),
+        ('twitter',   'Twitter/X'),
+        ('youtube',   'YouTube'),
+        ('tiktok',    'TikTok'),
+        ('threads',   'Threads'),
+        ('pinterest', 'Pinterest'),
+        ('telegram',  'Telegram'),
+        
     ]
-
     social_account   = models.ForeignKey(
         SocialAccount,
         on_delete=models.CASCADE,

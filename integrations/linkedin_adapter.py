@@ -196,12 +196,24 @@ class LinkedinAdapter(BaseSocialAdapter):
         if error:
             return False, error
 
+        post_id = platform_status.platform_post_id
+        if not post_id:
+            return False, 'No post ID found'
+
+    # URN encode করতে হবে — colon (:) URL এ কাজ করে না
+        from urllib.parse import quote
+        encoded_id = quote(post_id, safe='')
+
         headers = self._base_headers(token)
+
+    # ugcPosts দিয়ে publish হলে ugcPosts এ delete, নইলে posts এ
+        if 'share' in post_id or 'ugcPost' in post_id:
+            url = f'https://api.linkedin.com/v2/ugcPosts/{encoded_id}'
+        else:
+            url = f'https://api.linkedin.com/v2/posts/{encoded_id}'
+
         try:
-            res = requests.delete(
-                f'https://api.linkedin.com/v2/posts/{platform_status.platform_post_id}',
-                headers=headers, timeout=15,
-            )
+            res = requests.delete(url, headers=headers, timeout=15)
             if res.status_code == 204:
                 return True, None
             error_msg = res.json().get('message', res.text) if res.text else 'LinkedIn delete failed'
