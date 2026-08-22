@@ -24,26 +24,19 @@ class LinkedinAdapter(BaseSocialAdapter):
 
     def _upload_image(self, token, author_urn, image_url):
         headers = self._base_headers(token)
-
         register_payload = {
             "registerUploadRequest": {
                 "owner": author_urn,
                 "recipes": ["urn:li:digitalmediaRecipe:feedshare-image"],
                 "serviceRelationships": [
-                    {
-                        "identifier": "urn:li:userGeneratedContent",
-                        "relationshipType": "OWNER",
-                    }
+                    {"identifier": "urn:li:userGeneratedContent", "relationshipType": "OWNER"}
                 ],
             }
         }
         reg_res = requests.post(
             'https://api.linkedin.com/v2/assets?action=registerUpload',
-            headers=headers,
-            json=register_payload,
-            timeout=15,
+            headers=headers, json=register_payload, timeout=15,
         )
-
         if reg_res.status_code != 200:
             return None, f"Image register failed: {reg_res.text[:200]}"
 
@@ -56,24 +49,62 @@ class LinkedinAdapter(BaseSocialAdapter):
         asset_urn = reg_data.get('asset')
 
         if not upload_url or not asset_urn:
-            return None, "Could not get upload URL from LinkedIn"
+            return None, "Could not get upload URL"
 
         img_response = requests.get(image_url, timeout=30)
         if img_response.status_code != 200:
             return None, "Could not download image"
 
         upload_res = requests.put(
-            upload_url,
-            data=img_response.content,
-            headers={
-                'Authorization': f'Bearer {token}',
-                'Content-Type': 'image/jpeg',
-            },
+            upload_url, data=img_response.content,
+            headers={'Authorization': f'Bearer {token}', 'Content-Type': 'image/jpeg'},
             timeout=60,
         )
-
         if upload_res.status_code not in [200, 201, 204]:
             return None, f"Image upload failed: {upload_res.status_code}"
+
+        return asset_urn, None
+
+    def _upload_video(self, token, author_urn, video_url):
+        headers = self._base_headers(token)
+        register_payload = {
+            "registerUploadRequest": {
+                "owner": author_urn,
+                "recipes": ["urn:li:digitalmediaRecipe:feedshare-video"],
+                "serviceRelationships": [
+                    {"identifier": "urn:li:userGeneratedContent", "relationshipType": "OWNER"}
+                ],
+            }
+        }
+        reg_res = requests.post(
+            'https://api.linkedin.com/v2/assets?action=registerUpload',
+            headers=headers, json=register_payload, timeout=15,
+        )
+        if reg_res.status_code != 200:
+            return None, f"Video register failed: {reg_res.text[:200]}"
+
+        reg_data = reg_res.json().get('value', {})
+        upload_url = (
+            reg_data.get('uploadMechanism', {})
+            .get('com.linkedin.digitalmedia.uploading.MediaUploadHttpRequest', {})
+            .get('uploadUrl')
+        )
+        asset_urn = reg_data.get('asset')
+
+        if not upload_url or not asset_urn:
+            return None, "Could not get video upload URL"
+
+        vid_response = requests.get(video_url, timeout=60)
+        if vid_response.status_code != 200:
+            return None, "Could not download video"
+
+        upload_res = requests.put(
+            upload_url, data=vid_response.content,
+            headers={'Authorization': f'Bearer {token}', 'Content-Type': 'video/mp4'},
+            timeout=120,
+        )
+        if upload_res.status_code not in [200, 201, 204]:
+            return None, f"Video upload failed: {upload_res.status_code}"
 
         return asset_urn, None
 
@@ -95,13 +126,17 @@ class LinkedinAdapter(BaseSocialAdapter):
         try:
             if media_items:
                 uploaded_assets = []
+                media_category = 'IMAGE'
+
                 for media in media_items:
                     if media.media_type == 'video':
-                        print(f"[LinkedIn] Video not supported yet, skipping")
-                        continue
-                    asset_urn, upload_error = self._upload_image(token, author_urn, media.url)
+                        asset_urn, upload_error = self._upload_video(token, author_urn, media.url)
+                        media_category = 'VIDEO'
+                    else:
+                        asset_urn, upload_error = self._upload_image(token, author_urn, media.url)
+
                     if upload_error:
-                        print(f"[LinkedIn] Image upload failed: {upload_error}")
+                        print(f"[LinkedIn] Upload failed: {upload_error}")
                     else:
                         uploaded_assets.append({"status": "READY", "media": asset_urn})
 
@@ -112,13 +147,13 @@ class LinkedinAdapter(BaseSocialAdapter):
                         "specificContent": {
                             "com.linkedin.ugc.ShareContent": {
                                 "shareCommentary": {"text": post_content},
-                                "shareMediaCategory": "IMAGE",
+                                "shareMediaCategory": media_category,
                                 "media": uploaded_assets,
                             }
                         },
                         "visibility": {"com.linkedin.ugc.MemberNetworkVisibility": "PUBLIC"},
                     }
-                    res = requests.post('https://api.linkedin.com/v2/ugcPosts', headers=headers, json=ugc_payload, timeout=30)
+                    res = requests.post('https://api.linkedin.com/v2/ugcPosts', headers=headers, json=ugc_payload, timeout=60)
                 else:
                     payload = {
                         'author': author_urn,
@@ -163,7 +198,10 @@ class LinkedinAdapter(BaseSocialAdapter):
 
         headers = self._base_headers(token)
         try:
-            res = requests.delete(f'https://api.linkedin.com/v2/posts/{platform_status.platform_post_id}', headers=headers, timeout=15)
+            res = requests.delete(
+                f'https://api.linkedin.com/v2/posts/{platform_status.platform_post_id}',
+                headers=headers, timeout=15,
+            )
             if res.status_code == 204:
                 return True, None
             error_msg = res.json().get('message', res.text) if res.text else 'LinkedIn delete failed'

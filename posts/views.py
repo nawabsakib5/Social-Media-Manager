@@ -15,9 +15,7 @@ from social_accounts.models import SocialAccount
 from inbox.models import InboxItem
 from .models import ExternalPost
 from django.utils.dateparse import parse_datetime
-
-
-
+from datetime import datetime, timezone as tz
 
 
 User = get_user_model() 
@@ -111,6 +109,19 @@ def _delete_from_platform(platform_status):
             return False, f"Facebook delete failed: {error}"
         elif platform == 'instagram':
             return True, "Instagram: please delete manually from the app"
+        elif platform == 'linkedin':
+            res = requests.delete(
+                f"https://api.linkedin.com/v2/posts/{post_id}",
+                headers={
+                    'Authorization': f'Bearer {token}',
+                    'X-Restli-Protocol-Version': '2.0.0',
+                },
+                timeout=15
+            )
+            if res.status_code == 204:
+                return True, "Deleted from LinkedIn ✓"
+            error = res.json().get('message', res.text) if res.text else 'LinkedIn delete failed'
+            return False, f"LinkedIn delete failed: {error}"
         return True, f"{platform}: deletion not supported"
     except requests.RequestException as e:
         return False, f"Network error: {e}"
@@ -137,6 +148,8 @@ def _update_on_platform(platform_status, new_content):
             return False, f"Facebook update failed: {error}"
         elif platform == 'instagram':
             return False, "Instagram caption edit requires manual update"
+        elif platform == 'linkedin':
+            return False, "LinkedIn does not support post editing via API. Please edit manually."
         return True, f"{platform}: editing not supported"
     except requests.RequestException as e:
         return False, f"Network error: {e}"
@@ -539,6 +552,23 @@ def post_analytics(request, post_id):
                         elif metric['name'] == 'impressions':
                             data['impressions'] = metric.get('values', [{}])[0].get('value', 0)
 
+            elif platform == 'linkedin':
+                # LinkedIn basic stats — ugcPosts socialActions
+                li_res = requests.get(
+                    f'https://api.linkedin.com/v2/socialActions/{platform_post_id}',
+                    headers={
+                        'Authorization': f'Bearer {token}',
+                        'X-Restli-Protocol-Version': '2.0.0',
+                    },
+                    timeout=15
+                ).json()
+
+                if 'status' in li_res and li_res['status'] != 200:
+                    data['error'] = li_res.get('message', 'LinkedIn analytics error')
+                else:
+                    data['likes']    = li_res.get('likesSummary', {}).get('totalLikes', 0)
+                    data['comments'] = li_res.get('commentsSummary', {}).get('totalFirstLevelComments', 0)
+
             else:
                 data['error'] = f'{platform} analytics not supported yet'
 
@@ -553,20 +583,22 @@ def post_analytics(request, post_id):
     })
 
 
-
-
 @login_required
 def sync_external_posts(request):
-    """Meta থেকে সব posts sync করো"""
+    """Meta + LinkedIn থেকে সব posts sync করো"""
     from integrations.facebook_adapter import FacebookAdapter
+    from integrations.linkedin_adapter import LinkedinAdapter
 
     if request.user.is_superuser or getattr(request.user, 'user_type', None) == 'admin':
-        accounts = SocialAccount.objects.filter(status='connected', platform__in=['facebook', 'instagram'])
+        accounts = SocialAccount.objects.filter(
+            status='connected',
+            platform__in=['facebook', 'instagram', 'linkedin']  # ← LinkedIn যোগ
+        )
     else:
         accounts = SocialAccount.objects.filter(
             permitted_users=request.user,
             status='connected',
-            platform__in=['facebook', 'instagram']
+            platform__in=['facebook', 'instagram', 'linkedin']  # ← LinkedIn যোগ
         )
 
     total_synced = 0
@@ -574,14 +606,14 @@ def sync_external_posts(request):
 
     for account in accounts:
         try:
-            adapter = FacebookAdapter()
-            page_token, error = adapter.get_page_token(account)
-
-            if error:
-                errors.append(f"{account.account_name}: {error}")
-                continue
-
+            # ── Facebook ──────────────────────────────────────────────────
             if account.platform == 'facebook':
+                adapter = FacebookAdapter()
+                page_token, error = adapter.get_page_token(account)
+                if error:
+                    errors.append(f"{account.account_name}: {error}")
+                    continue
+
                 page_id = account.platform_account_id
                 res = requests.get(
                     f'https://graph.facebook.com/v22.0/{page_id}/published_posts',
@@ -595,7 +627,7 @@ def sync_external_posts(request):
                 ).json()
 
                 for p in res.get('data', []):
-                    ext_post, _ = ExternalPost.objects.update_or_create(
+                    ExternalPost.objects.update_or_create(
                         social_account=account,
                         external_post_id=p['id'],
                         defaults={
@@ -611,7 +643,14 @@ def sync_external_posts(request):
                     )
                     total_synced += 1
 
+            # ── Instagram ─────────────────────────────────────────────────
             elif account.platform == 'instagram':
+                adapter = FacebookAdapter()
+                page_token, error = adapter.get_page_token(account)
+                if error:
+                    errors.append(f"{account.account_name}: {error}")
+                    continue
+
                 page_id = account.platform_account_id
                 ig_res = requests.get(
                     f'https://graph.facebook.com/v22.0/{page_id}/media',
@@ -640,13 +679,66 @@ def sync_external_posts(request):
                     )
                     total_synced += 1
 
+            # ── LinkedIn ──────────────────────────────────────────────────
+            elif account.platform == 'linkedin':
+                adapter = LinkedinAdapter()
+                token, error = adapter.get_page_token(account)
+                if error:
+                    errors.append(f"{account.account_name}: {error}")
+                    continue
+
+                author_urn = f"urn:li:person:{account.platform_account_id}"
+
+                li_res = requests.get(
+                    'https://api.linkedin.com/v2/ugcPosts',
+                    headers={
+                        'Authorization': f'Bearer {token}',
+                        'X-Restli-Protocol-Version': '2.0.0',
+                    },
+                    params={
+                        'q': 'authors',
+                        'authors': f'List({author_urn})',
+                        'count': 50,
+                    },
+                    timeout=15
+                ).json()
+
+                if 'status' in li_res and li_res.get('status') != 200:
+                    errors.append(f"{account.account_name}: {li_res.get('message', 'LinkedIn API error')}")
+                    continue
+
+                for p in li_res.get('elements', []):
+                    content = (
+                        p.get('specificContent', {})
+                         .get('com.linkedin.ugc.ShareContent', {})
+                         .get('shareCommentary', {})
+                         .get('text', '')
+                    )
+
+                    # millisecond timestamp → datetime (সঠিক convert)
+                    posted_at = None
+                    ts = p.get('created', {}).get('time')
+                    if ts:
+                        posted_at = datetime.fromtimestamp(ts / 1000, tz=tz.utc)
+
+                    ExternalPost.objects.update_or_create(
+                        social_account=account,
+                        external_post_id=p.get('id', ''),
+                        defaults={
+                            'platform': 'linkedin',
+                            'content': content,
+                            'posted_at': posted_at,
+                        }
+                    )
+                    total_synced += 1
+
         except Exception as e:
             errors.append(f"{account.account_name}: {str(e)}")
 
     if errors:
         messages.warning(request, f"Synced {total_synced} posts. Errors: {'; '.join(errors)}")
     else:
-        messages.success(request, f"Successfully synced {total_synced} posts from Meta.")
+        messages.success(request, f"Successfully synced {total_synced} posts from all platforms.")
 
     return redirect('external_post_list')
 
