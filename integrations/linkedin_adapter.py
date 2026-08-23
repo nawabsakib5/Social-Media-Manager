@@ -1,5 +1,6 @@
 # integrations/linkedin_adapter.py
 import requests
+from urllib.parse import quote
 from .base import BaseSocialAdapter
 
 
@@ -153,7 +154,12 @@ class LinkedinAdapter(BaseSocialAdapter):
                         },
                         "visibility": {"com.linkedin.ugc.MemberNetworkVisibility": "PUBLIC"},
                     }
-                    res = requests.post('https://api.linkedin.com/v2/ugcPosts', headers=headers, json=ugc_payload, timeout=60)
+                    res = requests.post(
+                        'https://api.linkedin.com/v2/ugcPosts',
+                        headers=headers,
+                        json=ugc_payload,
+                        timeout=60
+                    )
                 else:
                     payload = {
                         'author': author_urn,
@@ -162,7 +168,12 @@ class LinkedinAdapter(BaseSocialAdapter):
                         'distribution': {'feedDistribution': 'MAIN_FEED', 'targetEntities': []},
                         'lifecycleState': 'PUBLISHED',
                     }
-                    res = requests.post('https://api.linkedin.com/v2/posts', headers=headers, json=payload, timeout=30)
+                    res = requests.post(
+                        'https://api.linkedin.com/v2/posts',
+                        headers=headers,
+                        json=payload,
+                        timeout=30
+                    )
             else:
                 payload = {
                     'author': author_urn,
@@ -171,7 +182,12 @@ class LinkedinAdapter(BaseSocialAdapter):
                     'distribution': {'feedDistribution': 'MAIN_FEED', 'targetEntities': []},
                     'lifecycleState': 'PUBLISHED',
                 }
-                res = requests.post('https://api.linkedin.com/v2/posts', headers=headers, json=payload, timeout=30)
+                res = requests.post(
+                    'https://api.linkedin.com/v2/posts',
+                    headers=headers,
+                    json=payload,
+                    timeout=30
+                )
 
             if res.status_code in [200, 201]:
                 post_id = res.headers.get('x-restli-id', '') or res.headers.get('X-RestLi-Id', '')
@@ -200,24 +216,55 @@ class LinkedinAdapter(BaseSocialAdapter):
         if not post_id:
             return False, 'No post ID found'
 
-    # URN encode করতে হবে — colon (:) URL এ কাজ করে না
-        from urllib.parse import quote
+        # Content-Type ছাড়া header — DELETE এ body নেই
+        headers = {
+            'Authorization': f'Bearer {token}',
+            'X-Restli-Protocol-Version': '2.0.0',
+        }
+
+        # URN encode করো — colon (:) URL এ syntax error দেয়
         encoded_id = quote(post_id, safe='')
 
-        headers = self._base_headers(token)
-
-    # ugcPosts দিয়ে publish হলে ugcPosts এ delete, নইলে posts এ
-        if 'share' in post_id or 'ugcPost' in post_id:
-            url = f'https://api.linkedin.com/v2/ugcPosts/{encoded_id}'
-        else:
-            url = f'https://api.linkedin.com/v2/posts/{encoded_id}'
-
         try:
+            # ugcPost (media post) হলে ugcPosts endpoint
+            if 'ugcPost' in post_id:
+                url = f'https://api.linkedin.com/v2/ugcPosts/{encoded_id}'
+            # share (text only post) হলে posts endpoint
+            elif 'share' in post_id:
+                url = f'https://api.linkedin.com/v2/posts/{encoded_id}'
+            else:
+                # fallback — দুটোই try করো
+                url = f'https://api.linkedin.com/v2/ugcPosts/{encoded_id}'
+
             res = requests.delete(url, headers=headers, timeout=15)
+            print(f"[LinkedIn DELETE] URL: {url}")
+            print(f"[LinkedIn DELETE] Status: {res.status_code}")
+            print(f"[LinkedIn DELETE] Response: {res.text[:300]}")
+
             if res.status_code == 204:
                 return True, None
-            error_msg = res.json().get('message', res.text) if res.text else 'LinkedIn delete failed'
+
+            # 404 হলে অন্য endpoint try করো
+            if res.status_code == 404:
+                if 'ugcPost' in post_id:
+                    url2 = f'https://api.linkedin.com/v2/posts/{encoded_id}'
+                else:
+                    url2 = f'https://api.linkedin.com/v2/ugcPosts/{encoded_id}'
+
+                res2 = requests.delete(url2, headers=headers, timeout=15)
+                print(f"[LinkedIn DELETE fallback] URL: {url2}")
+                print(f"[LinkedIn DELETE fallback] Status: {res2.status_code}")
+                print(f"[LinkedIn DELETE fallback] Response: {res2.text[:300]}")
+
+                if res2.status_code == 204:
+                    return True, None
+
+                error_msg = res2.json().get('message', res2.text) if res2.text else f'HTTP {res2.status_code}'
+                return False, error_msg
+
+            error_msg = res.json().get('message', res.text) if res.text else f'HTTP {res.status_code}'
             return False, error_msg
+
         except Exception as e:
             return False, str(e)
 

@@ -16,6 +16,7 @@ from inbox.models import InboxItem
 from .models import ExternalPost
 from django.utils.dateparse import parse_datetime
 from datetime import datetime, timezone as tz
+from urllib.parse import quote
 
 
 User = get_user_model() 
@@ -107,22 +108,52 @@ def _delete_from_platform(platform_status):
                 return True, "Deleted from Facebook ✓"
             error = res.get('error', {}).get('message', 'Unknown error')
             return False, f"Facebook delete failed: {error}"
+
         elif platform == 'instagram':
             return True, "Instagram: please delete manually from the app"
+
         elif platform == 'linkedin':
-            res = requests.delete(
-                f"https://api.linkedin.com/v2/posts/{post_id}",
-                headers={
-                    'Authorization': f'Bearer {token}',
-                    'X-Restli-Protocol-Version': '2.0.0',
-                },
-                timeout=15
-            )
+            encoded_id = quote(post_id, safe='')
+            headers = {
+                'Authorization': f'Bearer {token}',
+                'X-Restli-Protocol-Version': '2.0.0',
+            }
+
+            if 'ugcPost' in post_id:
+                url = f'https://api.linkedin.com/v2/ugcPosts/{encoded_id}'
+            else:
+                url = f'https://api.linkedin.com/v2/posts/{encoded_id}'
+
+            res = requests.delete(url, headers=headers, timeout=15)
+            print(f"[LinkedIn DELETE] URL: {url}")
+            print(f"[LinkedIn DELETE] Status: {res.status_code}")
+            print(f"[LinkedIn DELETE] Response: {res.text[:300]}")
+
             if res.status_code == 204:
                 return True, "Deleted from LinkedIn ✓"
-            error = res.json().get('message', res.text) if res.text else 'LinkedIn delete failed'
+
+            if res.status_code == 404:
+                if 'ugcPost' in post_id:
+                    url2 = f'https://api.linkedin.com/v2/posts/{encoded_id}'
+                else:
+                    url2 = f'https://api.linkedin.com/v2/ugcPosts/{encoded_id}'
+
+                res2 = requests.delete(url2, headers=headers, timeout=15)
+                print(f"[LinkedIn DELETE fallback] URL: {url2}")
+                print(f"[LinkedIn DELETE fallback] Status: {res2.status_code}")
+                print(f"[LinkedIn DELETE fallback] Response: {res2.text[:300]}")
+
+                if res2.status_code == 204:
+                    return True, "Deleted from LinkedIn ✓"
+
+                error = res2.json().get('message', res2.text) if res2.text else f'HTTP {res2.status_code}'
+                return False, f"LinkedIn delete failed: {error}"
+
+            error = res.json().get('message', res.text) if res.text else f'HTTP {res.status_code}'
             return False, f"LinkedIn delete failed: {error}"
+
         return True, f"{platform}: deletion not supported"
+
     except requests.RequestException as e:
         return False, f"Network error: {e}"
 
@@ -553,9 +584,7 @@ def post_analytics(request, post_id):
                             data['impressions'] = metric.get('values', [{}])[0].get('value', 0)
 
             elif platform == 'linkedin':
-                from urllib.parse import quote
                 encoded_id = quote(platform_post_id, safe='')
-
                 li_res = requests.get(
                     f'https://api.linkedin.com/v2/socialActions/{encoded_id}',
                     headers={
@@ -587,20 +616,19 @@ def post_analytics(request, post_id):
 
 @login_required
 def sync_external_posts(request):
-    """Meta + LinkedIn থেকে সব posts sync করো"""
     from integrations.facebook_adapter import FacebookAdapter
     from integrations.linkedin_adapter import LinkedinAdapter
 
     if request.user.is_superuser or getattr(request.user, 'user_type', None) == 'admin':
         accounts = SocialAccount.objects.filter(
             status='connected',
-            platform__in=['facebook', 'instagram', 'linkedin']  # ← LinkedIn যোগ
+            platform__in=['facebook', 'instagram', 'linkedin']
         )
     else:
         accounts = SocialAccount.objects.filter(
             permitted_users=request.user,
             status='connected',
-            platform__in=['facebook', 'instagram', 'linkedin']  # ← LinkedIn যোগ
+            platform__in=['facebook', 'instagram', 'linkedin']
         )
 
     total_synced = 0
@@ -608,7 +636,6 @@ def sync_external_posts(request):
 
     for account in accounts:
         try:
-            # ── Facebook ──────────────────────────────────────────────────
             if account.platform == 'facebook':
                 adapter = FacebookAdapter()
                 page_token, error = adapter.get_page_token(account)
@@ -645,7 +672,6 @@ def sync_external_posts(request):
                     )
                     total_synced += 1
 
-            # ── Instagram ─────────────────────────────────────────────────
             elif account.platform == 'instagram':
                 adapter = FacebookAdapter()
                 page_token, error = adapter.get_page_token(account)
@@ -681,7 +707,6 @@ def sync_external_posts(request):
                     )
                     total_synced += 1
 
-            # ── LinkedIn ──────────────────────────────────────────────────
             elif account.platform == 'linkedin':
                 adapter = LinkedinAdapter()
                 token, error = adapter.get_page_token(account)
@@ -690,7 +715,6 @@ def sync_external_posts(request):
                     continue
 
                 author_urn = f"urn:li:person:{account.platform_account_id}"
-
                 li_res = requests.get(
                     'https://api.linkedin.com/v2/ugcPosts',
                     headers={
@@ -717,7 +741,6 @@ def sync_external_posts(request):
                          .get('text', '')
                     )
 
-                    # millisecond timestamp → datetime (সঠিক convert)
                     posted_at = None
                     ts = p.get('created', {}).get('time')
                     if ts:
@@ -747,7 +770,6 @@ def sync_external_posts(request):
 
 @login_required
 def external_post_list(request):
-    """Sync হওয়া সব external posts দেখাও"""
     if request.user.is_superuser or getattr(request.user, 'user_type', None) == 'admin':
         accounts = SocialAccount.objects.filter(status='connected')
     else:
