@@ -183,13 +183,6 @@ def inbox_live_sync(request):
                 synced_count += _sync_facebook_messages(account, page_token)
             elif account.platform == 'instagram':
                 synced_count += _sync_instagram_messages(account, page_token)
-                # আগে ছিল শুধু facebook/instagram
-# এই block টা যোগ করো:
-            elif account.platform == 'linkedin':
-                try:
-                    synced_count += _sync_linkedin_comments(account, account.access_token)
-                except Exception as e:
-                    print(f"[Live Sync LinkedIn Error] {account.account_name}: {e}")
         except Exception as e:
             print(f"[Live Sync Error] {account.account_name}: {e}")
 
@@ -528,43 +521,23 @@ def _sync_twitter_mentions(account, token):
 
 def _sync_linkedin_comments(account, token):
     """LinkedIn post comments sync।"""
-    from urllib.parse import quote
     author_id = account.platform_account_id
     headers = {
         "Authorization": f"Bearer {token}",
         "X-Restli-Protocol-Version": "2.0.0"
     }
     count = 0
-
-    # ugcPosts API দিয়ে posts আনো
-    author_urn = f"urn:li:person:{author_id}"
-    posts_res = requests.get(
-        'https://api.linkedin.com/v2/ugcPosts',
-        headers=headers,
-        params={
-            'q': 'authors',
-            'authors': f'List({author_urn})',
-            'count': 10,
-        },
-        timeout=15
-    ).json()
+    posts_url = f"https://api.linkedin.com/v2/posts?author=urn:li:person:{author_id}&count=10"
+    posts_res = requests.get(posts_url, headers=headers, timeout=15).json()
 
     if 'message' in posts_res:
         print(f"[LinkedIn] {account.account_name}: {posts_res.get('message')}")
         return 0
 
     for post in posts_res.get('elements', []):
-        post_urn = post.get('id', '')
-        if not post_urn:
-            continue
-
-        # URN encode করো
-        encoded_urn = quote(post_urn, safe='')
-        comments_res = requests.get(
-            f'https://api.linkedin.com/v2/socialActions/{encoded_urn}/comments',
-            headers=headers,
-            timeout=10
-        ).json()
+        post_urn = post['id']
+        comments_url = f"https://api.linkedin.com/v2/socialActions/{post_urn}/comments"
+        comments_res = requests.get(comments_url, headers=headers, timeout=10).json()
 
         if 'message' in comments_res:
             continue
@@ -573,9 +546,8 @@ def _sync_linkedin_comments(account, token):
             commenter_urn = comment.get('actor', '')
             if f"urn:li:person:{author_id}" in commenter_urn:
                 continue
-
             _, created = InboxItem.objects.update_or_create(
-                item_id=comment.get('id', ''),
+                item_id=comment['id'],
                 defaults={
                     'social_account': account,
                     'type': 'comment',
