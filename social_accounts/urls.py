@@ -17,4 +17,6 @@ urlpatterns = [
     path('twitter/callback/', views.twitter_callback, name='twitter_callback'),
     path('linkedin/login/', views.linkedin_login, name='linkedin_login'),
     path('linkedin/callback/', views.linkedin_callback, name='linkedin_callback'),
+    path('youtube/login/', views.youtube_login, name='youtube_login'),
+    path('youtube/callback/', views.youtube_callback, name='youtube_callback'),
 ]
