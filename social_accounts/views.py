@@ -753,7 +753,7 @@ def linkedin_callback(request):
 
 YOUTUBE_CLIENT_ID = getattr(settings, 'YOUTUBE_CLIENT_ID', '')
 YOUTUBE_CLIENT_SECRET = getattr(settings, 'YOUTUBE_CLIENT_SECRET', '')
-YOUTUBE_REDIRECT_URI = 'http://localhost:8000/accounts/youtube/callback/'
+YOUTUBE_REDIRECT_URI = 'http://localhost:8000/posts/accounts/youtube/callback/'
 
 @login_required
 def youtube_login(request):
@@ -761,7 +761,11 @@ def youtube_login(request):
         'client_id': YOUTUBE_CLIENT_ID,
         'redirect_uri': YOUTUBE_REDIRECT_URI,
         'response_type': 'code',
-        'scope': 'https://www.googleapis.com/auth/youtube https://www.googleapis.com/auth/youtube.upload https://www.googleapis.com/auth/youtube.force-ssl',
+        'scope': ' '.join([
+            'https://www.googleapis.com/auth/youtube',
+            'https://www.googleapis.com/auth/youtube.upload',
+            'https://www.googleapis.com/auth/youtube.force-ssl',
+        ]),
         'access_type': 'offline',
         'prompt': 'consent',
         'state': str(request.user.id),
@@ -785,7 +789,6 @@ def youtube_callback(request):
         return redirect('social_accounts:account_list')
 
     try:
-        # Code exchange করে token নাও
         token_res = requests.post(
             'https://oauth2.googleapis.com/token',
             data={
@@ -805,7 +808,6 @@ def youtube_callback(request):
         access_token = token_res['access_token']
         refresh_token = token_res.get('refresh_token', '')
 
-        # YouTube channel info নাও
         channel_res = requests.get(
             'https://www.googleapis.com/youtube/v3/channels',
             headers={'Authorization': f'Bearer {access_token}'},
