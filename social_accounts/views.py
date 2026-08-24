@@ -747,3 +747,103 @@ def linkedin_callback(request):
         messages.error(request, f"Network error during LinkedIn connection: {str(e)}")
         
     return redirect('social_accounts:account_list')
+
+
+
+
+YOUTUBE_CLIENT_ID = getattr(settings, 'YOUTUBE_CLIENT_ID', '')
+YOUTUBE_CLIENT_SECRET = getattr(settings, 'YOUTUBE_CLIENT_SECRET', '')
+YOUTUBE_REDIRECT_URI = 'http://localhost:8000/accounts/youtube/callback/'
+
+@login_required
+def youtube_login(request):
+    params = {
+        'client_id': YOUTUBE_CLIENT_ID,
+        'redirect_uri': YOUTUBE_REDIRECT_URI,
+        'response_type': 'code',
+        'scope': 'https://www.googleapis.com/auth/youtube https://www.googleapis.com/auth/youtube.upload https://www.googleapis.com/auth/youtube.force-ssl',
+        'access_type': 'offline',
+        'prompt': 'consent',
+        'state': str(request.user.id),
+    }
+    auth_url = "https://accounts.google.com/o/oauth2/v2/auth?" + urllib.parse.urlencode(params)
+    return redirect(auth_url)
+
+
+@login_required
+def youtube_callback(request):
+    code = request.GET.get('code')
+    state = request.GET.get('state')
+    error = request.GET.get('error')
+
+    if error or not code:
+        messages.error(request, f"YouTube connection failed: {error or 'No code received.'}")
+        return redirect('social_accounts:account_list')
+
+    if state != str(request.user.id):
+        messages.error(request, "Security check failed. Please try again.")
+        return redirect('social_accounts:account_list')
+
+    try:
+        # Code exchange করে token নাও
+        token_res = requests.post(
+            'https://oauth2.googleapis.com/token',
+            data={
+                'code': code,
+                'client_id': YOUTUBE_CLIENT_ID,
+                'client_secret': YOUTUBE_CLIENT_SECRET,
+                'redirect_uri': YOUTUBE_REDIRECT_URI,
+                'grant_type': 'authorization_code',
+            },
+            timeout=15
+        ).json()
+
+        if 'access_token' not in token_res:
+            messages.error(request, f"YouTube token error: {token_res.get('error_description', 'Token exchange failed.')}")
+            return redirect('social_accounts:account_list')
+
+        access_token = token_res['access_token']
+        refresh_token = token_res.get('refresh_token', '')
+
+        # YouTube channel info নাও
+        channel_res = requests.get(
+            'https://www.googleapis.com/youtube/v3/channels',
+            headers={'Authorization': f'Bearer {access_token}'},
+            params={'part': 'snippet', 'mine': 'true'},
+            timeout=15
+        ).json()
+
+        items = channel_res.get('items', [])
+        if not items:
+            messages.error(request, "No YouTube channel found.")
+            return redirect('social_accounts:account_list')
+
+        channel = items[0]
+        channel_id = channel['id']
+        channel_title = channel['snippet']['title']
+        profile_pic = channel['snippet']['thumbnails']['default']['url']
+
+        sa, created = SocialAccount.objects.update_or_create(
+            platform='youtube',
+            platform_account_id=channel_id,
+            defaults={
+                'account_name': channel_title,
+                'profile_picture_url': profile_pic,
+                'status': 'connected',
+                'connected_by': request.user,
+            }
+        )
+        sa.access_token = access_token
+        if refresh_token:
+            sa.refresh_token = refresh_token
+        sa.save()
+
+        if not (request.user.is_superuser or getattr(request.user, 'user_type', None) == 'admin'):
+            sa.permitted_users.add(request.user)
+
+        messages.success(request, f"Successfully connected YouTube: {channel_title}")
+
+    except requests.RequestException as e:
+        messages.error(request, f"Network error: {str(e)}")
+
+    return redirect('social_accounts:account_list')
