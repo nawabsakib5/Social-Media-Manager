@@ -239,6 +239,8 @@ LINKEDIN_CLIENT_SECRET = config('LINKEDIN_CLIENT_SECRET', default='')
 LINKEDIN_REDIRECT_URI = config('LINKEDIN_REDIRECT_URI', default='')
 TWITTER_CLIENT_ID = config('TWITTER_CLIENT_ID', default='')
 TWITTER_CLIENT_SECRET = config('TWITTER_CLIENT_SECRET', default='')
+YOUTUBE_CLIENT_ID = os.getenv('YOUTUBE_CLIENT_ID', '')
+YOUTUBE_CLIENT_SECRET = os.getenv('YOUTUBE_CLIENT_SECRET', '')
 
 # ── Email ──
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'

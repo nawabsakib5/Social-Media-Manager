@@ -16,9 +16,9 @@
                 <p class="text-muted mb-0 small fw-medium">Manage, sync, and monitor your connected professional platforms</p>
             </div>
         </div>
-        
+
         {% if user.is_staff or user.is_superuser %}
-        <a href="{% url 'social_accounts:facebook_login' %}" class="btn btn-primary btn-sm px-4 py-2.5 rounded-pill shadow-lg fw-semibold d-flex align-items-center gap-2 btn-3d-glow" id="connect-btn">
+        <a href="{% url 'social_accounts:facebook_login' %}" class="btn btn-primary btn-sm px-4 py-2 rounded-pill shadow-lg fw-semibold d-flex align-items-center gap-2 btn-3d-glow" id="connect-btn">
             <i class="fa-solid fa-plus"></i>Connect New Account
         </a>
         {% endif %}
@@ -28,7 +28,7 @@
     <div class="row g-4 mb-5" id="platform-grid">
         {% for item in platform_data %}
         <div class="col-6 col-sm-4 col-md-3 col-lg-2 platform-card-wrapper" style="opacity: 0; transform: translateY(20px);">
-            
+
             <!-- Dynamic Routing Block -->
             {% if item.account and item.account.status == 'connected' %}
                 <a href="{% url 'social_accounts:workspace' item.account.id %}" class="text-decoration-none">
@@ -39,15 +39,19 @@
                     <a href="{% url 'social_accounts:twitter_login' %}" class="text-decoration-none">
                 {% elif item.name == 'linkedin' %}
                     <a href="{% url 'social_accounts:linkedin_login' %}" class="text-decoration-none">
+                {% elif item.name == 'youtube' %}
+                    <a href="{% url 'social_accounts:youtube_login' %}" class="text-decoration-none">
                 {% else %}
                     <a href="#" onclick="alert('{{ item.name|capfirst }} integration is coming soon!'); return false;" class="text-decoration-none">
                 {% endif %}
             {% endif %}
 
                 <div class="card platform-card-3d border-0 p-3 h-100 position-relative glass-effect rounded-4 shadow-sm">
-                    
+
                     <!-- Status Indicator Dot -->
-                    <div class="position-absolute" style="top: 12px; right: 12px; width: 9px; height: 9px; border-radius: 50%; background: {% if item.account and item.account.status == 'connected' %}#22c55e{% elif item.account %}#f59e0b{% else %}#cbd5e1{% endif %}; box-shadow: 0 0 8px {% if item.account and item.account.status == 'connected' %}rgba(34, 197, 94, 0.5){% elif item.account %}rgba(245, 158, 11, 0.5){% else %}transparent{% endif %};">
+                    <div class="position-absolute" style="top: 12px; right: 12px; width: 9px; height: 9px; border-radius: 50%;
+                        background: {% if item.account and item.account.status == 'connected' %}#22c55e{% elif item.account %}#f59e0b{% else %}#cbd5e1{% endif %};
+                        box-shadow: 0 0 8px {% if item.account and item.account.status == 'connected' %}rgba(34, 197, 94, 0.5){% elif item.account %}rgba(245, 158, 11, 0.5){% else %}transparent{% endif %};">
                     </div>
 
                     <!-- Platform Icon Box -->
@@ -64,11 +68,18 @@
                                 {% elif item.name == 'linkedin' %}text-primary
                                 {% elif item.name == 'tiktok' %}text-dark
                                 {% elif item.name == 'threads' %}text-dark
-                                {% elif item.name == 'telegram' %}text-info style="color: #0088cc !important;"
-                                {% elif item.name == 'pinterest' %}text-danger style="color: #bd081c !important;"
-                                {% elif item.name == 'reddit' %}text-orange style="color: #ff4500 !important;"
-                                {% elif item.name == 'snapchat' %}text-warning style="color: #eab308 !important;"
-                                {% elif item.name == 'discord' %}text-primary style="color: #5865f2 !important;"
+                                {% elif item.name == 'telegram' %}text-info
+                                {% elif item.name == 'pinterest' %}text-danger
+                                {% elif item.name == 'reddit' %}text-orange
+                                {% elif item.name == 'snapchat' %}text-warning
+                                {% elif item.name == 'discord' %}text-primary
+                                {% endif %}"
+                                style="
+                                {% if item.name == 'telegram' %}color: #0088cc !important;
+                                {% elif item.name == 'pinterest' %}color: #bd081c !important;
+                                {% elif item.name == 'reddit' %}color: #ff4500 !important;
+                                {% elif item.name == 'snapchat' %}color: #eab308 !important;
+                                {% elif item.name == 'discord' %}color: #5865f2 !important;
                                 {% endif %}">
                             </i>
                         {% endif %}
@@ -125,7 +136,7 @@
         {% if accounts %}
         <div class="card border-0 rounded-4 shadow-lg overflow-hidden glass-card-3d">
             {% for acc in accounts %}
-            <div class="account-row d-flex flex-column flex-md-row align-items-md-center justify-content-between px-4 py-3.5 gap-3 border-bottom border-light">
+            <div class="account-row d-flex flex-column flex-md-row align-items-md-center justify-content-between px-4 py-3 gap-3 border-bottom border-light">
                 <div class="d-flex align-items-center gap-3">
                     <div class="platform-icon-box m-0 flex-shrink-0">
                         {% if acc.platform == 'gmail' %}
@@ -143,7 +154,7 @@
                         {% endif %}
                     </div>
                     <div>
-                        <div class="fw-bold text-dark fs-6 mb-0.5">{{ acc.account_name }}</div>
+                        <div class="fw-bold text-dark fs-6 mb-0">{{ acc.account_name }}</div>
                         <div class="small text-muted d-flex align-items-center gap-2" style="font-size: 12px;">
                             <span class="fw-medium text-capitalize text-secondary">{{ acc.platform }}</span>
                             {% if acc.platform_account_id %}
@@ -152,9 +163,9 @@
                         </div>
                     </div>
                 </div>
-                
-                <div class="d-flex align-items-center gap-2.5 flex-wrap">
-                    <span class="badge rounded-pill px-3 py-1.5 fw-bold
+
+                <div class="d-flex align-items-center gap-2 flex-wrap">
+                    <span class="badge rounded-pill px-3 py-1 fw-bold
                         {% if acc.status == 'connected' %}bg-success-subtle text-success border border-success border-opacity-25
                         {% elif acc.status == 'expired' %}bg-warning-subtle text-warning border border-warning border-opacity-25
                         {% else %}bg-danger-subtle text-danger border border-danger border-opacity-25{% endif %}" style="font-size: 11px;">
@@ -163,14 +174,14 @@
                         {% else %}<i class="fa-solid fa-circle-xmark me-1"></i>{% endif %}
                         {{ acc.status|capfirst }}
                     </span>
-                    
-                    <a href="{% url 'social_accounts:workspace' acc.id %}" class="btn btn-sm btn-light border rounded-pill px-3 py-1.5 fw-semibold text-secondary shadow-sm">
+
+                    <a href="{% url 'social_accounts:workspace' acc.id %}" class="btn btn-sm btn-light border rounded-pill px-3 py-1 fw-semibold text-secondary shadow-sm">
                         <i class="fa-solid fa-arrow-right me-1 text-primary"></i>Open
                     </a>
-                    
+
                     <form method="POST" action="{% url 'social_accounts:disconnect_account' acc.id %}" onsubmit="return confirm('Disconnect {{ acc.account_name }}?');" class="d-inline mb-0">
                         {% csrf_token %}
-                        <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-3 py-1.5 fw-semibold border-0 shadow-sm">
+                        <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-3 py-1 fw-semibold border-0 shadow-sm">
                             <i class="fa-solid fa-link-slash me-1"></i>Disconnect
                         </button>
                     </form>
@@ -178,17 +189,18 @@
             </div>
             {% endfor %}
         </div>
+
         {% else %}
         <!-- Empty State -->
         <div id="empty-state" class="card border-0 shadow-lg text-center py-5 px-4 rounded-4 bg-white">
-            <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-inline-flex align-items-center justify-content-center mb-3 shadow-inner" style="width: 75px; height: 75px;">
+            <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-inline-flex align-items-center justify-content-center mb-3 shadow-inner mx-auto" style="width: 75px; height: 75px;">
                 <i class="fa-solid fa-plug fs-3"></i>
             </div>
             <h5 class="fw-bold text-dark mb-1">No accounts connected yet</h5>
             <p class="text-muted small mb-4">Connect your social media platforms to begin publishing content.</p>
             {% if user.is_staff or user.is_superuser %}
             <div>
-                <a href="{% url 'social_accounts:facebook_login' %}" class="btn btn-primary btn-sm px-4 py-2.5 rounded-pill fw-bold shadow-lg btn-3d-glow">
+                <a href="{% url 'social_accounts:facebook_login' %}" class="btn btn-primary btn-sm px-4 py-2 rounded-pill fw-bold shadow-lg btn-3d-glow">
                     <i class="fa-solid fa-plus me-1"></i>Connect First Account
                 </a>
             </div>
@@ -207,9 +219,9 @@
         background: var(--primary-gradient);
     }
 
-    .glass-effect { 
-        background: rgba(255, 255, 255, 0.85); 
-        backdrop-filter: blur(12px); 
+    .glass-effect {
+        background: rgba(255, 255, 255, 0.85);
+        backdrop-filter: blur(12px);
         border: 1px solid rgba(226, 232, 240, 0.9) !important;
     }
 
@@ -219,42 +231,42 @@
         border: 1px solid rgba(226, 232, 240, 0.9) !important;
     }
 
-    .platform-card-3d { 
-        transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.3s ease; 
+    .platform-card-3d {
+        transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.3s ease;
     }
-    
-    .platform-card-3d:hover { 
-        transform: translateY(-8px) scale(1.03); 
-        box-shadow: 0 20px 30px rgba(79, 70, 229, 0.1) !important; 
+
+    .platform-card-3d:hover {
+        transform: translateY(-8px) scale(1.03);
+        box-shadow: 0 20px 30px rgba(79, 70, 229, 0.1) !important;
     }
-    
-    .platform-icon-box { 
-        width: 50px; 
-        height: 50px; 
-        background: #fff; 
-        border-radius: 15px; 
-        display: flex; 
-        align-items: center; 
+
+    .platform-icon-box {
+        width: 50px;
+        height: 50px;
+        background: #fff;
+        border-radius: 15px;
+        display: flex;
+        align-items: center;
         justify-content: center;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
         border: 1px solid #f1f5f9;
     }
-    
-    .btn-3d-glow { 
+
+    .btn-3d-glow {
         background: var(--primary-gradient);
         border: none;
-        box-shadow: 0 8px 20px -4px rgba(79, 70, 229, 0.4); 
-        transition: 0.3s; 
+        box-shadow: 0 8px 20px -4px rgba(79, 70, 229, 0.4);
+        transition: 0.3s;
     }
-    
-    .btn-3d-glow:hover { 
-        transform: translateY(-2px); 
-        box-shadow: 0 12px 25px -4px rgba(79, 70, 229, 0.6); 
+
+    .btn-3d-glow:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 12px 25px -4px rgba(79, 70, 229, 0.6);
     }
-    
-    .account-row:hover { 
-        background: #fafbff; 
-        transition: 0.2s; 
+
+    .account-row:hover {
+        background: #fafbff;
+        transition: background 0.2s ease;
     }
 </style>
 
@@ -264,16 +276,16 @@
     document.addEventListener('DOMContentLoaded', () => {
         // GSAP Entrance Timeline Animation
         const tl = gsap.timeline({ defaults: { ease: 'power3.out' } });
-        
+
         tl.from('#accounts-header', { opacity: 0, y: -20, duration: 0.6 })
           .to('.platform-card-wrapper', { opacity: 1, y: 0, stagger: 0.05, duration: 0.5 }, '-=0.3')
           .to('#accounts-list-container', { opacity: 1, y: 0, duration: 0.5 }, '-=0.2');
 
         // Vanilla-Tilt 3D Effect for Grid Cards
         VanillaTilt.init(document.querySelectorAll(".platform-card-3d"), {
-            max: 8, 
-            speed: 400, 
-            glare: true, 
+            max: 8,
+            speed: 400,
+            glare: true,
             "max-glare": 0.15,
             scale: 1.02
         });
