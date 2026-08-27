@@ -151,6 +151,12 @@ def sync_inbox_data(request):
                     synced_count += _sync_linkedin_comments(account, page_token)
                 except Exception as e:
                     print(f"[LinkedIn Error] {account.account_name}: {e}")
+            elif account.platform == 'youtube':
+                try:
+                    synced_count += _sync_youtube_comments(account)
+                except Exception as e:
+                    print(f"[YouTube Comments Error] {account.account_name}: {e}")
+
         except Exception as e:
             print(f"[General Sync Error] {account.account_name}: {e}")
 
@@ -681,6 +687,20 @@ def send_inbox_reply(request, item_id):
             if not success:
                 error_msg = res.json().get('message', 'LinkedIn Reply Error')
 
+        elif platform == 'youtube':
+            from integrations.youtube_adapter import YouTubeAdapter
+            adapter = YouTubeAdapter()
+            token, err = adapter.get_page_token(item.social_account)
+            if err:
+                success = False
+                error_msg = err
+            else:
+                success, result = adapter.reply_to_comment(
+                    item.social_account, item.item_id, reply_content
+                )
+                if not success:
+                    error_msg = result
+
         if success:
             Reply.objects.create(inbox_item=item, content=reply_content, sent_by=request.user)
             item.is_replied = True
@@ -708,3 +728,38 @@ def mark_read_ajax(request, item_id):
     item.is_read = True
     item.save(update_fields=['is_read'])
     return JsonResponse({'status': 'success'})
+
+
+def _sync_youtube_comments(account):
+    """YouTube video comments sync"""
+    from integrations.youtube_adapter import YouTubeAdapter
+    from posts.models import ExternalPost
+
+    adapter = YouTubeAdapter(account)
+    count = 0
+
+    videos = ExternalPost.objects.filter(
+        social_account=account,
+        platform='youtube'
+    )
+
+    for video in videos:
+        comments, error = adapter.get_comments(account, video.external_post_id)
+        if error:
+            continue
+
+        for comment in comments:
+            _, created = InboxItem.objects.update_or_create(
+                item_id=comment['id'],
+                defaults={
+                    'social_account': account,
+                    'type': 'comment',
+                    'sender_id': comment['id'],
+                    'sender_name': comment['author'],
+                    'content': comment['text'],
+                    'received_at': timezone.now(),
+                }
+            )
+            if created:
+                count += 1
+    return count

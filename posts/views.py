@@ -640,7 +640,7 @@ def sync_external_posts(request):
         accounts = SocialAccount.objects.filter(
             permitted_users=request.user,
             status='connected',
-            platform__in=['facebook', 'instagram', 'linkedin']
+            platform__in=['facebook', 'instagram', 'linkedin', 'youtube']
         )
 
     total_synced = 0
