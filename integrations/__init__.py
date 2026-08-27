@@ -3,6 +3,7 @@ from .instagram_adapter import InstagramAdapter
 from .twitter_adapter import TwitterAdapter
 from .whatsapp_adapter import WhatsAppAdapter
 from .linkedin_adapter import LinkedinAdapter
+from .youtube_adapter import YouTubeAdapter
 
 ADAPTER_REGISTRY = {
     'facebook': FacebookAdapter,
@@ -10,6 +11,7 @@ ADAPTER_REGISTRY = {
     'twitter': TwitterAdapter,
     'whatsapp': WhatsAppAdapter,
     'linkedin': LinkedinAdapter,
+    'youtube': YouTubeAdapter,
 }
 
 def get_social_adapter(social_account):
@@ -18,3 +20,5 @@ def get_social_adapter(social_account):
     if not adapter_class:
         raise ValueError(f"No adapter registered for platform: '{social_account.platform}'")
     return adapter_class(social_account)
+
+

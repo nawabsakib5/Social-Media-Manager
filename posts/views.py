@@ -600,6 +600,18 @@ def post_analytics(request, post_id):
                     data['likes']    = li_res.get('likesSummary', {}).get('totalLikes', 0)
                     data['comments'] = li_res.get('commentsSummary', {}).get('totalFirstLevelComments', 0)
 
+            elif platform == 'youtube':
+                from integrations.youtube_adapter import YouTubeAdapter
+                adapter = YouTubeAdapter(account)
+                yt_data = adapter.get_analytics(ps)
+                if yt_data.get('error'):
+                    data['error'] = yt_data['error']
+                else:
+                    data['likes']       = yt_data.get('likes', 0)
+                    data['comments']    = yt_data.get('comments', 0)
+                    data['reach']       = yt_data.get('reach', 0)
+                    data['impressions'] = yt_data.get('impressions', 0)
+
             else:
                 data['error'] = f'{platform} analytics not supported yet'
 
