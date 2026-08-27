@@ -763,3 +763,38 @@ def _sync_youtube_comments(account):
             if created:
                 count += 1
     return count
+
+
+def _sync_youtube_comments(account):
+    """YouTube video comments sync"""
+    from integrations.youtube_adapter import YouTubeAdapter
+    from posts.models import ExternalPost
+
+    adapter = YouTubeAdapter(account)
+    count = 0
+
+    videos = ExternalPost.objects.filter(
+        social_account=account,
+        platform='youtube'
+    )
+
+    for video in videos:
+        comments, error = adapter.get_comments(account, video.external_post_id)
+        if error:
+            continue
+
+        for comment in comments:
+            _, created = InboxItem.objects.update_or_create(
+                item_id=comment['id'],
+                defaults={
+                    'social_account': account,
+                    'type': 'comment',
+                    'sender_id': comment['id'],
+                    'sender_name': comment['author'],
+                    'content': comment['text'],
+                    'received_at': timezone.now(),
+                }
+            )
+            if created:
+                count += 1
+    return count
