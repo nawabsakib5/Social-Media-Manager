@@ -634,7 +634,7 @@ def sync_external_posts(request):
     if request.user.is_superuser or getattr(request.user, 'user_type', None) == 'admin':
         accounts = SocialAccount.objects.filter(
             status='connected',
-            platform__in=['facebook', 'instagram', 'linkedin']
+            platform__in=['facebook', 'instagram', 'linkedin', 'youtube']
         )
     else:
         accounts = SocialAccount.objects.filter(
@@ -768,6 +768,15 @@ def sync_external_posts(request):
                         }
                     )
                     total_synced += 1
+
+            elif account.platform == 'youtube':
+                from integrations.youtube_adapter import YouTubeAdapter
+                adapter = YouTubeAdapter(account)
+                count, error = adapter.sync_videos(account)
+                if error:
+                    errors.append(f"{account.account_name}: {error}")
+                else:
+                    total_synced += count
 
         except Exception as e:
             errors.append(f"{account.account_name}: {str(e)}")
