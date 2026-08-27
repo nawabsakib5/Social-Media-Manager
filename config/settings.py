@@ -234,13 +234,19 @@ CELERY_TASK_EAGER_PROPAGATES = config('CELERY_TASK_ALWAYS_EAGER', default=False,
 FACEBOOK_APP_ID = config('FACEBOOK_APP_ID', default='')
 FACEBOOK_APP_SECRET = config('FACEBOOK_APP_SECRET', default='')
 FACEBOOK_REDIRECT_URI = config('FACEBOOK_REDIRECT_URI', default='')
+
+
 LINKEDIN_CLIENT_ID = config('LINKEDIN_CLIENT_ID', default='')
 LINKEDIN_CLIENT_SECRET = config('LINKEDIN_CLIENT_SECRET', default='')
 LINKEDIN_REDIRECT_URI = config('LINKEDIN_REDIRECT_URI', default='')
+
+
 TWITTER_CLIENT_ID = config('TWITTER_CLIENT_ID', default='')
 TWITTER_CLIENT_SECRET = config('TWITTER_CLIENT_SECRET', default='')
-YOUTUBE_CLIENT_ID = os.getenv('YOUTUBE_CLIENT_ID', '')
-YOUTUBE_CLIENT_SECRET = os.getenv('YOUTUBE_CLIENT_SECRET', '')
+
+
+YOUTUBE_CLIENT_ID = config('YOUTUBE_CLIENT_ID', default='')
+YOUTUBE_CLIENT_SECRET = config('YOUTUBE_CLIENT_SECRET', default='')
 
 # ── Email ──
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'

@@ -774,7 +774,7 @@ def youtube_login(request):
     return redirect(auth_url)
 
 
-@login_required
+
 def youtube_callback(request):
     code = request.GET.get('code')
     state = request.GET.get('state')
@@ -783,6 +783,10 @@ def youtube_callback(request):
     if error or not code:
         messages.error(request, f"YouTube connection failed: {error or 'No code received.'}")
         return redirect('social_accounts:account_list')
+
+    if not request.user.is_authenticated:
+        from django.contrib.auth.views import redirect_to_login
+        return redirect_to_login(request.get_full_path())
 
     if state != str(request.user.id):
         messages.error(request, "Security check failed. Please try again.")
