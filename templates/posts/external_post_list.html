@@ -65,6 +65,8 @@
                     <option value="">All Platforms</option>
                     <option value="facebook" {% if platform_filter == 'facebook' %}selected{% endif %}>Facebook</option>
                     <option value="instagram" {% if platform_filter == 'instagram' %}selected{% endif %}>Instagram</option>
+                    <option value="linkedin" {% if platform_filter == 'linkedin' %}selected{% endif %}>LinkedIn</option>
+                    <option value="youtube" {% if platform_filter == 'youtube' %}selected{% endif %}>YouTube</option>
                 </select>
             </div>
             <div class="col-md-4">
@@ -113,7 +115,7 @@
                     <div>
                         <!-- Platform badge -->
                         <div class="d-flex align-items-center justify-content-between mb-2">
-                            <span style="font-size: 12px; font-weight: 700; color: {% if post.platform == 'facebook' %}#1877f2{% else %}#e1306c{% endif %};">
+                            <span style="font-size: 12px; font-weight: 700; color: {% if post.platform == 'facebook' %}#1877f2{% elif post.platform == 'instagram' %}#e1306c{% elif post.platform == 'youtube' %}#ff0000{% elif post.platform == 'linkedin' %}#0077b5{% else %}#666{% endif %};">
                                 <i class="fa-brands fa-{{ post.platform }} me-1"></i>
                                 {{ post.social_account.account_name|default:post.platform|title }}
                             </span>
