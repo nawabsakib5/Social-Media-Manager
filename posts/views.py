@@ -728,14 +728,15 @@ def sync_external_posts(request):
 
                 author_urn = f"urn:li:person:{account.platform_account_id}"
                 li_res = requests.get(
-                    'https://api.linkedin.com/v2/ugcPosts',
+                    'https://api.linkedin.com/v2/posts',
                     headers={
                         'Authorization': f'Bearer {token}',
                         'X-Restli-Protocol-Version': '2.0.0',
+                        'LinkedIn-Version': '202304',
                     },
                     params={
-                        'q': 'authors',
-                        'authors': f'List({author_urn})',
+                        'author': author_urn,
+                        'q': 'author',
                         'count': 50,
                     },
                     timeout=15
@@ -746,15 +747,10 @@ def sync_external_posts(request):
                     continue
 
                 for p in li_res.get('elements', []):
-                    content = (
-                        p.get('specificContent', {})
-                         .get('com.linkedin.ugc.ShareContent', {})
-                         .get('shareCommentary', {})
-                         .get('text', '')
-                    )
+                    content = p.get('commentary', '')
 
                     posted_at = None
-                    ts = p.get('created', {}).get('time')
+                    ts = p.get('publishedAt')
                     if ts:
                         posted_at = datetime.fromtimestamp(ts / 1000, tz=tz.utc)
 
