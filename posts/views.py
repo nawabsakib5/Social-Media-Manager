@@ -731,16 +731,18 @@ def sync_external_posts(request):
                     'https://api.linkedin.com/v2/posts',
                     headers={
                         'Authorization': f'Bearer {token}',
-                        'X-Restli-Protocol-Version': '2.0.0',
                         'LinkedIn-Version': '202304',
                     },
                     params={
                         'author': author_urn,
                         'q': 'author',
                         'count': 50,
+                        'sortBy': 'LAST_MODIFIED',
                     },
                     timeout=15
                 ).json()
+
+                print(f"[LinkedIn Sync] Response: {li_res}")
 
                 if 'status' in li_res and li_res.get('status') != 200:
                     errors.append(f"{account.account_name}: {li_res.get('message', 'LinkedIn API error')}")
