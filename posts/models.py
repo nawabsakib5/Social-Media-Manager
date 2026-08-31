@@ -51,6 +51,7 @@ class PostMedia(models.Model):
     media_type = models.CharField(max_length=10, choices=MEDIA_TYPE_CHOICES, default='image')
     order      = models.PositiveIntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
+    extra_data = models.JSONField(default=dict, blank=True)
 
     class Meta:
         ordering = ['order', 'created_at']
