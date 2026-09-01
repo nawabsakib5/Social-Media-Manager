@@ -211,6 +211,30 @@ def post_create(request):
                 post.scheduled_time = timezone.now()
                 post.status = 'processing'
 
+            # Platform-specific extra data save করো
+            extra_data = {}
+
+            # YouTube
+            extra_data['youtube_title'] = request.POST.get('youtube_title', '')
+            extra_data['youtube_tags'] = request.POST.get('youtube_tags', '')
+            extra_data['youtube_category'] = request.POST.get('youtube_category', '22')
+            extra_data['youtube_privacy'] = request.POST.get('youtube_privacy', 'public')
+
+            # LinkedIn
+            extra_data['linkedin_post_type'] = request.POST.get('linkedin_post_type', 'post')
+            extra_data['linkedin_visibility'] = request.POST.get('linkedin_visibility', 'PUBLIC')
+
+            # Instagram
+            extra_data['instagram_location'] = request.POST.get('instagram_location', '')
+            extra_data['instagram_alt_text'] = request.POST.get('instagram_alt_text', '')
+
+            # TikTok
+            extra_data['tiktok_privacy'] = request.POST.get('tiktok_privacy', 'PUBLIC_TO_EVERYONE')
+            extra_data['tiktok_duet'] = 'tiktok_duet' in request.POST
+            extra_data['tiktok_stitch'] = 'tiktok_stitch' in request.POST
+            extra_data['tiktok_comment'] = 'tiktok_comment' in request.POST
+
+            post.extra_data = extra_data
             post.save()
 
             uploaded_files = request.FILES.getlist('media_files')
