@@ -448,6 +448,9 @@ def platform_edit(request, post_id, ps_id):
 
 
 def dashboard_live_stats(request):
+    if not request.user.is_authenticated:
+        return JsonResponse({'error': 'Unauthorized'}, status=401)
+
     if request.headers.get('x-requested-with') == 'XMLHttpRequest':
         if request.user.is_superuser or getattr(request.user, 'user_type', None) == 'admin':
             accounts = SocialAccount.objects.filter(status='connected')
