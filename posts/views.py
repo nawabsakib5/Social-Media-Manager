@@ -219,6 +219,7 @@ def post_create(request):
             extra_data['youtube_tags'] = request.POST.get('youtube_tags', '')
             extra_data['youtube_category'] = request.POST.get('youtube_category', '22')
             extra_data['youtube_privacy'] = request.POST.get('youtube_privacy', 'public')
+            extra_data['youtube_content_type_val'] = request.POST.get('youtube_content_type_val', 'video')
 
             # LinkedIn
             extra_data['linkedin_post_type'] = request.POST.get('linkedin_post_type', 'post')
