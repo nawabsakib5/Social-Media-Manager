@@ -73,27 +73,18 @@ class YouTubeAdapter(BaseSocialAdapter):
             if video_res.status_code != 200:
                 return False, 'Could not download video file.'
 
-            # extra_data থেকে YouTube specific fields নাও
-            extra = getattr(post, 'extra_data', {}) or {}
-            title = extra.get('youtube_title', '').strip() or (post.content or 'Untitled Video')[:100]
+            title = (post.content or 'Untitled Video')[:100]
             description = post.content or ''
-            tags = [t.strip() for t in extra.get('youtube_tags', '').split(',') if t.strip()]
-            category_id = extra.get('youtube_category', '22')
-            privacy = extra.get('youtube_privacy', 'public')
 
             # YouTube upload metadata
-            snippet = {
-                'title': title,
-                'description': description,
-                'categoryId': str(category_id),
-            }
-            if tags:
-                snippet['tags'] = tags
-
             metadata = {
-                'snippet': snippet,
+                'snippet': {
+                    'title': title,
+                    'description': description,
+                    'categoryId': '22',  # People & Blogs
+                },
                 'status': {
-                    'privacyStatus': privacy,
+                    'privacyStatus': 'public',
                 },
             }
 
