@@ -45,7 +45,7 @@
                     <i class="fa-solid fa-images text-primary me-2"></i>Upload Images / Videos
                 </label>
                 
-                <div class="upload-dropzone p-4 rounded-4 text-center position-relative border border-2 border-dashed bg-light bg-opacity-50 transition-hover" style="cursor: pointer; border-color: #cbd5e1 !important;">
+                <div class="upload-dropzone p-4 rounded-4 text-center position-relative border border-2 border-dashed bg-light bg-opacity-50" style="cursor: pointer; border-color: #cbd5e1 !important;">
                     <input type="file" name="media_files" id="mediaInput"
                         class="position-absolute top-0 start-0 w-100 h-100 opacity-0"
                         style="cursor: pointer; z-index: 5;"
@@ -54,11 +54,11 @@
                         onchange="previewMediaFiles(event)">
                     
                     <div class="py-3">
-                        <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-inline-flex align-items-center justify-content-center mb-3 shadow-2sm" style="width: 50px; height: 50px;">
+                        <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 50px; height: 50px;">
                             <i class="fa-solid fa-cloud-arrow-up fs-4"></i>
                         </div>
-                        <h6 class="fw-bold text-dark mb-1">Click to upload or drag & drop media</h6>
-                        <p class="text-muted small mb-0">Supports images and videos (Multiple files allowed)</p>
+                        <h6 class="fw-bold text-dark mb-1" id="uploadHint">Click to upload or drag & drop media</h6>
+                        <p class="text-muted small mb-0" id="uploadSubHint">Supports images and videos (Multiple files allowed)</p>
                     </div>
                 </div>
 
@@ -98,42 +98,81 @@
                     <i class="fa-brands fa-youtube text-danger fs-5"></i>
                     <span class="fw-bold text-danger" style="font-size: 14px;">YouTube Settings</span>
                 </div>
+
+                <!-- Content Type -->
                 <div class="mb-3">
-                    <label class="form-label fw-semibold" style="font-size: 13px;">Video Title <span class="text-danger">*</span></label>
-                    <input type="text" name="youtube_title" class="form-control rounded-3" placeholder="Enter video title (required for YouTube)" maxlength="100">
-                    <small class="text-muted">Max 100 characters. If empty, post caption will be used.</small>
+                    <label class="form-label fw-semibold" style="font-size: 13px;">Content Type</label>
+                    <div class="d-flex gap-3 flex-wrap">
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="youtube_content_type" id="yt_video" value="video" checked onchange="updateYouTubeUpload()">
+                            <label class="form-check-label fw-semibold" for="yt_video" style="font-size: 13px;">
+                                <i class="fa-solid fa-film text-danger me-1"></i> Video
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="youtube_content_type" id="yt_short" value="short" onchange="updateYouTubeUpload()">
+                            <label class="form-check-label fw-semibold" for="yt_short" style="font-size: 13px;">
+                                <i class="fa-solid fa-mobile-screen text-danger me-1"></i> Short
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="youtube_content_type" id="yt_community" value="community" onchange="updateYouTubeUpload()">
+                            <label class="form-check-label fw-semibold" for="yt_community" style="font-size: 13px;">
+                                <i class="fa-solid fa-image text-danger me-1"></i> Community Post
+                            </label>
+                        </div>
+                    </div>
                 </div>
-                <div class="mb-3">
-                    <label class="form-label fw-semibold" style="font-size: 13px;">Tags</label>
-                    <input type="text" name="youtube_tags" class="form-control rounded-3" placeholder="fashion, kids, tshirt (comma separated)">
-                    <small class="text-muted">Separate tags with commas.</small>
+
+                <!-- Video/Short fields -->
+                <div id="yt-video-fields">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold" style="font-size: 13px;">Video Title <span class="text-danger">*</span></label>
+                        <input type="text" name="youtube_title" class="form-control rounded-3" placeholder="Enter video title" maxlength="100">
+                        <small class="text-muted">Max 100 characters. If empty, post caption will be used.</small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold" style="font-size: 13px;">Tags</label>
+                        <input type="text" name="youtube_tags" class="form-control rounded-3" placeholder="fashion, kids, tshirt (comma separated)">
+                        <small class="text-muted">Separate tags with commas.</small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold" style="font-size: 13px;">Category</label>
+                        <select name="youtube_category" class="form-select rounded-3">
+                            <option value="22">People & Blogs</option>
+                            <option value="1">Film & Animation</option>
+                            <option value="2">Autos & Vehicles</option>
+                            <option value="10">Music</option>
+                            <option value="17">Sports</option>
+                            <option value="19">Travel & Events</option>
+                            <option value="20">Gaming</option>
+                            <option value="23">Comedy</option>
+                            <option value="24">Entertainment</option>
+                            <option value="25">News & Politics</option>
+                            <option value="26">Howto & Style</option>
+                            <option value="27">Education</option>
+                            <option value="28">Science & Technology</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label fw-semibold" style="font-size: 13px;">Privacy</label>
+                        <select name="youtube_privacy" class="form-select rounded-3">
+                            <option value="public">Public</option>
+                            <option value="unlisted">Unlisted</option>
+                            <option value="private">Private</option>
+                        </select>
+                    </div>
                 </div>
-                <div class="mb-3">
-                    <label class="form-label fw-semibold" style="font-size: 13px;">Category</label>
-                    <select name="youtube_category" class="form-select rounded-3">
-                        <option value="22">People & Blogs</option>
-                        <option value="1">Film & Animation</option>
-                        <option value="2">Autos & Vehicles</option>
-                        <option value="10">Music</option>
-                        <option value="17">Sports</option>
-                        <option value="19">Travel & Events</option>
-                        <option value="20">Gaming</option>
-                        <option value="23">Comedy</option>
-                        <option value="24">Entertainment</option>
-                        <option value="25">News & Politics</option>
-                        <option value="26">Howto & Style</option>
-                        <option value="27">Education</option>
-                        <option value="28">Science & Technology</option>
-                    </select>
+
+                <!-- Community Post fields -->
+                <div id="yt-community-fields" class="d-none">
+                    <div class="alert alert-info py-2 mb-0" style="font-size: 13px;">
+                        <i class="fa-solid fa-circle-info me-1"></i>
+                        Community Post এ image বা text post করা যাবে। Caption box এ text লেখো এবং উপরে image upload করো।
+                    </div>
                 </div>
-                <div>
-                    <label class="form-label fw-semibold" style="font-size: 13px;">Privacy</label>
-                    <select name="youtube_privacy" class="form-select rounded-3">
-                        <option value="public">Public</option>
-                        <option value="unlisted">Unlisted</option>
-                        <option value="private">Private</option>
-                    </select>
-                </div>
+
+                <input type="hidden" name="youtube_content_type_val" id="youtube_content_type_hidden" value="video">
             </div>
 
             <!-- LinkedIn specific -->
@@ -165,12 +204,40 @@
                     <span class="fw-bold text-danger" style="font-size: 14px;">Instagram Settings</span>
                 </div>
                 <div class="mb-3">
+                    <label class="form-label fw-semibold" style="font-size: 13px;">Content Type</label>
+                    <select name="instagram_content_type" class="form-select rounded-3">
+                        <option value="feed">Feed Post (Image/Video)</option>
+                        <option value="reel">Reel (Video)</option>
+                        <option value="story">Story</option>
+                    </select>
+                </div>
+                <div class="mb-3">
                     <label class="form-label fw-semibold" style="font-size: 13px;">Location Tag</label>
                     <input type="text" name="instagram_location" class="form-control rounded-3" placeholder="e.g. Dhaka, Bangladesh">
                 </div>
                 <div>
                     <label class="form-label fw-semibold" style="font-size: 13px;">Alt Text</label>
                     <input type="text" name="instagram_alt_text" class="form-control rounded-3" placeholder="Describe your image for accessibility">
+                </div>
+            </div>
+
+            <!-- Facebook specific -->
+            <div id="facebook-fields" class="platform-fields d-none mb-4 p-4 rounded-4 border" style="border-color: #1877f2 !important; background: #f0f4ff;">
+                <div class="d-flex align-items-center gap-2 mb-3">
+                    <i class="fa-brands fa-facebook text-primary fs-5"></i>
+                    <span class="fw-bold text-primary" style="font-size: 14px;">Facebook Settings</span>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold" style="font-size: 13px;">Post Type</label>
+                    <select name="facebook_post_type" class="form-select rounded-3">
+                        <option value="feed">Feed Post</option>
+                        <option value="reel">Reel</option>
+                        <option value="story">Story</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="form-label fw-semibold" style="font-size: 13px;">Feeling / Activity</label>
+                    <input type="text" name="facebook_feeling" class="form-control rounded-3" placeholder="e.g. feeling happy 😊 (optional)">
                 </div>
             </div>
 
@@ -188,7 +255,7 @@
                         <option value="SELF_ONLY">Private</option>
                     </select>
                 </div>
-                <div class="d-flex gap-4">
+                <div class="d-flex gap-4 flex-wrap">
                     <div class="form-check">
                         <input class="form-check-input" type="checkbox" name="tiktok_duet" id="tiktokDuet" checked>
                         <label class="form-check-label fw-semibold" for="tiktokDuet" style="font-size: 13px;">Allow Duet</label>
@@ -204,6 +271,18 @@
                 </div>
             </div>
 
+            <!-- Twitter/X specific -->
+            <div id="twitter-fields" class="platform-fields d-none mb-4 p-4 rounded-4 border" style="border-color: #1da1f2 !important; background: #f0f8ff;">
+                <div class="d-flex align-items-center gap-2 mb-3">
+                    <i class="fa-brands fa-x-twitter fs-5"></i>
+                    <span class="fw-bold" style="font-size: 14px;">Twitter / X Settings</span>
+                </div>
+                <div class="alert alert-warning py-2 mb-0" style="font-size: 13px;">
+                    <i class="fa-solid fa-triangle-exclamation me-1"></i>
+                    Twitter/X API requires a paid plan. Post will be attempted with available access.
+                </div>
+            </div>
+
             <hr class="my-4 opacity-25">
 
             <!-- Post Type Selection -->
@@ -215,7 +294,7 @@
                 <div class="row g-3">
                     <div class="col-md-6">
                         <input class="btn-check" type="radio" name="post_type" id="type_instant" value="instant" checked onchange="toggleSchedule()">
-                        <label class="btn btn-outline-light text-dark border w-100 p-3 rounded-4 text-start d-flex align-items-center gap-3 shadow-2sm schedule-option-card active" for="type_instant">
+                        <label class="btn btn-outline-light text-dark border w-100 p-3 rounded-4 text-start d-flex align-items-center gap-3 schedule-option-card active" for="type_instant">
                             <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width: 40px; height: 40px;">
                                 <i class="fa-solid fa-paper-plane"></i>
                             </div>
@@ -228,7 +307,7 @@
 
                     <div class="col-md-6">
                         <input class="btn-check" type="radio" name="post_type" id="type_scheduled" value="scheduled" onchange="toggleSchedule()">
-                        <label class="btn btn-outline-light text-dark border w-100 p-3 rounded-4 text-start d-flex align-items-center gap-3 shadow-2sm schedule-option-card" for="type_scheduled">
+                        <label class="btn btn-outline-light text-dark border w-100 p-3 rounded-4 text-start d-flex align-items-center gap-3 schedule-option-card" for="type_scheduled">
                             <div class="bg-warning bg-opacity-10 text-warning rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width: 40px; height: 40px;">
                                 <i class="fa-solid fa-clock"></i>
                             </div>
@@ -242,7 +321,7 @@
             </div>
 
             <!-- Schedule DateTime -->
-            <div class="mb-4 d-none p-4 rounded-4 bg-light border border-warning border-opacity-25 animate-fade-in" id="scheduleBox">
+            <div class="mb-4 d-none p-4 rounded-4 bg-light border border-warning border-opacity-25" id="scheduleBox">
                 <label class="form-label fw-bold text-dark mb-2" style="font-size: 13px;">
                     <i class="fa-solid fa-calendar-days text-warning me-2"></i>Select Exact Schedule Date & Time
                 </label>
@@ -252,7 +331,7 @@
 
             <!-- Action Buttons -->
             <div class="d-flex justify-content-end align-items-center gap-3 pt-4 border-top mt-5">
-                <a href="{% url 'post_list' %}" class="btn btn-light border px-4 py-2 rounded-pill fw-semibold text-secondary shadow-2sm">Cancel</a>
+                <a href="{% url 'post_list' %}" class="btn btn-light border px-4 py-2 rounded-pill fw-semibold text-secondary">Cancel</a>
                 <button type="submit" class="btn btn-primary px-5 py-2 rounded-pill fw-bold shadow-sm d-flex align-items-center gap-2" id="submitBtn">
                     <i class="fa-solid fa-paper-plane"></i>Publish Now
                 </button>
@@ -283,12 +362,11 @@ function updatePlatformFields() {
         return label ? label.textContent.toLowerCase() : '';
     });
 
-    // Hide all platform fields first
     document.querySelectorAll('.platform-fields').forEach(el => el.classList.add('d-none'));
 
-    // Show relevant fields
     if (platforms.some(p => p.includes('youtube'))) {
         document.getElementById('youtube-fields').classList.remove('d-none');
+        updateYouTubeUpload();
     }
     if (platforms.some(p => p.includes('linkedin'))) {
         document.getElementById('linkedin-fields').classList.remove('d-none');
@@ -296,8 +374,46 @@ function updatePlatformFields() {
     if (platforms.some(p => p.includes('instagram'))) {
         document.getElementById('instagram-fields').classList.remove('d-none');
     }
+    if (platforms.some(p => p.includes('facebook'))) {
+        document.getElementById('facebook-fields').classList.remove('d-none');
+    }
     if (platforms.some(p => p.includes('tiktok'))) {
         document.getElementById('tiktok-fields').classList.remove('d-none');
+    }
+    if (platforms.some(p => p.includes('twitter') || p.includes('x)'))) {
+        document.getElementById('twitter-fields').classList.remove('d-none');
+    }
+}
+
+function updateYouTubeUpload() {
+    const selected = document.querySelector('input[name="youtube_content_type"]:checked');
+    const type = selected ? selected.value : 'video';
+    document.getElementById('youtube_content_type_hidden').value = type;
+
+    const videoFields = document.getElementById('yt-video-fields');
+    const communityFields = document.getElementById('yt-community-fields');
+    const uploadHint = document.getElementById('uploadHint');
+    const uploadSubHint = document.getElementById('uploadSubHint');
+    const mediaInput = document.getElementById('mediaInput');
+
+    if (type === 'community') {
+        videoFields.classList.add('d-none');
+        communityFields.classList.remove('d-none');
+        mediaInput.accept = 'image/*';
+        uploadHint.textContent = 'Upload Image for Community Post';
+        uploadSubHint.textContent = 'Supports JPG, PNG, GIF';
+    } else if (type === 'short') {
+        videoFields.classList.remove('d-none');
+        communityFields.classList.add('d-none');
+        mediaInput.accept = 'video/*';
+        uploadHint.textContent = 'Upload Vertical Video for YouTube Short';
+        uploadSubHint.textContent = 'Recommended: 9:16 ratio, max 60 seconds';
+    } else {
+        videoFields.classList.remove('d-none');
+        communityFields.classList.add('d-none');
+        mediaInput.accept = 'video/*';
+        uploadHint.textContent = 'Upload Video for YouTube';
+        uploadSubHint.textContent = 'Supports MP4, MOV, AVI';
     }
 }
 
@@ -345,14 +461,14 @@ function previewMediaFiles(event) {
         reader.onload = function(e) {
             const col = document.createElement('div');
             col.className = 'col-6 col-md-3 position-relative';
-            const badgeType = isVideo ? 
-                '<span class="badge bg-danger shadow-2sm"><i class="fa-solid fa-video me-1"></i>Video</span>' : 
-                '<span class="badge bg-primary shadow-2sm"><i class="fa-solid fa-image me-1"></i>Image</span>';
+            const badgeType = isVideo ?
+                '<span class="badge bg-danger"><i class="fa-solid fa-video me-1"></i>Video</span>' :
+                '<span class="badge bg-primary"><i class="fa-solid fa-image me-1"></i>Image</span>';
             col.innerHTML = `
                 <div class="card border-0 shadow-sm overflow-hidden position-relative rounded-3" style="background: #0f172a;">
                     <div class="position-absolute top-0 start-0 m-2 z-3">${badgeType}</div>
-                    ${isVideo ? 
-                        `<video src="${e.target.result}" class="w-100" style="height: 130px; object-fit: cover;" muted></video>` : 
+                    ${isVideo ?
+                        `<video src="${e.target.result}" class="w-100" style="height: 130px; object-fit: cover;" muted></video>` :
                         `<img src="${e.target.result}" class="w-100" style="height: 130px; object-fit: cover;">`
                     }
                 </div>
@@ -366,7 +482,6 @@ function previewMediaFiles(event) {
 
 <style>
     .card { border: 1px solid #f1f5f9 !important; box-shadow: 0 10px 25px -5px rgba(0,0,0,.04) !important; }
-    .shadow-2sm { box-shadow: 0 1px 2px 0 rgba(0,0,0,.03); }
     .upload-dropzone { transition: all 0.2s ease-in-out; }
     .upload-dropzone:hover { border-color: #0d6efd !important; background-color: rgba(13,110,253,.02) !important; }
     .schedule-option-card { transition: all 0.2s ease; }
