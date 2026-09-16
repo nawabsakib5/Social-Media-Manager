@@ -8,6 +8,7 @@ from django.contrib import messages
 from django.utils import timezone
 from django.db.models import Count, Q
 from django.http import JsonResponse
+from .permissions import get_permitted_post_or_403
 from .models import Post, PostPlatformStatus
 from .forms import PostForm
 from .tasks import publish_post_task
@@ -295,16 +296,16 @@ def post_create(request):
 
 @login_required
 def post_detail(request, post_id):
-    post = get_object_or_404(
-        Post.objects.prefetch_related('platform_statuses__social_account', 'social_accounts'),
-        id=post_id
+    post = get_permitted_post_or_403(
+        request, post_id,
+        queryset=Post.objects.prefetch_related('platform_statuses__social_account', 'social_accounts')
     )
     return render(request, 'posts/post_detail.html', {'post': post})
 
 
 @login_required
 def post_edit(request, post_id):
-    post = get_object_or_404(Post, id=post_id)
+    post = get_permitted_post_or_403(request, post_id)
 
     if request.method == 'POST':
         form = PostForm(request.POST, request.FILES, instance=post, user=request.user)
@@ -344,7 +345,7 @@ def post_edit(request, post_id):
 
 @login_required
 def post_delete(request, post_id):
-    post = get_object_or_404(Post, id=post_id)
+    post = get_permitted_post_or_403(request, post_id)
     if request.method == 'POST':
         results = []
         for ps in post.platform_statuses.all():
@@ -362,7 +363,7 @@ def post_delete(request, post_id):
 
 @login_required
 def post_publish_now(request, post_id):
-    post = get_object_or_404(Post, id=post_id)
+    post = get_permitted_post_or_403(request, post_id)
     if request.method == 'POST':
         accounts = post.social_accounts.all()
         if not accounts:
@@ -388,7 +389,7 @@ def platform_delete(request, post_id, ps_id):
     if request.method != 'POST':
         return redirect('post_detail', post_id=post_id)
 
-    post = get_object_or_404(Post, id=post_id)
+    post = get_permitted_post_or_403(request, post_id)
     ps = get_object_or_404(PostPlatformStatus, id=ps_id, post=post)
     account_name = ps.social_account.account_name
 
@@ -421,7 +422,7 @@ def platform_edit(request, post_id, ps_id):
     if request.method != 'POST':
         return redirect('post_detail', post_id=post_id)
 
-    post = get_object_or_404(Post, id=post_id)
+    post = get_permitted_post_or_403(request, post_id)
     ps = get_object_or_404(PostPlatformStatus, id=ps_id, post=post)
     new_content = request.POST.get('new_content', '').strip()
     account_name = ps.social_account.account_name
@@ -514,7 +515,7 @@ def dashboard_live_stats(request):
 
 @login_required
 def post_analytics(request, post_id):
-    post = get_object_or_404(Post, id=post_id)
+    post = get_permitted_post_or_403(request, post_id)
 
     platform_statuses = PostPlatformStatus.objects.filter(
         post=post, status='published'
