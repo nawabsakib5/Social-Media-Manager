@@ -4,6 +4,7 @@ import urllib.parse
 from urllib.parse import urlencode
 from django.conf import settings
 from django.shortcuts import render, redirect, get_object_or_404
+from django.db.models import Q
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from .models import SocialAccount
@@ -229,11 +230,14 @@ def post_comment_reply(request, platform, comment_id):
         return redirect('social_accounts:workspace')
     
     try:
-        account = SocialAccount.objects.get(
-            platform=platform, 
-            status='connected', 
-            connected_by=request.user
-        )
+        if request.user.is_superuser or getattr(request.user, 'user_type', None) == 'admin':
+            account = SocialAccount.objects.get(platform=platform, status='connected')
+        else:
+            account = SocialAccount.objects.get(
+                Q(connected_by=request.user) | Q(permitted_users=request.user),
+                platform=platform,
+                status='connected',
+            )
     except SocialAccount.DoesNotExist:
         messages.error(request, f"{platform.capitalize()} account not connected.")
         return redirect('social_accounts:account_list')
@@ -290,11 +294,14 @@ def send_messenger_reply(request):
         return redirect('social_accounts:workspace', platform='facebook')
     
     try:
-        account = SocialAccount.objects.get(
-            platform='facebook', 
-            status='connected', 
-            connected_by=request.user
-        )
+        if request.user.is_superuser or getattr(request.user, 'user_type', None) == 'admin':
+            account = SocialAccount.objects.get(platform='facebook', status='connected')
+        else:
+            account = SocialAccount.objects.get(
+                Q(connected_by=request.user) | Q(permitted_users=request.user),
+                platform='facebook',
+                status='connected',
+            )
     except SocialAccount.DoesNotExist:
         messages.error(request, "Facebook account not connected.")
         return redirect('social_accounts:account_list')
