@@ -1,0 +1,84 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div class="container py-4">
+  <div class="row justify-content-center">
+    <div class="col-md-8">
+
+      <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+          <h5 class="mb-0">
+            <i class="bi bi-facebook me-2"></i>
+            Select Pages to Connect
+          </h5>
+          <small>Choose which Facebook Pages (and linked Instagram accounts) to connect to SocialManager.</small>
+        </div>
+
+        <div class="card-body">
+          <form method="POST" action="{% url 'social_accounts:facebook_connect_pages' %}">
+            {% csrf_token %}
+
+            {% for page in pages %}
+            <div class="card mb-3 border">
+              <div class="card-body">
+
+                <!-- Facebook Page -->
+                <div class="form-check d-flex align-items-center gap-3">
+                  <input
+                    class="form-check-input mt-0"
+                    type="checkbox"
+                    name="page_ids"
+                    value="{{ page.page_id }}"
+                    id="page_{{ page.page_id }}"
+                    checked
+                  >
+                  <label class="form-check-label d-flex align-items-center gap-2" for="page_{{ page.page_id }}">
+                    <i class="bi bi-facebook text-primary fs-5"></i>
+                    <div>
+                      <strong>{{ page.page_name }}</strong>
+                      <br>
+                      <small class="text-muted">Facebook Page · ID: {{ page.page_id }}</small>
+                    </div>
+                  </label>
+                </div>
+
+                <!-- Linked Instagram (যদি থাকে) -->
+                {% if page.instagram %}
+                <div class="ms-4 mt-2 p-2 bg-light rounded d-flex align-items-center gap-2">
+                  <i class="bi bi-instagram text-danger fs-5"></i>
+                  <div>
+                    <strong>@{{ page.instagram.username }}</strong>
+                    <br>
+                    <small class="text-muted">Instagram · Linked to {{ page.page_name }}</small>
+                  </div>
+                  <span class="badge bg-success ms-auto">Auto-connected</span>
+                </div>
+                {% endif %}
+
+              </div>
+            </div>
+            {% empty %}
+            <div class="alert alert-warning">
+              No Facebook Pages found. Please create a Facebook Page first.
+            </div>
+            {% endfor %}
+
+            <div class="d-flex justify-content-between mt-3">
+              <a href="{% url 'social_accounts:account_list' %}" class="btn btn-outline-secondary">
+                Cancel
+              </a>
+              <button type="submit" class="btn btn-primary">
+                <i class="bi bi-link-45deg me-1"></i>
+                Connect Selected Pages
+              </button>
+            </div>
+
+          </form>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+{% endblock %}

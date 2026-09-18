@@ -1,4 +1,3 @@
-
 from django.urls import path
 from . import views
 
@@ -10,6 +9,8 @@ urlpatterns = [
     path('workspace/<int:account_id>/', views.workspace, name='workspace'),
     path('facebook/login/', views.facebook_login, name='facebook_login'),
     path('callback/', views.facebook_callback, name='facebook_callback'),
+    path('facebook/select-pages/', views.facebook_select_pages, name='facebook_select_pages'),           # নতুন
+    path('facebook/connect-pages/', views.facebook_connect_selected_pages, name='facebook_connect_pages'), # নতুন
     path('reply/<str:platform>/<str:comment_id>/', views.post_comment_reply, name='comment_reply'),
     path('messenger/reply/', views.send_messenger_reply, name='send_messenger_reply'),
     path('disconnect/<int:account_id>/', views.disconnect_account, name='disconnect_account'),
