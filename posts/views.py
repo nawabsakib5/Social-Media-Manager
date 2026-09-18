@@ -18,6 +18,7 @@ from .models import ExternalPost
 from django.utils.dateparse import parse_datetime
 from datetime import datetime, timezone as tz
 from urllib.parse import quote
+from organizations.utils import get_user_organization
 
 
 User = get_user_model() 
@@ -28,18 +29,46 @@ def is_admin(user):
     return user.is_superuser or user.is_staff or getattr(user, 'user_type', None) == 'admin'
 
 
+def get_org_accounts(user):
+    """User-এর Organization-এর connected accounts — অন্য Organization-এর
+    accounts কোনোভাবেই আসবে না।"""
+    org = get_user_organization(user)
+    is_admin_user = user.is_superuser or getattr(user, 'user_type', None) == 'admin'
+
+    if is_admin_user and org:
+        return SocialAccount.objects.filter(organization=org, status='connected')
+    elif org:
+        return SocialAccount.objects.filter(
+            organization=org,
+            permitted_users=user,
+            status='connected'
+        )
+    return SocialAccount.objects.none()
+
+
+def get_org_posts(user):
+    """User-এর Organization-এর posts — অন্য Organization-এর posts আসবে না।"""
+    org = get_user_organization(user)
+    is_admin_user = user.is_superuser or getattr(user, 'user_type', None) == 'admin'
+
+    if is_admin_user and org:
+        return Post.objects.filter(organization=org)
+    elif org:
+        return Post.objects.filter(organization=org, created_by=user)
+    return Post.objects.none()
+
+
 @login_required
 def dashboard(request):
-    is_admin = request.user.is_superuser or getattr(request.user, 'user_type', None) == 'admin'
+    is_admin_user = request.user.is_superuser or getattr(request.user, 'user_type', None) == 'admin'
+    accounts = get_org_accounts(request.user)
+    posts_query = get_org_posts(request.user)
 
-    if is_admin:
-        accounts = SocialAccount.objects.filter(status='connected')
-        posts_query = Post.objects.all()
-        total_users_count = User.objects.count()
-        all_users = User.objects.all().order_by('-last_login')
+    if is_admin_user:
+        org = get_user_organization(request.user)
+        total_users_count = org.members.count() if org else 1
+        all_users = org.members.all().order_by('-last_login') if org else []
     else:
-        accounts = SocialAccount.objects.filter(permitted_users=request.user, status='connected')
-        posts_query = Post.objects.filter(created_by=request.user)
         total_users_count = 1
         all_users = []
 
@@ -126,9 +155,6 @@ def _delete_from_platform(platform_status):
                 url = f'https://api.linkedin.com/v2/posts/{encoded_id}'
 
             res = requests.delete(url, headers=headers, timeout=15)
-            print(f"[LinkedIn DELETE] URL: {url}")
-            print(f"[LinkedIn DELETE] Status: {res.status_code}")
-            print(f"[LinkedIn DELETE] Response: {res.text[:300]}")
 
             if res.status_code == 204:
                 return True, "Deleted from LinkedIn ✓"
@@ -140,13 +166,8 @@ def _delete_from_platform(platform_status):
                     url2 = f'https://api.linkedin.com/v2/ugcPosts/{encoded_id}'
 
                 res2 = requests.delete(url2, headers=headers, timeout=15)
-                print(f"[LinkedIn DELETE fallback] URL: {url2}")
-                print(f"[LinkedIn DELETE fallback] Status: {res2.status_code}")
-                print(f"[LinkedIn DELETE fallback] Response: {res2.text[:300]}")
-
                 if res2.status_code == 204:
                     return True, "Deleted from LinkedIn ✓"
-
                 error = res2.json().get('message', res2.text) if res2.text else f'HTTP {res2.status_code}'
                 return False, f"LinkedIn delete failed: {error}"
 
@@ -181,7 +202,7 @@ def _update_on_platform(platform_status, new_content):
         elif platform == 'instagram':
             return False, "Instagram caption edit requires manual update"
         elif platform == 'linkedin':
-            return False, "LinkedIn does not support post editing via API. Please edit manually."
+            return False, "LinkedIn does not support post editing via API."
         return True, f"{platform}: editing not supported"
     except requests.RequestException as e:
         return False, f"Network error: {e}"
@@ -190,7 +211,7 @@ def _update_on_platform(platform_status, new_content):
 @login_required
 def post_list(request):
     posts = (
-        Post.objects.all()
+        get_org_posts(request.user)
         .prefetch_related('platform_statuses__social_account', 'social_accounts')
         .order_by('-created_at')
     )
@@ -204,6 +225,7 @@ def post_create(request):
         if form.is_valid():
             post = form.save(commit=False)
             post.created_by = request.user
+            post.organization = get_user_organization(request.user)
 
             post_type = request.POST.get('post_type', 'instant')
             if post_type == 'scheduled':
@@ -212,25 +234,16 @@ def post_create(request):
                 post.scheduled_time = timezone.now()
                 post.status = 'processing'
 
-            # Platform-specific extra data save করো
             extra_data = {}
-
-            # YouTube
             extra_data['youtube_title'] = request.POST.get('youtube_title', '')
             extra_data['youtube_tags'] = request.POST.get('youtube_tags', '')
             extra_data['youtube_category'] = request.POST.get('youtube_category', '22')
             extra_data['youtube_privacy'] = request.POST.get('youtube_privacy', 'public')
             extra_data['youtube_content_type_val'] = request.POST.get('youtube_content_type_val', 'video')
-
-            # LinkedIn
             extra_data['linkedin_post_type'] = request.POST.get('linkedin_post_type', 'post')
             extra_data['linkedin_visibility'] = request.POST.get('linkedin_visibility', 'PUBLIC')
-
-            # Instagram
             extra_data['instagram_location'] = request.POST.get('instagram_location', '')
             extra_data['instagram_alt_text'] = request.POST.get('instagram_alt_text', '')
-
-            # TikTok
             extra_data['tiktok_privacy'] = request.POST.get('tiktok_privacy', 'PUBLIC_TO_EVERYONE')
             extra_data['tiktok_duet'] = 'tiktok_duet' in request.POST
             extra_data['tiktok_stitch'] = 'tiktok_stitch' in request.POST
@@ -454,16 +467,17 @@ def dashboard_live_stats(request):
         return JsonResponse({'error': 'Unauthorized'}, status=401)
 
     if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-        if request.user.is_superuser or getattr(request.user, 'user_type', None) == 'admin':
-            accounts = SocialAccount.objects.filter(status='connected')
-            posts_query = Post.objects.all()
-            total_users_count = User.objects.count()
-            users_data = list(User.objects.all().order_by('-last_login').values(
+        is_admin_user = request.user.is_superuser or getattr(request.user, 'user_type', None) == 'admin'
+        accounts = get_org_accounts(request.user)
+        posts_query = get_org_posts(request.user)
+
+        if is_admin_user:
+            org = get_user_organization(request.user)
+            total_users_count = org.members.count() if org else 1
+            users_data = list(org.members.all().order_by('-last_login').values(
                 'username', 'is_superuser', 'is_active', 'last_login', 'user_type'
-            ))
+            )) if org else []
         else:
-            accounts = SocialAccount.objects.filter(permitted_users=request.user, status='connected')
-            posts_query = Post.objects.filter(created_by=request.user)
             total_users_count = 1
             users_data = []
 
@@ -481,7 +495,6 @@ def dashboard_live_stats(request):
             ).order_by('-received_at')
 
             unread_inbox = unread_items.count()
-
             unread_inbox_data = list(unread_items.values(
                 'id', 'sender_name', 'content', 'type',
                 'received_at', 'social_account__platform',
@@ -660,17 +673,8 @@ def sync_external_posts(request):
     from integrations.facebook_adapter import FacebookAdapter
     from integrations.linkedin_adapter import LinkedinAdapter
 
-    if request.user.is_superuser or getattr(request.user, 'user_type', None) == 'admin':
-        accounts = SocialAccount.objects.filter(
-            status='connected',
-            platform__in=['facebook', 'instagram', 'linkedin', 'youtube']
-        )
-    else:
-        accounts = SocialAccount.objects.filter(
-            permitted_users=request.user,
-            status='connected',
-            platform__in=['facebook', 'instagram', 'linkedin', 'youtube']
-        )
+    accounts = get_org_accounts(request.user)
+    accounts = accounts.filter(platform__in=['facebook', 'instagram', 'linkedin', 'youtube'])
 
     total_synced = 0
     errors = []
@@ -771,15 +775,12 @@ def sync_external_posts(request):
                     timeout=15
                 ).json()
 
-                print(f"[LinkedIn Sync] Response: {li_res}")
-
                 if 'status' in li_res and li_res.get('status') != 200:
                     errors.append(f"{account.account_name}: {li_res.get('message', 'LinkedIn API error')}")
                     continue
 
                 for p in li_res.get('elements', []):
                     content = p.get('commentary', '')
-
                     posted_at = None
                     ts = p.get('publishedAt')
                     if ts:
@@ -818,10 +819,7 @@ def sync_external_posts(request):
 
 @login_required
 def external_post_list(request):
-    if request.user.is_superuser or getattr(request.user, 'user_type', None) == 'admin':
-        accounts = SocialAccount.objects.filter(status='connected')
-    else:
-        accounts = SocialAccount.objects.filter(permitted_users=request.user, status='connected')
+    accounts = get_org_accounts(request.user)
 
     platform_filter = request.GET.get('platform', '')
     account_filter  = request.GET.get('account', '')

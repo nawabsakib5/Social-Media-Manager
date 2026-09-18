@@ -12,6 +12,15 @@ class Post(models.Model):
         ('failed',     'Failed'),
     ]
 
+    # Organization (multi-tenancy)
+    organization = models.ForeignKey(
+        'organizations.Organization',
+        on_delete=models.CASCADE,
+        related_name='posts',
+        null=True,
+        blank=True
+    )
+
     social_accounts = models.ManyToManyField(
         'social_accounts.SocialAccount',
         through='PostPlatformStatus',
@@ -83,7 +92,6 @@ class PostPlatformStatus(models.Model):
 
 
 class ExternalPost(models.Model):
-    """Meta Business Suite বা অন্য জায়গা থেকে করা posts sync করার জন্য"""
     PLATFORM_CHOICES = [
         ('facebook',  'Facebook'),
         ('instagram', 'Instagram'),
@@ -94,7 +102,6 @@ class ExternalPost(models.Model):
         ('threads',   'Threads'),
         ('pinterest', 'Pinterest'),
         ('telegram',  'Telegram'),
-        
     ]
     social_account   = models.ForeignKey(
         SocialAccount,
@@ -104,9 +111,9 @@ class ExternalPost(models.Model):
     platform         = models.CharField(max_length=20, choices=PLATFORM_CHOICES)
     external_post_id = models.CharField(max_length=255)
     content          = models.TextField(blank=True, null=True)
-    media_url        = models.TextField(blank=True, null=True)   # ✅ TextField
+    media_url        = models.TextField(blank=True, null=True)
     media_type       = models.CharField(max_length=20, blank=True, null=True)
-    permalink_url    = models.TextField(blank=True, null=True)   # ✅ TextField
+    permalink_url    = models.TextField(blank=True, null=True)
 
     # Analytics
     likes            = models.IntegerField(default=0)

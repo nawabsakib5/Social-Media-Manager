@@ -33,6 +33,15 @@ class SocialAccount(models.Model):
         ('disconnected', 'Disconnected'),
     ]
 
+    # Organization (multi-tenancy)
+    organization = models.ForeignKey(
+        'organizations.Organization',
+        on_delete=models.CASCADE,
+        related_name='social_accounts',
+        null=True,
+        blank=True
+    )
+
     # Basic Info
     platform = models.CharField(max_length=20, choices=PLATFORM_CHOICES)
     account_name = models.CharField(max_length=100)
@@ -41,12 +50,12 @@ class SocialAccount(models.Model):
     profile_picture_url = models.URLField(null=True, blank=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='disconnected')
 
-    # Encrypted tokens (using property methods for encryption)
+    # Encrypted tokens
     _access_token = models.TextField(null=True, blank=True, db_column='access_token')
     _refresh_token = models.TextField(null=True, blank=True, db_column='refresh_token')
     token_expiry = models.DateTimeField(null=True, blank=True)
 
-    # Extra fields for platform-specific data
+    # Extra fields
     whatsapp_business_account_id = models.CharField(max_length=255, null=True, blank=True)
     extra_data = models.JSONField(default=dict, blank=True)
 
@@ -57,15 +66,13 @@ class SocialAccount(models.Model):
         null=True,
         related_name='social_accounts'
     )
-    
-    
+
     permitted_users = models.ManyToManyField(
         settings.AUTH_USER_MODEL,
         blank=True,
         related_name='permitted_accounts'
     )
 
-    
     connected_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -80,8 +87,6 @@ class SocialAccount(models.Model):
     def __str__(self):
         return f"{self.account_name} ({self.platform})"
 
-    
-
     @property
     def access_token(self):
         if not self._access_token:
@@ -89,7 +94,6 @@ class SocialAccount(models.Model):
         try:
             return get_cipher().decrypt(self._access_token.encode()).decode()
         except Exception:
-            
             return self._access_token
 
     @access_token.setter
@@ -97,13 +101,10 @@ class SocialAccount(models.Model):
         if not value:
             self._access_token = None
             return
-        
         try:
-            
             get_cipher().decrypt(value.encode())
             self._access_token = value
         except Exception:
-            
             self._access_token = get_cipher().encrypt(value.encode()).decode()
 
     @property
@@ -120,14 +121,12 @@ class SocialAccount(models.Model):
         if not value:
             self._refresh_token = None
             return
-        
         try:
             get_cipher().decrypt(value.encode())
             self._refresh_token = value
         except Exception:
             self._refresh_token = get_cipher().encrypt(value.encode()).decode()
 
-    
     def get_token(self):
         return self.access_token
 
