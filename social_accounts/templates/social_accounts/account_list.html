@@ -16,7 +16,6 @@
                 <p class="text-muted mb-0 small fw-medium">Manage, sync, and monitor your connected professional platforms</p>
             </div>
         </div>
-
         {% if user.is_staff or user.is_superuser %}
         <button class="btn btn-primary btn-sm px-4 py-2 rounded-pill shadow-lg fw-semibold d-flex align-items-center gap-2 btn-3d-glow"
                 data-bs-toggle="modal" data-bs-target="#connectModal">
@@ -32,16 +31,13 @@
             {% if item.account and item.account.status == 'connected' %}
                 <a href="{% url 'social_accounts:workspace' item.account.id %}" class="text-decoration-none">
             {% else %}
-                <a href="#" data-platform="{{ item.name }}" class="text-decoration-none connect-platform-btn"
-                   data-bs-toggle="modal" data-bs-target="#connectModal">
+                <a href="#" class="text-decoration-none" data-bs-toggle="modal" data-bs-target="#connectModal">
             {% endif %}
-
                 <div class="card platform-card-3d border-0 p-3 h-100 position-relative glass-effect rounded-4 shadow-sm">
                     <div class="position-absolute" style="top: 12px; right: 12px; width: 9px; height: 9px; border-radius: 50%;
                         background: {% if item.account and item.account.status == 'connected' %}#22c55e{% elif item.account %}#f59e0b{% else %}#cbd5e1{% endif %};
-                        box-shadow: 0 0 8px {% if item.account and item.account.status == 'connected' %}rgba(34, 197, 94, 0.5){% elif item.account %}rgba(245, 158, 11, 0.5){% else %}transparent{% endif %};">
+                        box-shadow: 0 0 8px {% if item.account and item.account.status == 'connected' %}rgba(34,197,94,0.5){% elif item.account %}rgba(245,158,11,0.5){% else %}transparent{% endif %};">
                     </div>
-
                     <div class="platform-icon-box mx-auto mb-3 shadow-sm">
                         {% if item.name == 'gmail' %}
                             <i class="fa-brands fa-google fs-4" style="color: #ea4335 !important;"></i>
@@ -69,7 +65,6 @@
                             </i>
                         {% endif %}
                     </div>
-
                     <div class="fw-bold text-dark text-truncate mb-1" style="font-size: 13px;">
                         {% if item.name == 'twitter' %}Twitter / X
                         {% elif item.name == 'tiktok' %}TikTok
@@ -84,7 +79,6 @@
                         {% elif item.name == 'discord' %}Discord
                         {% else %}{{ item.name|capfirst }}{% endif %}
                     </div>
-
                     <div class="text-muted text-truncate" style="font-size: 10px;">
                         {% if item.account %}
                             <span class="fw-semibold text-secondary">{{ item.account.account_name|truncatechars:12 }}</span>
@@ -92,7 +86,6 @@
                             <span class="text-muted opacity-75">Not Linked</span>
                         {% endif %}
                     </div>
-
                     <div class="mt-2 pt-2 border-top border-light d-flex align-items-center justify-content-between text-muted" style="font-size: 10px;">
                         <span class="fw-medium">{% if item.account and item.account.status == 'connected' %}Open{% else %}Connect{% endif %}</span>
                         <i class="fa-solid fa-arrow-right-long"></i>
@@ -144,7 +137,6 @@
                         </div>
                     </div>
                 </div>
-
                 <div class="d-flex align-items-center gap-2 flex-wrap">
                     <span class="badge rounded-pill px-3 py-1 fw-bold
                         {% if acc.status == 'connected' %}bg-success-subtle text-success border border-success border-opacity-25
@@ -170,7 +162,7 @@
         </div>
         {% else %}
         <div id="empty-state" class="card border-0 shadow-lg text-center py-5 px-4 rounded-4 bg-white">
-            <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-inline-flex align-items-center justify-content-center mb-3 shadow-inner mx-auto" style="width: 75px; height: 75px;">
+            <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-inline-flex align-items-center justify-content-center mb-3 mx-auto" style="width: 75px; height: 75px;">
                 <i class="fa-solid fa-plug fs-3"></i>
             </div>
             <h5 class="fw-bold text-dark mb-1">No accounts connected yet</h5>
@@ -191,7 +183,7 @@
 
 <!-- ── Connect New Account Modal ── -->
 <div class="modal fade" id="connectModal" tabindex="-1" aria-labelledby="connectModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-lg modal-dialog-centered">
+  <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
     <div class="modal-content border-0 rounded-4 shadow-lg">
 
       <div class="modal-header border-0 pb-0 px-4 pt-4">
@@ -207,7 +199,7 @@
       <div class="modal-body px-4 py-4">
         <div class="row g-3">
 
-          <!-- Facebook -->
+          <!-- Facebook ✅ -->
           <div class="col-6 col-sm-4 col-md-3">
             <a href="{% url 'social_accounts:facebook_login' %}" class="text-decoration-none">
               <div class="connect-option-card text-center p-3 rounded-3 border h-100">
@@ -218,7 +210,18 @@
             </a>
           </div>
 
-          <!-- LinkedIn -->
+          <!-- Instagram ✅ (Facebook-এর মাধ্যমে) -->
+          <div class="col-6 col-sm-4 col-md-3">
+            <a href="{% url 'social_accounts:facebook_login' %}" class="text-decoration-none">
+              <div class="connect-option-card text-center p-3 rounded-3 border h-100">
+                <i class="fa-brands fa-instagram fs-2 text-danger mb-2 d-block"></i>
+                <div class="fw-semibold text-dark" style="font-size: 13px;">Instagram</div>
+                <div class="text-muted" style="font-size: 10px;">Via Facebook Page</div>
+              </div>
+            </a>
+          </div>
+
+          <!-- LinkedIn ✅ -->
           <div class="col-6 col-sm-4 col-md-3">
             <a href="{% url 'social_accounts:linkedin_login' %}" class="text-decoration-none">
               <div class="connect-option-card text-center p-3 rounded-3 border h-100">
@@ -229,7 +232,7 @@
             </a>
           </div>
 
-          <!-- YouTube -->
+          <!-- YouTube ✅ -->
           <div class="col-6 col-sm-4 col-md-3">
             <a href="{% url 'social_accounts:youtube_login' %}" class="text-decoration-none">
               <div class="connect-option-card text-center p-3 rounded-3 border h-100">
@@ -240,7 +243,7 @@
             </a>
           </div>
 
-          <!-- Twitter/X -->
+          <!-- Twitter ✅ -->
           <div class="col-6 col-sm-4 col-md-3">
             <a href="{% url 'social_accounts:twitter_login' %}" class="text-decoration-none">
               <div class="connect-option-card text-center p-3 rounded-3 border h-100">
@@ -251,10 +254,10 @@
             </a>
           </div>
 
-          <!-- TikTok -->
+          <!-- TikTok 🔜 -->
           <div class="col-6 col-sm-4 col-md-3">
             <a href="#" onclick="comingSoon('TikTok'); return false;" class="text-decoration-none">
-              <div class="connect-option-card text-center p-3 rounded-3 border h-100 coming-soon-card">
+              <div class="connect-option-card coming-soon-card text-center p-3 rounded-3 border h-100">
                 <i class="fa-brands fa-tiktok fs-2 text-dark mb-2 d-block"></i>
                 <div class="fw-semibold text-dark" style="font-size: 13px;">TikTok</div>
                 <div class="text-muted" style="font-size: 10px;">Coming soon</div>
@@ -262,10 +265,10 @@
             </a>
           </div>
 
-          <!-- Pinterest -->
+          <!-- Pinterest 🔜 -->
           <div class="col-6 col-sm-4 col-md-3">
             <a href="#" onclick="comingSoon('Pinterest'); return false;" class="text-decoration-none">
-              <div class="connect-option-card text-center p-3 rounded-3 border h-100 coming-soon-card">
+              <div class="connect-option-card coming-soon-card text-center p-3 rounded-3 border h-100">
                 <i class="fa-brands fa-pinterest fs-2 mb-2 d-block" style="color: #bd081c;"></i>
                 <div class="fw-semibold text-dark" style="font-size: 13px;">Pinterest</div>
                 <div class="text-muted" style="font-size: 10px;">Coming soon</div>
@@ -273,10 +276,10 @@
             </a>
           </div>
 
-          <!-- Telegram -->
+          <!-- Telegram 🔜 -->
           <div class="col-6 col-sm-4 col-md-3">
             <a href="#" onclick="comingSoon('Telegram'); return false;" class="text-decoration-none">
-              <div class="connect-option-card text-center p-3 rounded-3 border h-100 coming-soon-card">
+              <div class="connect-option-card coming-soon-card text-center p-3 rounded-3 border h-100">
                 <i class="fa-brands fa-telegram fs-2 mb-2 d-block" style="color: #0088cc;"></i>
                 <div class="fw-semibold text-dark" style="font-size: 13px;">Telegram</div>
                 <div class="text-muted" style="font-size: 10px;">Coming soon</div>
@@ -284,12 +287,67 @@
             </a>
           </div>
 
-          <!-- WhatsApp -->
+          <!-- WhatsApp 🔜 -->
           <div class="col-6 col-sm-4 col-md-3">
             <a href="#" onclick="comingSoon('WhatsApp'); return false;" class="text-decoration-none">
-              <div class="connect-option-card text-center p-3 rounded-3 border h-100 coming-soon-card">
+              <div class="connect-option-card coming-soon-card text-center p-3 rounded-3 border h-100">
                 <i class="fa-brands fa-whatsapp fs-2 text-success mb-2 d-block"></i>
                 <div class="fw-semibold text-dark" style="font-size: 13px;">WhatsApp</div>
+                <div class="text-muted" style="font-size: 10px;">Coming soon</div>
+              </div>
+            </a>
+          </div>
+
+          <!-- Threads 🔜 -->
+          <div class="col-6 col-sm-4 col-md-3">
+            <a href="#" onclick="comingSoon('Threads'); return false;" class="text-decoration-none">
+              <div class="connect-option-card coming-soon-card text-center p-3 rounded-3 border h-100">
+                <i class="fa-brands fa-threads fs-2 text-dark mb-2 d-block"></i>
+                <div class="fw-semibold text-dark" style="font-size: 13px;">Threads</div>
+                <div class="text-muted" style="font-size: 10px;">Coming soon</div>
+              </div>
+            </a>
+          </div>
+
+          <!-- Reddit 🔜 -->
+          <div class="col-6 col-sm-4 col-md-3">
+            <a href="#" onclick="comingSoon('Reddit'); return false;" class="text-decoration-none">
+              <div class="connect-option-card coming-soon-card text-center p-3 rounded-3 border h-100">
+                <i class="fa-brands fa-reddit fs-2 mb-2 d-block" style="color: #ff4500;"></i>
+                <div class="fw-semibold text-dark" style="font-size: 13px;">Reddit</div>
+                <div class="text-muted" style="font-size: 10px;">Coming soon</div>
+              </div>
+            </a>
+          </div>
+
+          <!-- Snapchat 🔜 -->
+          <div class="col-6 col-sm-4 col-md-3">
+            <a href="#" onclick="comingSoon('Snapchat'); return false;" class="text-decoration-none">
+              <div class="connect-option-card coming-soon-card text-center p-3 rounded-3 border h-100">
+                <i class="fa-brands fa-snapchat fs-2 mb-2 d-block" style="color: #eab308;"></i>
+                <div class="fw-semibold text-dark" style="font-size: 13px;">Snapchat</div>
+                <div class="text-muted" style="font-size: 10px;">Coming soon</div>
+              </div>
+            </a>
+          </div>
+
+          <!-- Discord 🔜 -->
+          <div class="col-6 col-sm-4 col-md-3">
+            <a href="#" onclick="comingSoon('Discord'); return false;" class="text-decoration-none">
+              <div class="connect-option-card coming-soon-card text-center p-3 rounded-3 border h-100">
+                <i class="fa-brands fa-discord fs-2 mb-2 d-block" style="color: #5865f2;"></i>
+                <div class="fw-semibold text-dark" style="font-size: 13px;">Discord</div>
+                <div class="text-muted" style="font-size: 10px;">Coming soon</div>
+              </div>
+            </a>
+          </div>
+
+          <!-- Gmail 🔜 -->
+          <div class="col-6 col-sm-4 col-md-3">
+            <a href="#" onclick="comingSoon('Gmail'); return false;" class="text-decoration-none">
+              <div class="connect-option-card coming-soon-card text-center p-3 rounded-3 border h-100">
+                <i class="fa-brands fa-google fs-2 mb-2 d-block" style="color: #ea4335;"></i>
+                <div class="fw-semibold text-dark" style="font-size: 13px;">Gmail</div>
                 <div class="text-muted" style="font-size: 10px;">Coming soon</div>
               </div>
             </a>
@@ -314,35 +372,10 @@
     .btn-3d-glow { background: var(--primary-gradient); border: none; box-shadow: 0 8px 20px -4px rgba(79,70,229,0.4); transition: 0.3s; }
     .btn-3d-glow:hover { transform: translateY(-2px); box-shadow: 0 12px 25px -4px rgba(79,70,229,0.6); }
     .account-row:hover { background: #fafbff; transition: background 0.2s ease; }
-
-    /* Connect Modal Cards */
-    .connect-option-card {
-        cursor: pointer;
-        transition: all 0.2s ease;
-        background: #fff;
-    }
-    .connect-option-card:hover {
-        border-color: #4f46e5 !important;
-        background: #f5f3ff;
-        transform: translateY(-3px);
-        box-shadow: 0 8px 20px rgba(79,70,229,0.12);
-    }
-    .coming-soon-card {
-        opacity: 0.6;
-        position: relative;
-    }
-    .coming-soon-card::after {
-        content: 'Soon';
-        position: absolute;
-        top: 6px;
-        right: 6px;
-        background: #e0e7ff;
-        color: #4f46e5;
-        font-size: 9px;
-        font-weight: 700;
-        padding: 2px 6px;
-        border-radius: 20px;
-    }
+    .connect-option-card { cursor: pointer; transition: all 0.2s ease; background: #fff; }
+    .connect-option-card:hover { border-color: #4f46e5 !important; background: #f5f3ff; transform: translateY(-3px); box-shadow: 0 8px 20px rgba(79,70,229,0.12); }
+    .coming-soon-card { opacity: 0.6; position: relative; }
+    .coming-soon-card::after { content: 'Soon'; position: absolute; top: 6px; right: 6px; background: #e0e7ff; color: #4f46e5; font-size: 9px; font-weight: 700; padding: 2px 6px; border-radius: 20px; }
 </style>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
@@ -360,7 +393,12 @@
     });
 
     function comingSoon(platform) {
-        alert(platform + ' integration is coming soon! 🚀');
+        const modal = document.getElementById('connectModal');
+        const bsModal = bootstrap.Modal.getInstance(modal);
+        if (bsModal) bsModal.hide();
+        setTimeout(() => {
+            alert('🚀 ' + platform + ' integration is coming soon!\n\nWe\'re working on it and will notify you when it\'s ready.');
+        }, 300);
     }
 </script>
 {% endblock %}
